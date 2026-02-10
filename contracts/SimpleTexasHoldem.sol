@@ -2,830 +2,768 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./PokerHandEvaluator.sol";
 
 /**
- * @title Simplified Texas Hold'em Poker Game
- * @notice This contract implements a simplified version of Texas Hold'em poker
- * @dev Games run on an hourly schedule with automatic begin/end times
- * @dev Uses OpenZeppelin's Ownable for ownership management and ReentrancyGuard for security
+ * @title SimpleTexasHoldem
+ * @dev A simplified Texas Hold'em poker game implemented as a smart contract
+ * Owner controls game lifecycle, players join and bet within time windows
  */
 contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    // ============ Constants ============
+
+    // Game configuration
+    uint256 public constant MIN_PLAYERS = 2;
+    uint256 public constant MAX_PLAYERS = 9;
+    uint256 public constant MAX_TOTAL_PLAYERS = 50; // Max participation attempts per game
+    uint256 public constant HOUSE_FEE_PERCENTAGE = 1; // 1% fee to contract owner
+    uint256 public constant JOIN_CUTOFF = 5 minutes; // No joins in last 5 minutes
+    uint256 public constant MIN_CARDS_REQUIRED = 7; // 2 hole + 5 board
+
+    // Card deck (52 cards: 0-51)
+    // Card index to rank/suit mapping:
+    // Rank: cardIndex % 13 → 0-12 represent ranks 2-Ace (add 2 to get actual rank)
+    // Suit: cardIndex / 13 → 0=Clubs, 1=Diamonds, 2=Hearts, 3=Spades
+    uint8 public constant DECK_SIZE = 52;
+
+    // ============ State Variables ============
     
-    // ============================================
-    // STATE VARIABLES
-    // ============================================
+    // Packed slot 1: Booleans (4 bytes total, fit in 1 slot)
+    bool public useETH;              // 1 byte - If true, use ETH instead of ERC20 token
+    bool public gameActive;          // 1 byte - Is there an active game?
+    bool public storeDetailedRecords; // 1 byte - Toggle for detailed storage vs events only
+    bool public gamePaused;          // 1 byte - Emergency pause
     
-    // Current game round ID
-    uint256 public currentGameId;
+    // Slot 2: IERC20 interface (20 bytes = address)
+    IERC20 public gameToken;         // 20 bytes - Game token address
     
-    // Accumulated commission balance
-    uint256 public commissionBalance;
+    // Slot 3: uint256
+    uint256 public currentGameId;    // 32 bytes - Current game ID counter
     
-    // Game duration (1 hour)
-    uint256 public constant GAME_DURATION = 1 hours;
+    // Slot 4: uint256
+    uint256 public accumulatedHouseFees; // 32 bytes - House fee tracking
     
-    // House commission rate (1%)
-    uint256 public constant HOUSE_COMMISSION_PERCENT = 1;
-    
-    // Maximum and minimum players
-    uint8 public constant MAX_PLAYERS = 9;
-    uint8 public constant MIN_PLAYERS = 2;
-    
-    // Total cards in deck (52 standard cards, represented as 0-51)
-    uint8 public constant TOTAL_CARDS = 52;
-    
-    // Game states
-    enum GameState { NotStarted, InProgress, Ended }
-    
-    // Player information for each game
+    // Slot 5: uint256
+    uint256 private nonce;           // 32 bytes - Random number generation (NOTE: Use Chainlink VRF in production!)
+
+    // ============ Structures ============
+
+    // Player in active game (only stores betting players)
     struct Player {
-        uint256 betAmount;
-        uint8[2] holeCards;
-        bool hasFolded;
-        bool hasReceivedCards;
-        bool hasBet;
+        uint8[2] holeCards; // Two hole cards
+        uint256 betAmount; // Amount player has bet
     }
-    
-    // Game information
+
+    // Game state
     struct Game {
         uint256 gameId;
         uint256 startTime;
-        uint256 endTime;
-        GameState state;
-        address[] playerAddresses;
-        mapping(address => Player) players;
-        mapping(address => uint256) playerIndex; // Track player index for gas optimization
-        uint8[5] boardCards;
+        uint256 endTime; // Owner sets this when starting game
+        
+        // Card storage for all participants (even those who fold)
+        mapping(address => uint8[2]) playerCards; // Cards for anyone who joined
+        
+        // Active players (only those who bet)
+        mapping(address => Player) activePlayers;
+        address[] activePlayerAddresses; // List of betting players
+        
+        // Participation tracking (anyone who got cards, including folders)
+        mapping(address => bool) hasParticipated;
+        uint256 totalParticipations; // Counter for MAX_TOTAL_PLAYERS limit
+        
+        // Card pool for reuse
+        bool[52] cardsInUse; // Track which cards are dealt
+        uint8 cardsRemaining; // Quick counter
+        
+        // Board cards
+        uint8[5] boardCards; // Five community cards
         bool boardCardsDealt;
-        uint256 totalBetAmount;
+        
+        // Game status
+        bool resultsCalculated;
+        
+        // Results
+        uint256 totalPot;
         address[] winners;
-        bool[52] usedCards; // Track which cards are in use
+        uint256 houseFee;
     }
+
+    // Detailed game record for storage (optional, for debugging)
+    struct GameRecord {
+        uint256 gameId;
+        uint256 startTime;
+        uint256 endTime;
+        address[] players;
+        uint256[] betAmounts;
+        uint8[5] boardCards;
+        address[] winners;
+        uint256 potPerWinner;
+        uint256 houseFee;
+    }
+
+    // ============ Storage ============
+
+    // Current game
+    Game private currentGame;
     
-    // Mapping from game ID to Game
-    mapping(uint256 => Game) private games;
-    
-    
-    // ============================================
-    // EVENTS
-    // ============================================
-    
+    // Historical game records (only if storeDetailedRecords is true)
+    mapping(uint256 => GameRecord) public gameRecords;
+
+    // ============ Events ============
+
     event GameStarted(uint256 indexed gameId, uint256 startTime, uint256 endTime);
-    event GameEnded(uint256 indexed gameId, address[] winners, uint256 potAmount);
-    event PlayerJoined(uint256 indexed gameId, address indexed player);
-    event PlayerFolded(uint256 indexed gameId, address indexed player);
+    event PlayerJoined(uint256 indexed gameId, address indexed player, uint8[2] holeCards);
+    event PlayerFolded(uint256 indexed gameId, address indexed player, uint8[2] returnedCards);
     event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);
-    event CardsDealt(uint256 indexed gameId, address indexed player);
-    event BoardCardsRevealed(uint256 indexed gameId, uint8[5] boardCards);
-    event PotDistributed(uint256 indexed gameId, address indexed winner, uint256 amount);
-    event CommissionPaid(uint256 indexed gameId, uint256 amount);
-    
-    
-    // ============================================
-    // MODIFIERS
-    // ============================================
-    
-    /**
-     * @dev Checks if game is in progress
-     */
-    modifier gameInProgress(uint256 gameId) {
-        require(games[gameId].state == GameState.InProgress, "Game not in progress");
-        require(block.timestamp <= games[gameId].endTime, "Game time expired");
+    event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
+    event GameEnded(
+        uint256 indexed gameId, 
+        address[] winners, 
+        uint256 potPerWinner,
+        uint256 houseFee,
+        address[] allPlayers,
+        uint256[] betAmounts
+    );
+    event HouseFeeWithdrawn(address indexed owner, uint256 amount);
+    event DetailedRecordsToggled(bool enabled);
+    event EmergencyPauseToggled(bool gamePaused);
+
+    // ============ Modifiers ============
+
+    modifier whenNotPaused() {
+        require(!gamePaused, "Contract is paused");
         _;
     }
-    
-    /**
-     * @dev Checks if caller is a player in the game
-     */
-    modifier onlyGamePlayer(uint256 gameId) {
-        require(games[gameId].players[msg.sender].hasReceivedCards, "Not a player in this game");
+
+    modifier whenGameActive() {
+        require(gameActive, "No active game");
         _;
     }
-    
-    
-    // ============================================
-    // CONSTRUCTOR
-    // ============================================
-    
-    /**
-     * @notice Initializes the contract
-     * @dev Sets the contract deployer as the owner via Ownable
-     */
-    constructor() Ownable(msg.sender) {
-        currentGameId = 0;
+
+    modifier whenGameNotActive() {
+        require(!gameActive, "Game already active");
+        _;
     }
-    
-    
-    // ============================================
-    // OWNER FUNCTIONS (Only callable by contract owner)
-    // ============================================
-    
+
+    // ============ Constructor ============
+
     /**
-     * @notice Starts a new game round
-     * @dev Creates a new game with start and end times (1 hour duration)
-     * @dev Can only be called by owner
-     * @return gameId The ID of the newly created game
+     * @dev Constructor to initialize the contract
+     * @param _gameToken Address of ERC20 token to use (address(0) for ETH)
+     * @param _storeDetailedRecords Whether to store detailed game records in storage
      */
-    function startNewGame() external onlyOwner returns (uint256 gameId) {
+    constructor(address _gameToken, bool _storeDetailedRecords) Ownable(msg.sender) {
+        if (_gameToken == address(0)) {
+            useETH = true;
+        } else {
+            gameToken = IERC20(_gameToken);
+            useETH = false;
+        }
+        storeDetailedRecords = _storeDetailedRecords;
+        currentGameId = 0; // Will increment to 1 on first game
+        gameActive = false;
+    }
+
+    // ============ Owner Functions - Game Management ============
+
+    /**
+     * @dev Start a new game
+     * Only callable by owner
+     * @param duration Game duration in seconds (e.g., 3600 for 1 hour)
+     */
+    function startGame(uint256 duration) external onlyOwner whenNotPaused whenGameNotActive {
+        require(duration > JOIN_CUTOFF, "Duration must be longer than join cutoff");
+        
         currentGameId++;
-        gameId = currentGameId;
+        gameActive = true;
         
-        Game storage game = games[gameId];
-        game.gameId = gameId;
-        game.startTime = block.timestamp;
-        game.endTime = block.timestamp + GAME_DURATION;
-        game.state = GameState.InProgress;
+        // Initialize new game
+        currentGame.gameId = currentGameId;
+        currentGame.startTime = block.timestamp;
+        currentGame.endTime = block.timestamp + duration;
+        currentGame.boardCardsDealt = false;
+        currentGame.resultsCalculated = false;
+        currentGame.totalParticipations = 0;
+        currentGame.cardsRemaining = DECK_SIZE;
+        currentGame.totalPot = 0;
         
-        emit GameStarted(gameId, game.startTime, game.endTime);
+        // Reset card pool - all cards available
+        for (uint8 i = 0; i < DECK_SIZE; i++) {
+            currentGame.cardsInUse[i] = false;
+        }
+        
+        // Clear previous game data if any
+        delete currentGame.activePlayerAddresses;
+        delete currentGame.winners;
+        
+        emit GameStarted(currentGameId, currentGame.startTime, currentGame.endTime);
     }
-    
+
     /**
-     * @notice Manually ends the current game
-     * @dev Triggers game end logic, calculates winners, distributes pot
-     * @dev Can only be called by owner (useful for emergency or manual control)
-     * @param gameId The ID of the game to end
+     * @dev End the current game and calculate results
+     * Only callable by owner
+     * Distributes pot to winners and collects house fee
      */
-    function endGame(uint256 gameId) external onlyOwner nonReentrant {
-        Game storage game = games[gameId];
-        require(game.state == GameState.InProgress, "Game not in progress");
+    function endGame() external onlyOwner whenNotPaused whenGameActive {
+        uint256 playerCount = currentGame.activePlayerAddresses.length;
         
-        game.state = GameState.Ended;
-        
-        // Check if minimum players requirement is met
-        if (!_hasMinimumPlayers(gameId)) {
+        // If less than 2 players bet, cancel game and return bets
+        if (playerCount < MIN_PLAYERS) {
             // Return all bets to players
-            _returnAllBets(gameId);
-            emit GameEnded(gameId, new address[](0), 0);
+            for (uint256 i = 0; i < playerCount; i++) {
+                address player = currentGame.activePlayerAddresses[i];
+                uint256 betAmount = currentGame.activePlayers[player].betAmount;
+                
+                if (betAmount > 0) {
+                    _transferTokens(player, betAmount);
+                }
+            }
+            
+            gameActive = false;
+            emit GameEnded(currentGameId, new address[](0), 0, 0, currentGame.activePlayerAddresses, new uint256[](0));
             return;
         }
         
-        // Determine winners
-        address[] memory winners = _determineWinners(gameId);
-        game.winners = winners;
-        
-        // Distribute pot
-        uint256 potAmount = _distributePot(gameId);
-        
-        emit GameEnded(gameId, winners, potAmount);
-    }
-    
-    /**
-     * @notice Deals the five board cards for a game
-     * @dev Should be called after all players have finished betting
-     * @dev Can only be called by owner
-     * @param gameId The ID of the game
-     * @param boardCards Array of 5 card values representing the community cards (0-51)
-     */
-    function dealBoardCards(uint256 gameId, uint8[5] calldata boardCards) external onlyOwner gameInProgress(gameId) {
-        Game storage game = games[gameId];
-        require(!game.boardCardsDealt, "Board cards already dealt");
-        
-        // Validate cards are in valid range and not duplicates
-        for (uint256 i = 0; i < 5; i++) {
-            require(boardCards[i] < TOTAL_CARDS, "Invalid card value");
-            require(!game.usedCards[boardCards[i]], "Card already in use");
-            game.usedCards[boardCards[i]] = true;
+        // Deal board cards if not already dealt
+        if (!currentGame.boardCardsDealt) {
+            _dealBoardCards();
         }
         
-        game.boardCards = boardCards;
-        game.boardCardsDealt = true;
+        // Calculate results and distribute pot
+        _calculateResults();
         
-        emit BoardCardsRevealed(gameId, boardCards);
+        // Store record if enabled
+        if (storeDetailedRecords) {
+            _storeGameRecord();
+        }
+        
+        gameActive = false;
     }
-    
+
+    // ============ Owner Functions - Configuration ============
+
     /**
-     * @notice Withdraws accumulated commission from the contract
-     * @dev Can only be called by owner
+     * @dev Toggle detailed record storage on/off
+     * Only callable by owner
+     * @param enabled True to store detailed records, false for events only
      */
-    function withdrawCommission() external onlyOwner nonReentrant {
-        uint256 amount = commissionBalance;
-        require(amount > 0, "No commission to withdraw");
-        
-        commissionBalance = 0;
-        
-        (bool success, ) = owner().call{value: amount}("");
-        require(success, "Commission transfer failed");
+    function setDetailedRecords(bool enabled) external onlyOwner {
+        storeDetailedRecords = enabled;
+        emit DetailedRecordsToggled(enabled);
     }
-    
-    
-    // ============================================
-    // PLAYER FUNCTIONS (Callable by any user)
-    // ============================================
-    
+
     /**
-     * @notice Request to receive hole cards and join the game
-     * @dev Player must call this before they can bet
-     * @dev Assigns two hole cards to the player from available pool
-     * @param gameId The ID of the game to join
-     * @param card1 First hole card (0-51)
-     * @param card2 Second hole card (0-51)
+     * @dev Withdraw accumulated house fees
+     * Only callable by owner
      */
-    function requestHoleCards(uint256 gameId, uint8 card1, uint8 card2) external gameInProgress(gameId) {
-        Game storage game = games[gameId];
-        require(!game.players[msg.sender].hasReceivedCards, "Already received cards");
-        require(game.playerAddresses.length < MAX_PLAYERS, "Max players reached");
+    function withdrawHouseFees() external onlyOwner nonReentrant {
+        uint256 amount = accumulatedHouseFees;
+        require(amount > 0, "No fees to withdraw");
         
-        // Validate cards
-        require(card1 < TOTAL_CARDS && card2 < TOTAL_CARDS, "Invalid card value");
-        require(card1 != card2, "Cards must be different");
-        require(!game.usedCards[card1] && !game.usedCards[card2], "Card already in use");
+        accumulatedHouseFees = 0;
+        _transferTokens(owner(), amount);
         
-        // Mark cards as used
-        game.usedCards[card1] = true;
-        game.usedCards[card2] = true;
-        
-        // Initialize player
-        Player storage player = game.players[msg.sender];
-        player.holeCards = [card1, card2];
-        player.hasReceivedCards = true;
-        
-        // Add to player list
-        game.playerIndex[msg.sender] = game.playerAddresses.length;
-        game.playerAddresses.push(msg.sender);
-        
-        emit PlayerJoined(gameId, msg.sender);
-        emit CardsDealt(gameId, msg.sender);
+        emit HouseFeeWithdrawn(owner(), amount);
     }
-    
+
     /**
-     * @notice Player folds and quits the game
-     * @dev Marks player as folded, their hole cards can be reused
-     * @dev Player won't participate in pot distribution
-     * @param gameId The ID of the game
+     * @dev Emergency pause/unpause contract
+     * Only callable by owner
      */
-    function fold(uint256 gameId) external onlyGamePlayer(gameId) gameInProgress(gameId) {
-        Game storage game = games[gameId];
-        Player storage player = game.players[msg.sender];
+    function togglePause() external onlyOwner {
+        gamePaused = !gamePaused;
+        emit EmergencyPauseToggled(gamePaused);
+    }
+
+    // ============ Player Actions ============
+
+    /**
+     * @dev Request to join the current game and receive two hole cards
+     * Requirements:
+     * - Game must be active
+     * - Player has not already participated in this game
+     * - Total participations < MAX_TOTAL_PLAYERS
+     * - At least 7 cards remaining in deck
+     * - Join period not closed (before endTime - JOIN_CUTOFF)
+     */
+    function joinGame() external whenNotPaused whenGameActive {
+        require(!currentGame.hasParticipated[msg.sender], "Already participated in this game");
+        require(currentGame.totalParticipations < MAX_TOTAL_PLAYERS, "Game is full");
+        require(currentGame.cardsRemaining >= MIN_CARDS_REQUIRED, "Not enough cards remaining");
+        require(block.timestamp < currentGame.endTime - JOIN_CUTOFF, "Join period closed");
         
-        require(!player.hasFolded, "Already folded");
-        require(!player.hasBet, "Cannot fold after betting");
+        // Mark player as participated (prevents re-joining)
+        currentGame.hasParticipated[msg.sender] = true;
+        currentGame.totalParticipations++;
         
-        player.hasFolded = true;
+        // Deal hole cards
+        _dealHoleCards(msg.sender);
+        
+        emit PlayerJoined(currentGameId, msg.sender, currentGame.playerCards[msg.sender]);
+    }
+
+    /**
+     * @dev Fold and quit the game
+     * Returns cards to the pool for reuse
+     * Player cannot rejoin this game after folding
+     */
+    function fold() external whenNotPaused whenGameActive {
+        require(currentGame.hasParticipated[msg.sender], "Not in this game");
+        require(currentGame.activePlayers[msg.sender].betAmount == 0, "Already bet, cannot fold");
         
         // Return cards to pool
-        game.usedCards[player.holeCards[0]] = false;
-        game.usedCards[player.holeCards[1]] = false;
+        uint8[2] memory returnedCards = currentGame.playerCards[msg.sender];
+        _returnCards(msg.sender);
         
-        emit PlayerFolded(gameId, msg.sender);
-    }
-    
-    /**
-     * @notice Player places a bet
-     * @dev Player must transfer ETH with this call
-     * @dev Once bet is placed, player cannot fold
-     * @param gameId The ID of the game
-     */
-    function bet(uint256 gameId) external payable onlyGamePlayer(gameId) gameInProgress(gameId) {
-        Game storage game = games[gameId];
-        Player storage player = game.players[msg.sender];
+        // Delete player cards
+        delete currentGame.playerCards[msg.sender];
         
-        require(!player.hasFolded, "Cannot bet after folding");
-        require(!player.hasBet, "Already placed bet");
-        require(msg.value > 0, "Bet amount must be greater than 0");
+        emit PlayerFolded(currentGameId, msg.sender, returnedCards);
+    }
+
+    /**
+     * @dev Place a bet and commit to the game
+     * For ETH games: msg.value is the bet
+     * For ERC20 games: must approve tokens first, then call with betAmount
+     * @param betAmount Amount of tokens to bet (ignored for ETH games)
+     */
+    function placeBet(uint256 betAmount) external payable whenNotPaused whenGameActive nonReentrant {
+        require(currentGame.hasParticipated[msg.sender], "Must join game first");
+        require(currentGame.activePlayers[msg.sender].betAmount == 0, "Already bet");
         
-        player.betAmount = msg.value;
-        player.hasBet = true;
-        game.totalBetAmount += msg.value;
+        uint256 actualBetAmount;
         
-        emit PlayerBet(gameId, msg.sender, msg.value);
-    }
-    
-    /**
-     * @notice Reveals a player's hole cards
-     * @dev Can be called by the player (for transparency)
-     * @param gameId The ID of the game
-     */
-    function revealHoleCards(uint256 gameId) external view onlyGamePlayer(gameId) returns (uint8[2] memory) {
-        return games[gameId].players[msg.sender].holeCards;
-    }
-    
-    
-    // ============================================
-    // PUBLIC VIEW FUNCTIONS (Read-only, callable by anyone)
-    // ============================================
-    
-    /**
-     * @notice Gets the current game ID
-     * @return The current active game ID
-     */
-    function getCurrentGameId() external view returns (uint256) {
-        return currentGameId;
-    }
-    
-    /**
-     * @notice Gets basic information about a game
-     * @param gameId The ID of the game
-     * @return startTime Game start timestamp
-     * @return endTime Game end timestamp
-     * @return state Current game state
-     * @return playerCount Number of players
-     * @return totalBetAmount Total bet amount
-     */
-    function getGameInfo(uint256 gameId) external view returns (
-        uint256 startTime,
-        uint256 endTime,
-        GameState state,
-        uint256 playerCount,
-        uint256 totalBetAmount
-    ) {
-        Game storage game = games[gameId];
-        return (
-            game.startTime,
-            game.endTime,
-            game.state,
-            game.playerAddresses.length,
-            game.totalBetAmount
-        );
-    }
-    
-    /**
-     * @notice Gets a player's information in a specific game
-     * @param gameId The ID of the game
-     * @param playerAddress The address of the player
-     * @return betAmount The amount the player bet
-     * @return hasFolded Whether the player has folded
-     * @return hasReceivedCards Whether the player has received cards
-     * @return hasBet Whether the player has placed a bet
-     */
-    function getPlayerInfo(uint256 gameId, address playerAddress) external view returns (
-        uint256 betAmount,
-        bool hasFolded,
-        bool hasReceivedCards,
-        bool hasBet
-    ) {
-        Player storage player = games[gameId].players[playerAddress];
-        return (
-            player.betAmount,
-            player.hasFolded,
-            player.hasReceivedCards,
-            player.hasBet
-        );
-    }
-    
-    /**
-     * @notice Gets all player addresses in a game
-     * @param gameId The ID of the game
-     * @return Array of player addresses
-     */
-    function getPlayers(uint256 gameId) external view returns (address[] memory) {
-        return games[gameId].playerAddresses;
-    }
-    
-    /**
-     * @notice Gets the board cards for a game
-     * @param gameId The ID of the game
-     * @return boardCards Array of 5 community cards
-     */
-    function getBoardCards(uint256 gameId) external view returns (uint8[5] memory) {
-        require(games[gameId].boardCardsDealt, "Board cards not dealt yet");
-        return games[gameId].boardCards;
-    }
-    
-    /**
-     * @notice Gets the winners of a completed game
-     * @param gameId The ID of the game
-     * @return Array of winner addresses
-     */
-    function getWinners(uint256 gameId) external view returns (address[] memory) {
-        require(games[gameId].state == GameState.Ended, "Game not ended");
-        return games[gameId].winners;
-    }
-    
-    /**
-     * @notice Checks if current time is past game end time
-     * @param gameId The ID of the game
-     * @return Whether the game time has expired
-     */
-    function isGameTimeExpired(uint256 gameId) external view returns (bool) {
-        return block.timestamp > games[gameId].endTime;
-    }
-    
-    
-    // ============================================
-    // INTERNAL/PRIVATE FUNCTIONS
-    // ============================================
-    
-    /**
-     * @dev Calculates pot allocation based on player bets
-     * @dev Pot = lowest bet * number of non-folded betting players
-     * @param gameId The ID of the game
-     * @return potAmount The total pot amount
-     * @return minBet The minimum bet amount
-     */
-    function _calculatePot(uint256 gameId) internal view returns (uint256 potAmount, uint256 minBet) {
-        Game storage game = games[gameId];
-        uint256 activePlayers = 0;
-        minBet = type(uint256).max;
-        
-        // Find minimum bet and count active players
-        for (uint256 i = 0; i < game.playerAddresses.length; i++) {
-            Player storage player = game.players[game.playerAddresses[i]];
-            if (!player.hasFolded && player.hasBet) {
-                activePlayers++;
-                if (player.betAmount < minBet) {
-                    minBet = player.betAmount;
-                }
-            }
+        if (useETH) {
+            require(msg.value > 0, "Must bet some ETH");
+            actualBetAmount = msg.value;
+        } else {
+            require(betAmount > 0, "Must bet some tokens");
+            actualBetAmount = betAmount;
+            // Transfer tokens from player to contract
+            gameToken.safeTransferFrom(msg.sender, address(this), betAmount);
         }
         
-        if (activePlayers == 0) {
-            return (0, 0);
-        }
+        // Move cards from playerCards to players and record bet
+        currentGame.activePlayers[msg.sender].holeCards = currentGame.playerCards[msg.sender];
+        currentGame.activePlayers[msg.sender].betAmount = actualBetAmount;
+        currentGame.activePlayerAddresses.push(msg.sender);
         
-        potAmount = minBet * activePlayers;
+        emit PlayerBet(currentGameId, msg.sender, actualBetAmount);
     }
-    
+
+    // ============ Internal Game Logic Functions ============
+
     /**
-     * @dev Returns excess bets to players
-     * @dev Excess = player's bet - minimum bet
-     * @param gameId The ID of the game
-     * @param minBet The minimum bet amount
+     * @dev Deal two hole cards to a player
+     * Uses card pool and marks cards as in use
+     * @param player Address of the player
      */
-    function _returnExcessBets(uint256 gameId, uint256 minBet) internal {
-        Game storage game = games[gameId];
+    function _dealHoleCards(address player) internal {
+        uint8[2] memory cards;
+        cards[0] = _getRandomCard();
+        cards[1] = _getRandomCard();
         
-        for (uint256 i = 0; i < game.playerAddresses.length; i++) {
-            address playerAddr = game.playerAddresses[i];
-            Player storage player = game.players[playerAddr];
-            
-            if (player.hasBet && player.betAmount > minBet) {
-                uint256 excess = player.betAmount - minBet;
-                (bool success, ) = playerAddr.call{value: excess}("");
-                require(success, "Excess return failed");
-            }
-        }
+        currentGame.playerCards[player] = cards;
     }
-    
+
     /**
-     * @dev Returns all bets to players (when game ends with insufficient players)
-     * @param gameId The ID of the game
+     * @dev Return player's cards to the available pool
+     * Cards are returned to pool for reuse by other players
+     * @param player Address of the player
      */
-    function _returnAllBets(uint256 gameId) internal {
-        Game storage game = games[gameId];
+    function _returnCards(address player) internal {
+        uint8[2] memory cards = currentGame.playerCards[player];
         
-        for (uint256 i = 0; i < game.playerAddresses.length; i++) {
-            address playerAddr = game.playerAddresses[i];
-            Player storage player = game.players[playerAddr];
-            
-            if (player.hasBet && player.betAmount > 0) {
-                uint256 amount = player.betAmount;
-                player.betAmount = 0;
-                (bool success, ) = playerAddr.call{value: amount}("");
-                require(success, "Bet return failed");
-            }
-        }
+        // Validate player has cards
+        require(cards[0] != 0 || cards[1] != 0, "Player has no cards to return");
+        
+        // Return cards to pool
+        currentGame.cardsInUse[cards[0]] = false;
+        currentGame.cardsInUse[cards[1]] = false;
+        currentGame.cardsRemaining += 2;
     }
-    
+
     /**
-     * @dev Determines the strongest 5-card hand from 7 cards
-     * @dev Combines player's 2 hole cards with 5 board cards
+     * @dev Deal five board cards after all players have bet
+     * Can only be called once per game
+     */
+    function _dealBoardCards() internal {
+        require(!currentGame.boardCardsDealt, "Board cards already dealt");
+        
+        uint8[5] memory cards;
+        for (uint8 i = 0; i < 5; i++) {
+            cards[i] = _getRandomCard();
+        }
+        
+        currentGame.boardCards = cards;
+        currentGame.boardCardsDealt = true;
+        
+        emit BoardCardsDealt(currentGameId, cards);
+    }
+
+    /**
+     * @dev Calculate the strongest hand for a player
      * @param holeCards Player's two hole cards
-     * @param boardCards The five community cards
-     * @return handRank The rank of the best hand (0-9, higher is better)
-     * @return handValue Additional value for tie-breaking (encoded card values)
+     * @param boardCards Five community cards
+     * @return handRank Poker hand ranking
+     * @return handValue Tiebreaker value for same rank hands
      */
     function _evaluateHand(uint8[2] memory holeCards, uint8[5] memory boardCards) 
         internal 
         pure 
-        returns (uint256 handRank, uint256 handValue) 
+        returns (PokerHandEvaluator.HandRank handRank, uint256 handValue) 
     {
-        // Combine all 7 cards
-        uint8[7] memory allCards;
-        allCards[0] = holeCards[0];
-        allCards[1] = holeCards[1];
-        for (uint256 i = 0; i < 5; i++) {
-            allCards[i + 2] = boardCards[i];
-        }
-        
-        // Extract ranks and suits (card % 13 = rank, card / 13 = suit)
-        uint8[7] memory ranks;
-        uint8[7] memory suits;
-        for (uint256 i = 0; i < 7; i++) {
-            ranks[i] = allCards[i] % 13;
-            suits[i] = allCards[i] / 13;
-        }
-        
-        // Sort ranks for easier evaluation (bubble sort - simple for small arrays)
-        for (uint256 i = 0; i < 7; i++) {
-            for (uint256 j = i + 1; j < 7; j++) {
-                if (ranks[i] < ranks[j]) {
-                    (ranks[i], ranks[j]) = (ranks[j], ranks[i]);
-                }
-            }
-        }
-        
-        // Check for flush
-        bool hasFlush = false;
-        uint8[5] memory flushCards;
-        for (uint8 suit = 0; suit < 4; suit++) {
-            uint8 count = 0;
-            for (uint256 i = 0; i < 7; i++) {
-                if (suits[i] == suit) {
-                    if (count < 5) {
-                        flushCards[count] = ranks[i];
-                    }
-                    count++;
-                }
-            }
-            if (count >= 5) {
-                hasFlush = true;
-                break;
-            }
-        }
-        
-        // Check for straight
-        (bool hasStraight, uint8 straightHigh) = _checkStraight(ranks);
-        
-        // Count rank occurrences
-        uint8[13] memory rankCounts;
-        for (uint256 i = 0; i < 7; i++) {
-            rankCounts[ranks[i]]++;
-        }
-        
-        // Find pairs, three of a kind, four of a kind
-        uint8 fourKind = 0;
-        uint8 threeKind = 0;
-        uint8 pair1 = 0;
-        uint8 pair2 = 0;
-        
-        for (uint8 r = 12; r < 255; r--) { // Use underflow to loop from 12 to 0
-            if (r > 12) break;
-            if (rankCounts[r] == 4) {
-                fourKind = r;
-            } else if (rankCounts[r] == 3) {
-                if (threeKind == 0) threeKind = r;
-            } else if (rankCounts[r] == 2) {
-                if (pair1 == 0) pair1 = r;
-                else if (pair2 == 0) pair2 = r;
-            }
-        }
-        
-        // Determine hand rank and value
-        // Royal Flush (9)
-        if (hasFlush && hasStraight && straightHigh == 12) {
-            return (9, straightHigh);
-        }
-        
-        // Straight Flush (8)
-        if (hasFlush && hasStraight) {
-            return (8, straightHigh);
-        }
-        
-        // Four of a Kind (7)
-        if (fourKind > 0) {
-            return (7, uint256(fourKind) * 256 + _getKicker(ranks, fourKind));
-        }
-        
-        // Full House (6)
-        if (threeKind > 0 && pair1 > 0) {
-            return (6, uint256(threeKind) * 256 + pair1);
-        }
-        
-        // Flush (5)
-        if (hasFlush) {
-            uint256 value = 0;
-            for (uint256 i = 0; i < 5; i++) {
-                value = value * 256 + flushCards[i];
-            }
-            return (5, value);
-        }
-        
-        // Straight (4)
-        if (hasStraight) {
-            return (4, straightHigh);
-        }
-        
-        // Three of a Kind (3)
-        if (threeKind > 0) {
-            return (3, uint256(threeKind) * 65536 + _getTopKickers(ranks, threeKind, 2));
-        }
-        
-        // Two Pair (2)
-        if (pair1 > 0 && pair2 > 0) {
-            uint8 highPair = pair1 > pair2 ? pair1 : pair2;
-            uint8 lowPair = pair1 > pair2 ? pair2 : pair1;
-            return (2, uint256(highPair) * 65536 + uint256(lowPair) * 256 + _getKicker(ranks, highPair));
-        }
-        
-        // One Pair (1)
-        if (pair1 > 0) {
-            return (1, uint256(pair1) * 16777216 + _getTopKickers(ranks, pair1, 3));
-        }
-        
-        // High Card (0)
-        uint256 value = 0;
-        uint8 count = 0;
-        for (uint256 i = 0; i < 7 && count < 5; i++) {
-            value = value * 256 + ranks[i];
-            count++;
-        }
-        return (0, value);
+        return PokerHandEvaluator.evaluateBestHand(holeCards, boardCards);
     }
-    
+
     /**
-     * @dev Checks if ranks contain a straight
-     * @param ranks Sorted array of card ranks (high to low)
-     * @return hasStraight Whether a straight exists
-     * @return highCard The highest card in the straight
+     * @dev Determine winners and distribute pot
+     * Evaluates all player hands and finds winner(s)
      */
-    function _checkStraight(uint8[7] memory ranks) internal pure returns (bool hasStraight, uint8 highCard) {
-        // Check for Ace-low straight (A-2-3-4-5)
-        bool hasAce = false;
-        bool hasTwo = false;
-        bool hasThree = false;
-        bool hasFour = false;
-        bool hasFive = false;
+    function _calculateResults() internal {
+        require(!currentGame.resultsCalculated, "Results already calculated");
+        currentGame.resultsCalculated = true;
         
-        for (uint256 i = 0; i < 7; i++) {
-            if (ranks[i] == 12) hasAce = true;
-            if (ranks[i] == 0) hasTwo = true;
-            if (ranks[i] == 1) hasThree = true;
-            if (ranks[i] == 2) hasFour = true;
-            if (ranks[i] == 3) hasFive = true;
-        }
+        uint256 playerCount = currentGame.activePlayerAddresses.length;
+        require(playerCount >= MIN_PLAYERS, "Not enough players");
         
-        if (hasAce && hasTwo && hasThree && hasFour && hasFive) {
-            return (true, 3); // Ace-low straight, high card is 5 (rank 3)
-        }
-        
-        // Check for regular straights
-        for (uint8 start = 12; start >= 4; start--) {
-            bool found = true;
-            for (uint8 offset = 0; offset < 5; offset++) {
-                bool hasRank = false;
-                for (uint256 i = 0; i < 7; i++) {
-                    if (ranks[i] == start - offset) {
-                        hasRank = true;
-                        break;
-                    }
-                }
-                if (!hasRank) {
-                    found = false;
-                    break;
-                }
-            }
-            if (found) {
-                return (true, start);
-            }
-        }
-        
-        return (false, 0);
-    }
-    
-    /**
-     * @dev Gets the highest kicker excluding a specific rank
-     * @param ranks Sorted ranks
-     * @param excludeRank Rank to exclude
-     * @return The highest kicker value
-     */
-    function _getKicker(uint8[7] memory ranks, uint8 excludeRank) internal pure returns (uint256) {
-        for (uint256 i = 0; i < 7; i++) {
-            if (ranks[i] != excludeRank) {
-                return ranks[i];
-            }
-        }
-        return 0;
-    }
-    
-    /**
-     * @dev Gets top N kickers excluding a specific rank
-     * @param ranks Sorted ranks
-     * @param excludeRank Rank to exclude
-     * @param n Number of kickers needed
-     * @return Encoded kicker values
-     */
-    function _getTopKickers(uint8[7] memory ranks, uint8 excludeRank, uint8 n) internal pure returns (uint256) {
-        uint256 value = 0;
-        uint8 count = 0;
-        for (uint256 i = 0; i < 7 && count < n; i++) {
-            if (ranks[i] != excludeRank) {
-                value = value * 256 + ranks[i];
-                count++;
-            }
-        }
-        return value;
-    }
-    
-    /**
-     * @dev Finds all winners in the game
-     * @dev Evaluates all non-folded players' hands
-     * @param gameId The ID of the game
-     * @return winners Array of winner addresses
-     */
-    function _determineWinners(uint256 gameId) internal view returns (address[] memory winners) {
-        Game storage game = games[gameId];
-        require(game.boardCardsDealt, "Board cards not dealt");
-        
-        address[] memory activePlayers = new address[](game.playerAddresses.length);
-        uint256 activeCount = 0;
-        
-        // Get active players
-        for (uint256 i = 0; i < game.playerAddresses.length; i++) {
-            Player storage player = game.players[game.playerAddresses[i]];
-            if (!player.hasFolded && player.hasBet) {
-                activePlayers[activeCount] = game.playerAddresses[i];
-                activeCount++;
-            }
-        }
-        
-        if (activeCount == 0) {
-            return new address[](0);
-        }
-        
-        // Evaluate hands
-        uint256[] memory handRanks = new uint256[](activeCount);
-        uint256[] memory handValues = new uint256[](activeCount);
-        
-        for (uint256 i = 0; i < activeCount; i++) {
-            Player storage player = game.players[activePlayers[i]];
-            (handRanks[i], handValues[i]) = _evaluateHand(player.holeCards, game.boardCards);
-        }
-        
-        // Find best hand
-        uint256 bestRank = 0;
-        uint256 bestValue = 0;
-        for (uint256 i = 0; i < activeCount; i++) {
-            if (handRanks[i] > bestRank || (handRanks[i] == bestRank && handValues[i] > bestValue)) {
-                bestRank = handRanks[i];
-                bestValue = handValues[i];
-            }
-        }
-        
-        // Count winners
-        uint256 winnerCount = 0;
-        for (uint256 i = 0; i < activeCount; i++) {
-            if (handRanks[i] == bestRank && handValues[i] == bestValue) {
-                winnerCount++;
-            }
-        }
-        
-        // Collect winners
-        winners = new address[](winnerCount);
-        uint256 winnerIndex = 0;
-        for (uint256 i = 0; i < activeCount; i++) {
-            if (handRanks[i] == bestRank && handValues[i] == bestValue) {
-                winners[winnerIndex] = activePlayers[i];
-                winnerIndex++;
-            }
-        }
-    }
-    
-    /**
-     * @dev Distributes the pot to winners after deducting commission
-     * @dev Splits pot evenly among winners if there's a tie
-     * @param gameId The ID of the game
-     * @return potAmount The pot amount distributed
-     */
-    function _distributePot(uint256 gameId) internal returns (uint256 potAmount) {
-        Game storage game = games[gameId];
-        
-        (uint256 pot, uint256 minBet) = _calculatePot(gameId);
-        potAmount = pot;
-        
-        if (potAmount == 0) {
-            return 0;
-        }
+        // Calculate pot
+        (uint256 potSize, uint256 minBet) = _calculatePot();
+        currentGame.totalPot = potSize;
         
         // Return excess bets
-        _returnExcessBets(gameId, minBet);
+        _returnExcessBets(minBet);
         
-        // Calculate commission (1%)
-        uint256 commission = (potAmount * HOUSE_COMMISSION_PERCENT) / 100;
-        uint256 netPot = potAmount - commission;
+        // Evaluate all hands and find winners
+        PokerHandEvaluator.HandRank bestRank = PokerHandEvaluator.HandRank.HIGH_CARD;
+        uint256 bestValue = 0;
         
-        commissionBalance += commission;
-        emit CommissionPaid(gameId, commission);
-        
-        // Distribute to winners
-        address[] memory winners = game.winners;
-        if (winners.length > 0) {
-            uint256 amountPerWinner = netPot / winners.length;
+        for (uint256 i = 0; i < playerCount; i++) {
+            address player = currentGame.activePlayerAddresses[i];
+            (PokerHandEvaluator.HandRank rank, uint256 value) = _evaluateHand(
+                currentGame.activePlayers[player].holeCards,
+                currentGame.boardCards
+            );
             
-            for (uint256 i = 0; i < winners.length; i++) {
-                (bool success, ) = winners[i].call{value: amountPerWinner}("");
-                require(success, "Winner payment failed");
-                emit PotDistributed(gameId, winners[i], amountPerWinner);
+            if (rank > bestRank || (rank == bestRank && value > bestValue)) {
+                bestRank = rank;
+                bestValue = value;
+                delete currentGame.winners;
+                currentGame.winners.push(player);
+            } else if (rank == bestRank && value == bestValue) {
+                currentGame.winners.push(player);
+            }
+        }
+        
+        // Distribute pot to winners
+        _distributePot(currentGame.winners, potSize);
+    }
+
+    /**
+     * @dev Calculate pot size based on minimum bet
+     * Pot = minimum bet × number of players
+     * @return potSize Total pot size
+     * @return minBet Minimum bet amount
+     */
+    function _calculatePot() internal view returns (uint256 potSize, uint256 minBet) {
+        uint256 playerCount = currentGame.activePlayerAddresses.length;
+        require(playerCount > 0, "No players");
+        
+        // Find minimum bet
+        minBet = type(uint256).max;
+        for (uint256 i = 0; i < playerCount; i++) {
+            address player = currentGame.activePlayerAddresses[i];
+            uint256 bet = currentGame.activePlayers[player].betAmount;
+            if (bet < minBet) {
+                minBet = bet;
+            }
+        }
+        
+        potSize = minBet * playerCount;
+        return (potSize, minBet);
+    }
+
+    /**
+     * @dev Distribute winnings to winners
+     * Deducts 1% house fee, splits remainder among winners
+     * @param winners Array of winner addresses
+     * @param potSize Total pot size
+     */
+    function _distributePot(address[] memory winners, uint256 potSize) internal {
+        require(winners.length > 0, "No winners");
+        
+        // Calculate house fee (1%)
+        uint256 houseFee = (potSize * HOUSE_FEE_PERCENTAGE) / 100;
+        uint256 netPot = potSize - houseFee;
+        
+        // Split among winners
+        uint256 amountPerWinner = netPot / winners.length;
+        
+        // Accumulate house fee
+        accumulatedHouseFees += houseFee;
+        currentGame.houseFee = houseFee;
+        
+        // Transfer to winners
+        for (uint256 i = 0; i < winners.length; i++) {
+            _transferTokens(winners[i], amountPerWinner);
+        }
+        
+        // Prepare bet amounts array for event
+        uint256[] memory betAmounts = new uint256[](currentGame.activePlayerAddresses.length);
+        for (uint256 i = 0; i < currentGame.activePlayerAddresses.length; i++) {
+            betAmounts[i] = currentGame.activePlayers[currentGame.activePlayerAddresses[i]].betAmount;
+        }
+        
+        emit GameEnded(currentGameId, winners, amountPerWinner, houseFee, currentGame.activePlayerAddresses, betAmounts);
+    }
+
+    /**
+     * @dev Return excess bets to players
+     * Returns (betAmount - minBet) to each player
+     * @param minBet Minimum bet amount
+     */
+    function _returnExcessBets(uint256 minBet) internal {
+        for (uint256 i = 0; i < currentGame.activePlayerAddresses.length; i++) {
+            address player = currentGame.activePlayerAddresses[i];
+            uint256 betAmount = currentGame.activePlayers[player].betAmount;
+            
+            if (betAmount > minBet) {
+                uint256 excess = betAmount - minBet;
+                _transferTokens(player, excess);
             }
         }
     }
-    
+
     /**
-     * @dev Checks if minimum player requirement is met
-     * @param gameId The ID of the game
-     * @return Whether there are at least MIN_PLAYERS non-folded betting players
+     * @dev Store game record if detailed storage is enabled
      */
-    function _hasMinimumPlayers(uint256 gameId) internal view returns (bool) {
-        Game storage game = games[gameId];
-        uint256 activeCount = 0;
+    function _storeGameRecord() internal {
+        GameRecord storage record = gameRecords[currentGameId];
+        record.gameId = currentGameId;
+        record.startTime = currentGame.startTime;
+        record.endTime = currentGame.endTime;
+        record.boardCards = currentGame.boardCards;
+        record.winners = currentGame.winners;
+        record.houseFee = currentGame.houseFee;
         
-        for (uint256 i = 0; i < game.playerAddresses.length; i++) {
-            Player storage player = game.players[game.playerAddresses[i]];
-            if (!player.hasFolded && player.hasBet) {
-                activeCount++;
-            }
+        // Store player data
+        uint256 playerCount = currentGame.activePlayerAddresses.length;
+        record.players = new address[](playerCount);
+        record.betAmounts = new uint256[](playerCount);
+        
+        for (uint256 i = 0; i < playerCount; i++) {
+            address player = currentGame.activePlayerAddresses[i];
+            record.players[i] = player;
+            record.betAmounts[i] = currentGame.activePlayers[player].betAmount;
         }
         
-        return activeCount >= MIN_PLAYERS;
+        if (currentGame.winners.length > 0) {
+            uint256 netPot = currentGame.totalPot - currentGame.houseFee;
+            record.potPerWinner = netPot / currentGame.winners.length;
+        }
+    }
+
+    /**
+     * @dev Internal function to transfer tokens or ETH
+     * @param to Recipient address
+     * @param amount Amount to transfer
+     */
+    function _transferTokens(address to, uint256 amount) internal {
+        if (useETH) {
+            (bool success, ) = payable(to).call{value: amount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            gameToken.safeTransfer(to, amount);
+        }
+    }
+
+    // ============ Card Utility Functions ============
+
+    /**
+     * @dev Generate a random card that hasn't been dealt yet
+     * NOTE: This uses pseudo-random generation. Use Chainlink VRF in production!
+     * @return cardIndex Random card index (0-51)
+     */
+    function _getRandomCard() internal returns (uint8 cardIndex) {
+        require(currentGame.cardsRemaining > 0, "No cards remaining");
+        
+        // Simple pseudo-random (NOT SECURE - use Chainlink VRF in production)
+        uint256 randomNum = uint256(keccak256(abi.encodePacked(
+            block.timestamp,
+            block.prevrandao,
+            msg.sender,
+            nonce++
+        )));
+        
+        // Find an available card
+        uint256 attempts = 0;
+        while (attempts < DECK_SIZE) {
+            uint8 candidate = uint8(randomNum % DECK_SIZE);
+            
+            if (!currentGame.cardsInUse[candidate]) {
+                currentGame.cardsInUse[candidate] = true;
+                currentGame.cardsRemaining--;
+                return candidate;
+            }
+            
+            randomNum = uint256(keccak256(abi.encodePacked(randomNum, attempts)));
+            attempts++;
+        }
+        
+        revert("Failed to find available card");
+    }
+
+    /**
+     * @dev Get card rank (2-14, where 14 is Ace)
+     * @param cardIndex Card index (0-51)
+     * @return rank Card rank (2-14)
+     */
+    function _getCardRank(uint8 cardIndex) internal pure returns (uint8 rank) {
+        return PokerHandEvaluator.getCardRank(cardIndex);
+    }
+
+    /**
+     * @dev Get card suit (0-3: Clubs, Diamonds, Hearts, Spades)
+     * @param cardIndex Card index (0-51)
+     * @return suit Card suit (0-3)
+     */
+    function _getCardSuit(uint8 cardIndex) internal pure returns (uint8 suit) {
+        return PokerHandEvaluator.getCardSuit(cardIndex);
+    }
+
+    // ============ View Functions ============
+
+    /**
+     * @dev Get current game information
+     * @return gameId Current game ID
+     * @return startTime Game start time
+     * @return endTime Game end time
+     * @return playerCount Number of betting players
+     * @return totalParticipations Total participation attempts
+     * @return cardsRemaining Cards available in pool
+     * @return isActive Whether game is active
+     */
+    function getCurrentGameInfo() 
+        external 
+        view 
+        returns (
+            uint256 gameId,
+            uint256 startTime,
+            uint256 endTime,
+            uint256 playerCount,
+            uint256 totalParticipations,
+            uint256 cardsRemaining,
+            bool isActive
+        )
+    {
+        return (
+            currentGame.gameId,
+            currentGame.startTime,
+            currentGame.endTime,
+            currentGame.activePlayerAddresses.length,
+            currentGame.totalParticipations,
+            currentGame.cardsRemaining,
+            gameActive
+        );
+    }
+
+    /**
+     * @dev Get player's information in current game
+     * @param player Address of the player
+     * @return hasParticipated Whether player has participated (got cards)
+     * @return hasBet Whether player has placed bet
+     * @return betAmount Player's bet amount
+     * @return holeCards Player's hole cards
+     */
+    function getPlayerInfo(address player) 
+        external 
+        view 
+        returns (
+            bool hasParticipated,
+            bool hasBet,
+            uint256 betAmount,
+            uint8[2] memory holeCards
+        )
+    {
+        hasParticipated = currentGame.hasParticipated[player];
+        betAmount = currentGame.activePlayers[player].betAmount;
+        hasBet = (betAmount > 0); // Player has bet if betAmount > 0
+        
+        // Return cards from activePlayers if they bet, otherwise from playerCards
+        if (hasBet) {
+            holeCards = currentGame.activePlayers[player].holeCards;
+        } else {
+            holeCards = currentGame.playerCards[player];
+        }
+        
+        return (hasParticipated, hasBet, betAmount, holeCards);
+    }
+
+    /**
+     * @dev Get board cards for current game
+     * @return boardCards Five community cards
+     * @return dealt Whether board cards have been dealt
+     */
+    function getBoardCards() 
+        external 
+        view 
+        returns (uint8[5] memory boardCards, bool dealt)
+    {
+        return (currentGame.boardCards, currentGame.boardCardsDealt);
+    }
+
+    /**
+     * @dev Get all betting players in current game
+     * @return players Array of player addresses who have bet
+     */
+    function getGamePlayers() 
+        external 
+        view 
+        returns (address[] memory players)
+    {
+        return currentGame.activePlayerAddresses;
+    }
+
+    /**
+     * @dev Check if player can join current game
+     * @param player Address to check
+     * @return canJoin Whether player can join
+     * @return reason Reason if cannot join
+     */
+    function canPlayerJoin(address player) 
+        external 
+        view 
+        returns (bool canJoin, string memory reason)
+    {
+        if (gamePaused) {
+            return (false, "Contract is paused");
+        }
+        
+        if (!gameActive) {
+            return (false, "No active game");
+        }
+        
+        if (currentGame.hasParticipated[player]) {
+            return (false, "Already participated in this game");
+        }
+        
+        if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) {
+            return (false, "Game is full");
+        }
+        
+        if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) {
+            return (false, "Not enough cards remaining");
+        }
+        
+        if (block.timestamp >= currentGame.endTime - JOIN_CUTOFF) {
+            return (false, "Join period closed");
+        }
+        
+        return (true, "");
     }
 }
