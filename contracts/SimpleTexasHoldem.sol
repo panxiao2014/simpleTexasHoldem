@@ -19,8 +19,8 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
 
     // Game configuration
     uint256 public constant MIN_PLAYERS = 2;
-    uint256 public constant MAX_PLAYERS = 9;
-    uint256 public constant MAX_TOTAL_PLAYERS = 50; // Max participation attempts per game
+    uint256 public constant MAX_PLAYERS = 9;  // Maximum active betting players
+    uint256 public constant MAX_TOTAL_PLAYERS = 50; // Max participation attempts (joiners + folders)
     uint256 public constant HOUSE_FEE_PERCENTAGE = 1; // 1% fee to contract owner
     uint256 public constant JOIN_CUTOFF = 5 minutes; // No joins in last 5 minutes
     uint256 public constant MIN_CARDS_REQUIRED = 7; // 2 hole + 5 board
@@ -74,6 +74,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         
         // Participation tracking (anyone who got cards, including folders)
         mapping(address => bool) hasParticipated;
+        address[] allParticipants; // Everyone who joined (for cleanup)
         uint256 totalParticipations; // Counter for MAX_TOTAL_PLAYERS limit
         
         // Card pool for reuse
@@ -82,10 +83,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         
         // Board cards
         uint8[5] boardCards; // Five community cards
-        bool boardCardsDealt;
-        
-        // Game status
-        bool resultsCalculated;
         
         // Results
         uint256 totalPot;
@@ -93,8 +90,8 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         uint256 houseFee;
     }
 
-    // Detailed game record for storage (optional, for debugging)
-    struct GameRecord {
+    // Game result data (used for events and storage)
+    struct GameResult {
         uint256 gameId;
         uint256 startTime;
         uint256 endTime;
@@ -112,7 +109,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     Game private currentGame;
     
     // Historical game records (only if storeDetailedRecords is true)
-    mapping(uint256 => GameRecord) public gameRecords;
+    mapping(uint256 => GameResult) public gameRecords;
 
     // ============ Events ============
 
@@ -121,14 +118,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     event PlayerFolded(uint256 indexed gameId, address indexed player, uint8[2] returnedCards);
     event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);
     event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
-    event GameEnded(
-        uint256 indexed gameId, 
-        address[] winners, 
-        uint256 potPerWinner,
-        uint256 houseFee,
-        address[] allPlayers,
-        uint256[] betAmounts
-    );
+    event GameEnded(uint256 indexed gameId, GameResult result);
     event HouseFeeWithdrawn(address indexed owner, uint256 amount);
     event DetailedRecordsToggled(bool enabled);
     event EmergencyPauseToggled(bool gamePaused);
@@ -179,29 +169,20 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     function startGame(uint256 duration) external onlyOwner whenNotPaused whenGameNotActive {
         require(duration > JOIN_CUTOFF, "Duration must be longer than join cutoff");
         
+        // Clean up previous game and initialize new game
+        _cleanupGameData();
+        
         currentGameId++;
-        gameActive = true;
         
         // Initialize new game
         currentGame.gameId = currentGameId;
         currentGame.startTime = block.timestamp;
         currentGame.endTime = block.timestamp + duration;
-        currentGame.boardCardsDealt = false;
-        currentGame.resultsCalculated = false;
-        currentGame.totalParticipations = 0;
-        currentGame.cardsRemaining = DECK_SIZE;
-        currentGame.totalPot = 0;
-        
-        // Reset card pool - all cards available
-        for (uint8 i = 0; i < DECK_SIZE; i++) {
-            currentGame.cardsInUse[i] = false;
-        }
-        
-        // Clear previous game data if any
-        delete currentGame.activePlayerAddresses;
-        delete currentGame.winners;
         
         emit GameStarted(currentGameId, currentGame.startTime, currentGame.endTime);
+        
+        // Activate game only after all initialization is complete
+        gameActive = true;
     }
 
     /**
@@ -210,6 +191,9 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * Distributes pot to winners and collects house fee
      */
     function endGame() external onlyOwner whenNotPaused whenGameActive {
+        // Deactivate game immediately to prevent reentrancy
+        gameActive = false;
+        
         uint256 playerCount = currentGame.activePlayerAddresses.length;
         
         // If less than 2 players bet, cancel game and return bets
@@ -224,15 +208,25 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
                 }
             }
             
-            gameActive = false;
-            emit GameEnded(currentGameId, new address[](0), 0, 0, currentGame.activePlayerAddresses, new uint256[](0));
+            // Create empty game result for cancelled game
+            GameResult memory result = GameResult({
+                gameId: currentGameId,
+                startTime: currentGame.startTime,
+                endTime: currentGame.endTime,
+                players: currentGame.activePlayerAddresses,
+                betAmounts: new uint256[](0),
+                boardCards: currentGame.boardCards,
+                winners: new address[](0),
+                potPerWinner: 0,
+                houseFee: 0
+            });
+            
+            emit GameEnded(currentGameId, result);
             return;
         }
         
-        // Deal board cards if not already dealt
-        if (!currentGame.boardCardsDealt) {
-            _dealBoardCards();
-        }
+        // Deal board cards
+        _dealBoardCards();
         
         // Calculate results and distribute pot
         _calculateResults();
@@ -241,8 +235,36 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         if (storeDetailedRecords) {
             _storeGameRecord();
         }
+    }
+
+    /**
+     * @dev Clean up previous game data and reset for new game
+     * Deletes all mapping entries and resets state variables
+     * Called at the start of each new game to ensure clean state
+     */
+    function _cleanupGameData() internal {
+        // Clean up all participants from previous game (if any)
+        for (uint256 i = 0; i < currentGame.allParticipants.length; i++) {
+            address player = currentGame.allParticipants[i];
+            delete currentGame.playerCards[player];
+            delete currentGame.activePlayers[player];
+            delete currentGame.hasParticipated[player];
+        }
         
-        gameActive = false;
+        // Clear arrays
+        delete currentGame.allParticipants;
+        delete currentGame.activePlayerAddresses;
+        delete currentGame.winners;
+        
+        // Reset state variables
+        currentGame.totalParticipations = 0;
+        currentGame.cardsRemaining = DECK_SIZE;
+        currentGame.totalPot = 0;
+        
+        // Reset card pool - all cards available
+        for (uint8 i = 0; i < DECK_SIZE; i++) {
+            currentGame.cardsInUse[i] = false;
+        }
     }
 
     // ============ Owner Functions - Configuration ============
@@ -293,12 +315,14 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      */
     function joinGame() external whenNotPaused whenGameActive {
         require(!currentGame.hasParticipated[msg.sender], "Already participated in this game");
-        require(currentGame.totalParticipations < MAX_TOTAL_PLAYERS, "Game is full");
+        require(currentGame.activePlayerAddresses.length < MAX_PLAYERS, "Game is full");
+        require(currentGame.totalParticipations < MAX_TOTAL_PLAYERS, "Max participation attempts reached");
         require(currentGame.cardsRemaining >= MIN_CARDS_REQUIRED, "Not enough cards remaining");
         require(block.timestamp < currentGame.endTime - JOIN_CUTOFF, "Join period closed");
         
         // Mark player as participated (prevents re-joining)
         currentGame.hasParticipated[msg.sender] = true;
+        currentGame.allParticipants.push(msg.sender); // Track for cleanup
         currentGame.totalParticipations++;
         
         // Deal hole cards
@@ -390,18 +414,15 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
 
     /**
      * @dev Deal five board cards after all players have bet
-     * Can only be called once per game
+     * Called once when game ends
      */
     function _dealBoardCards() internal {
-        require(!currentGame.boardCardsDealt, "Board cards already dealt");
-        
         uint8[5] memory cards;
         for (uint8 i = 0; i < 5; i++) {
             cards[i] = _getRandomCard();
         }
         
         currentGame.boardCards = cards;
-        currentGame.boardCardsDealt = true;
         
         emit BoardCardsDealt(currentGameId, cards);
     }
@@ -424,11 +445,9 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     /**
      * @dev Determine winners and distribute pot
      * Evaluates all player hands and finds winner(s)
+     * Note: Can only be called once per game (protected by gameActive state)
      */
     function _calculateResults() internal {
-        require(!currentGame.resultsCalculated, "Results already calculated");
-        currentGame.resultsCalculated = true;
-        
         uint256 playerCount = currentGame.activePlayerAddresses.length;
         require(playerCount >= MIN_PLAYERS, "Not enough players");
         
@@ -513,13 +532,42 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
             _transferTokens(winners[i], amountPerWinner);
         }
         
-        // Prepare bet amounts array for event
-        uint256[] memory betAmounts = new uint256[](currentGame.activePlayerAddresses.length);
-        for (uint256 i = 0; i < currentGame.activePlayerAddresses.length; i++) {
+        // Create and emit game result
+        GameResult memory result = _createGameResult();
+        emit GameEnded(currentGameId, result);
+    }
+
+    /**
+     * @dev Create GameResult from current game state
+     * @return result Complete game result with all data
+     */
+    function _createGameResult() internal view returns (GameResult memory result) {
+        // Prepare bet amounts array
+        uint256 playerCount = currentGame.activePlayerAddresses.length;
+        uint256[] memory betAmounts = new uint256[](playerCount);
+        for (uint256 i = 0; i < playerCount; i++) {
             betAmounts[i] = currentGame.activePlayers[currentGame.activePlayerAddresses[i]].betAmount;
         }
         
-        emit GameEnded(currentGameId, winners, amountPerWinner, houseFee, currentGame.activePlayerAddresses, betAmounts);
+        // Calculate pot per winner
+        uint256 potPerWinner = 0;
+        if (currentGame.winners.length > 0) {
+            uint256 netPot = currentGame.totalPot - currentGame.houseFee;
+            potPerWinner = netPot / currentGame.winners.length;
+        }
+        
+        // Create and return game result
+        result = GameResult({
+            gameId: currentGameId,
+            startTime: currentGame.startTime,
+            endTime: currentGame.endTime,
+            players: currentGame.activePlayerAddresses,
+            betAmounts: betAmounts,
+            boardCards: currentGame.boardCards,
+            winners: currentGame.winners,
+            potPerWinner: potPerWinner,
+            houseFee: currentGame.houseFee
+        });
     }
 
     /**
@@ -543,29 +591,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * @dev Store game record if detailed storage is enabled
      */
     function _storeGameRecord() internal {
-        GameRecord storage record = gameRecords[currentGameId];
-        record.gameId = currentGameId;
-        record.startTime = currentGame.startTime;
-        record.endTime = currentGame.endTime;
-        record.boardCards = currentGame.boardCards;
-        record.winners = currentGame.winners;
-        record.houseFee = currentGame.houseFee;
-        
-        // Store player data
-        uint256 playerCount = currentGame.activePlayerAddresses.length;
-        record.players = new address[](playerCount);
-        record.betAmounts = new uint256[](playerCount);
-        
-        for (uint256 i = 0; i < playerCount; i++) {
-            address player = currentGame.activePlayerAddresses[i];
-            record.players[i] = player;
-            record.betAmounts[i] = currentGame.activePlayers[player].betAmount;
-        }
-        
-        if (currentGame.winners.length > 0) {
-            uint256 netPot = currentGame.totalPot - currentGame.houseFee;
-            record.potPerWinner = netPot / currentGame.winners.length;
-        }
+        gameRecords[currentGameId] = _createGameResult();
     }
 
     /**
@@ -705,19 +731,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Get board cards for current game
-     * @return boardCards Five community cards
-     * @return dealt Whether board cards have been dealt
-     */
-    function getBoardCards() 
-        external 
-        view 
-        returns (uint8[5] memory boardCards, bool dealt)
-    {
-        return (currentGame.boardCards, currentGame.boardCardsDealt);
-    }
-
-    /**
      * @dev Get all betting players in current game
      * @return players Array of player addresses who have bet
      */
@@ -752,8 +765,12 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
             return (false, "Already participated in this game");
         }
         
-        if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) {
+        if (currentGame.activePlayerAddresses.length >= MAX_PLAYERS) {
             return (false, "Game is full");
+        }
+        
+        if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) {
+            return (false, "Max participation attempts reached");
         }
         
         if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) {

@@ -1,8 +1,10 @@
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
+import HardhatContractSizer from '@solidstate/hardhat-contract-sizer';
 import { configVariable, defineConfig } from "hardhat/config";
 
 export default defineConfig({
-  plugins: [hardhatToolboxViemPlugin],
+  plugins: [hardhatToolboxViemPlugin,
+            HardhatContractSizer],
   solidity: {
     profiles: {
       default: {
