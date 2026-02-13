@@ -15,6 +15,29 @@ import "./PokerHandEvaluator.sol";
 contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    // ============ Custom Errors ============
+    
+    error ContractPaused();
+    error NoActiveGame();
+    error GameAlreadyActive();
+    error DurationTooShort();
+    error NoFees();
+    error AlreadyParticipated();
+    error GameFull();
+    error MaxAttemptsReached();
+    error NotEnoughCards();
+    error JoinPeriodClosed();
+    error NotInGame();
+    error AlreadyBet();
+    error MustJoinFirst();
+    error MustBetSome();
+    error NoCardsToReturn();
+    error NotEnoughPlayers();
+    error NoPlayers();
+    error NoWinners();
+    error TransferFailed();
+    error NoCardsRemaining();
+
     // ============ Constants ============
 
     // Game configuration
@@ -121,17 +144,17 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     // ============ Modifiers ============
 
     modifier whenNotPaused() {
-        require(!gamePaused, "Contract is paused");
+        if (gamePaused) revert ContractPaused();
         _;
     }
 
     modifier whenGameActive() {
-        require(gameActive, "No active game");
+        if (!gameActive) revert NoActiveGame();
         _;
     }
 
     modifier whenGameNotActive() {
-        require(!gameActive, "Game already active");
+        if (gameActive) revert GameAlreadyActive();
         _;
     }
 
@@ -160,7 +183,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * @param duration Game duration in seconds (e.g., 3600 for 1 hour)
      */
     function startGame(uint256 duration) external onlyOwner whenNotPaused whenGameNotActive {
-        require(duration > JOIN_CUTOFF, "Duration must be longer than join cutoff");
+        if (duration <= JOIN_CUTOFF) revert DurationTooShort();
         
         // Clean up previous game and initialize new game
         _cleanupGameData();
@@ -263,7 +286,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      */
     function withdrawHouseFees() external onlyOwner nonReentrant {
         uint256 amount = accumulatedHouseFees;
-        require(amount > 0, "No fees to withdraw");
+        if (amount == 0) revert NoFees();
         
         accumulatedHouseFees = 0;
         _transferTokens(owner(), amount);
@@ -292,11 +315,11 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * - Join period not closed (before endTime - JOIN_CUTOFF)
      */
     function joinGame() external whenNotPaused whenGameActive {
-        require(!currentGame.hasParticipated[msg.sender], "Already participated in this game");
-        require(currentGame.activePlayerAddresses.length < MAX_PLAYERS, "Game is full");
-        require(currentGame.totalParticipations < MAX_TOTAL_PLAYERS, "Max participation attempts reached");
-        require(currentGame.cardsRemaining >= MIN_CARDS_REQUIRED, "Not enough cards remaining");
-        require(block.timestamp < currentGame.endTime - JOIN_CUTOFF, "Join period closed");
+        if (currentGame.hasParticipated[msg.sender]) revert AlreadyParticipated();
+        if (currentGame.activePlayerAddresses.length >= MAX_PLAYERS) revert GameFull();
+        if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) revert MaxAttemptsReached();
+        if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) revert NotEnoughCards();
+        if (block.timestamp >= currentGame.endTime - JOIN_CUTOFF) revert JoinPeriodClosed();
         
         // Mark player as participated (prevents re-joining)
         currentGame.hasParticipated[msg.sender] = true;
@@ -315,8 +338,8 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * Player cannot rejoin this game after folding
      */
     function fold() external whenNotPaused whenGameActive {
-        require(currentGame.hasParticipated[msg.sender], "Not in this game");
-        require(currentGame.activePlayers[msg.sender].betAmount == 0, "Already bet, cannot fold");
+        if (!currentGame.hasParticipated[msg.sender]) revert NotInGame();
+        if (currentGame.activePlayers[msg.sender].betAmount != 0) revert AlreadyBet();
         
         // Return cards to pool
         uint8[2] memory returnedCards = currentGame.playerCards[msg.sender];
@@ -335,16 +358,16 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * @param betAmount Amount of tokens to bet (ignored for ETH games)
      */
     function placeBet(uint256 betAmount) external payable whenNotPaused whenGameActive nonReentrant {
-        require(currentGame.hasParticipated[msg.sender], "Must join game first");
-        require(currentGame.activePlayers[msg.sender].betAmount == 0, "Already bet");
+        if (!currentGame.hasParticipated[msg.sender]) revert MustJoinFirst();
+        if (currentGame.activePlayers[msg.sender].betAmount != 0) revert AlreadyBet();
         
         uint256 actualBetAmount;
         
         if (useETH) {
-            require(msg.value > 0, "Must bet some ETH");
+            if (msg.value == 0) revert MustBetSome();
             actualBetAmount = msg.value;
         } else {
-            require(betAmount > 0, "Must bet some tokens");
+            if (betAmount == 0) revert MustBetSome();
             actualBetAmount = betAmount;
             // Transfer tokens from player to contract
             gameToken.safeTransferFrom(msg.sender, address(this), betAmount);
@@ -382,7 +405,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         uint8[2] memory cards = currentGame.playerCards[player];
         
         // Validate player has cards
-        require(cards[0] != 0 || cards[1] != 0, "Player has no cards to return");
+        if (cards[0] == 0 && cards[1] == 0) revert NoCardsToReturn();
         
         // Return cards to pool
         currentGame.cardsInUse[cards[0]] = false;
@@ -427,7 +450,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      */
     function _calculateResults() internal {
         uint256 playerCount = currentGame.activePlayerAddresses.length;
-        require(playerCount >= MIN_PLAYERS, "Not enough players");
+        if (playerCount < MIN_PLAYERS) revert NotEnoughPlayers();
         
         // Calculate pot
         (uint256 potSize, uint256 minBet) = _calculatePot();
@@ -469,7 +492,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      */
     function _calculatePot() internal view returns (uint256 potSize, uint256 minBet) {
         uint256 playerCount = currentGame.activePlayerAddresses.length;
-        require(playerCount > 0, "No players");
+        if (playerCount == 0) revert NoPlayers();
         
         // Find minimum bet
         minBet = type(uint256).max;
@@ -492,7 +515,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * @param potSize Total pot size
      */
     function _distributePot(address[] memory winners, uint256 potSize) internal {
-        require(winners.length > 0, "No winners");
+        if (winners.length == 0) revert NoWinners();
         
         // Calculate house fee (1%)
         uint256 houseFee = (potSize * HOUSE_FEE_PERCENTAGE) / 100;
@@ -573,7 +596,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     function _transferTokens(address to, uint256 amount) internal {
         if (useETH) {
             (bool success, ) = payable(to).call{value: amount}("");
-            require(success, "ETH transfer failed");
+            if (!success) revert TransferFailed();
         } else {
             gameToken.safeTransfer(to, amount);
         }
@@ -587,7 +610,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
      * @return cardIndex Random card index (0-51)
      */
     function _getRandomCard() internal returns (uint8 cardIndex) {
-        require(currentGame.cardsRemaining > 0, "No cards remaining");
+        if (currentGame.cardsRemaining == 0) revert NoCardsRemaining();
         
         // Simple pseudo-random (NOT SECURE - use Chainlink VRF in production)
         uint256 randomNum = uint256(keccak256(abi.encodePacked(
@@ -711,47 +734,5 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         returns (address[] memory players)
     {
         return currentGame.activePlayerAddresses;
-    }
-
-    /**
-     * @dev Check if player can join current game
-     * @param player Address to check
-     * @return canJoin Whether player can join
-     * @return reason Reason if cannot join
-     */
-    function canPlayerJoin(address player) 
-        external 
-        view 
-        returns (bool canJoin, string memory reason)
-    {
-        if (gamePaused) {
-            return (false, "Contract is paused");
-        }
-        
-        if (!gameActive) {
-            return (false, "No active game");
-        }
-        
-        if (currentGame.hasParticipated[player]) {
-            return (false, "Already participated in this game");
-        }
-        
-        if (currentGame.activePlayerAddresses.length >= MAX_PLAYERS) {
-            return (false, "Game is full");
-        }
-        
-        if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) {
-            return (false, "Max participation attempts reached");
-        }
-        
-        if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) {
-            return (false, "Not enough cards remaining");
-        }
-        
-        if (block.timestamp >= currentGame.endTime - JOIN_CUTOFF) {
-            return (false, "Join period closed");
-        }
-        
-        return (true, "");
     }
 }
