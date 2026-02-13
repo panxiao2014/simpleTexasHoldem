@@ -1,57 +1,30 @@
-# Sample Hardhat 3 Beta Project (`node:test` and `viem`)
+# Simplified Texas hold'em implemented by smart contract
 
-This project showcases a Hardhat 3 Beta project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+## Players
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+Each game can have 2 to 9 players.
 
-## Project Overview
+## Rules
 
-This example project includes:
+When game begins, a player receives two hole cards. Then he has two choices:
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+1. Fold. That is, quit the game.
+2. Bet. Sepcify the amount of tokens he wants to bet, and then wait for the final result.
 
-## Usage
+If there are less than 2 players in the game, game ends immdiately, player's betting tokens will return to them.
 
-### Running Tests
+After each player finishes betting, five board cards will be dealt. Every player's strongest five-card hand is automatically determined by using each one's two hole cards and five board cards.
 
-To run all the tests in the project, execute the following command:
+## Poker hand rankings
 
-```shell
-npx hardhat test
-```
+Ranking of players five-card hand should follow the ranking rules in game of Texas hold'em. Refer to [this page](https://www.poker.org/poker-hands-ranking-chart/).
 
-You can also selectively run the Solidity or `node:test` tests:
+## Pot allocation
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
-```
+The total amount of tokens in the pot is the lowest betting tokens multiplies number of players. For example:
 
-### Make a deployment to Sepolia
+Four players are in the game, with betting tokens of 3, 2, 3, 5. Then the total tokens in the pot is 2*4=8. The additional tokens will be returned to each players at the end of the game.
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
+Winner gets the pot. If there are tie for winners, they'll split the pot. Note that 1% of the tokens in the pot will be subtracted and give to the game host (the owner of this contract). 
 
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
-
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
-
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
-
-After setting the variable, you can run the deployment with the Sepolia network:
-
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+For example, in the above case, user A wins the game. He'll get 8-8*1%=7.92 tokens. 0.08 token will give to the contract owner.
