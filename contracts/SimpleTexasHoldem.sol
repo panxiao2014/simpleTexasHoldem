@@ -33,10 +33,9 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
 
     // ============ State Variables ============
     
-    // Packed slot 1: Booleans (4 bytes total, fit in 1 slot)
+    // Packed slot 1: Booleans (3 bytes total, fit in 1 slot)
     bool public useETH;              // 1 byte - If true, use ETH instead of ERC20 token
     bool public gameActive;          // 1 byte - Is there an active game?
-    bool public storeDetailedRecords; // 1 byte - Toggle for detailed storage vs events only
     bool public gamePaused;          // 1 byte - Emergency pause
     
     // Slot 2: IERC20 interface (20 bytes = address)
@@ -107,9 +106,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
 
     // Current game
     Game private currentGame;
-    
-    // Historical game records (only if storeDetailedRecords is true)
-    mapping(uint256 => GameResult) public gameRecords;
 
     // ============ Events ============
 
@@ -120,7 +116,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
     event GameEnded(uint256 indexed gameId, GameResult result);
     event HouseFeeWithdrawn(address indexed owner, uint256 amount);
-    event DetailedRecordsToggled(bool enabled);
     event EmergencyPauseToggled(bool gamePaused);
 
     // ============ Modifiers ============
@@ -145,16 +140,14 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     /**
      * @dev Constructor to initialize the contract
      * @param _gameToken Address of ERC20 token to use (address(0) for ETH)
-     * @param _storeDetailedRecords Whether to store detailed game records in storage
      */
-    constructor(address _gameToken, bool _storeDetailedRecords) Ownable(msg.sender) {
+    constructor(address _gameToken) Ownable(msg.sender) {
         if (_gameToken == address(0)) {
             useETH = true;
         } else {
             gameToken = IERC20(_gameToken);
             useETH = false;
         }
-        storeDetailedRecords = _storeDetailedRecords;
         currentGameId = 0; // Will increment to 1 on first game
         gameActive = false;
     }
@@ -230,11 +223,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         
         // Calculate results and distribute pot
         _calculateResults();
-        
-        // Store record if enabled
-        if (storeDetailedRecords) {
-            _storeGameRecord();
-        }
     }
 
     /**
@@ -268,16 +256,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     }
 
     // ============ Owner Functions - Configuration ============
-
-    /**
-     * @dev Toggle detailed record storage on/off
-     * Only callable by owner
-     * @param enabled True to store detailed records, false for events only
-     */
-    function setDetailedRecords(bool enabled) external onlyOwner {
-        storeDetailedRecords = enabled;
-        emit DetailedRecordsToggled(enabled);
-    }
 
     /**
      * @dev Withdraw accumulated house fees
@@ -585,13 +563,6 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
                 _transferTokens(player, excess);
             }
         }
-    }
-
-    /**
-     * @dev Store game record if detailed storage is enabled
-     */
-    function _storeGameRecord() internal {
-        gameRecords[currentGameId] = _createGameResult();
     }
 
     /**
