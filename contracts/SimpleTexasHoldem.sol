@@ -112,7 +112,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     // ============ Storage ============
 
     // Current game
-    Game private currentGame;
+    Game internal currentGame;
 
     // ============ Events ============
     // All events are now inherited from TexasHoldemConstants:
@@ -593,7 +593,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      * NOTE: This uses pseudo-random generation. Use Chainlink VRF in production!
      * @return cardIndex Random card index (0-51)
      */
-    function _getRandomCard() internal returns (uint8 cardIndex) {
+    function _getRandomCard() internal virtual returns (uint8 cardIndex) {
         if (currentGame.cardsRemaining == 0) revert NoCardsRemaining();
         
         // Simple pseudo-random (NOT SECURE - use Chainlink VRF in production)
