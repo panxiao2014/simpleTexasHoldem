@@ -6,13 +6,14 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PokerHandEvaluator.sol";
+import "./TexasHoldemConstants.sol";
 
 /**
  * @title SimpleTexasHoldem
  * @dev A simplified Texas Hold'em poker game implemented as a smart contract
  * Owner controls game lifecycle, players join and bet within time windows
  */
-contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
+contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============ Custom Errors ============
@@ -39,20 +40,14 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     error NoCardsRemaining();
 
     // ============ Constants ============
-
-    // Game configuration
-    uint256 public constant MIN_PLAYERS = 2;
-    uint256 public constant MAX_PLAYERS = 9;  // Maximum active betting players
-    uint256 public constant MAX_TOTAL_PLAYERS = 50; // Max participation attempts (joiners + folders)
-    uint256 public constant HOUSE_FEE_PERCENTAGE = 1; // 1% fee to contract owner
-    uint256 public constant JOIN_CUTOFF = 5 minutes; // No joins in last 5 minutes
-    uint256 public constant MIN_CARDS_REQUIRED = 7; // 2 hole + 5 board
-
-    // Card deck (52 cards: 0-51)
-    // Card index to rank/suit mapping:
-    // Rank: cardIndex % 13 → 0-12 represent ranks 2-Ace (add 2 to get actual rank)
-    // Suit: cardIndex / 13 → 0=Clubs, 1=Diamonds, 2=Hearts, 3=Spades
-    uint8 public constant DECK_SIZE = 52;
+    // All game constants are now inherited from TexasHoldemConstants:
+    // - MIN_PLAYERS = 2
+    // - MAX_PLAYERS = 9
+    // - MAX_TOTAL_PLAYERS = 50
+    // - HOUSE_FEE_PERCENTAGE = 1
+    // - JOIN_CUTOFF = 5 minutes
+    // - MIN_CARDS_REQUIRED = 7
+    // - DECK_SIZE = 52
 
     // ============ State Variables ============
     
@@ -112,18 +107,7 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
         uint256 houseFee;
     }
 
-    // Game result data (used for events and storage)
-    struct GameResult {
-        uint256 gameId;
-        uint256 startTime;
-        uint256 endTime;
-        address[] players;
-        uint256[] betAmounts;
-        uint8[5] boardCards;
-        address[] winners;
-        uint256 potPerWinner;
-        uint256 houseFee;
-    }
+    // GameResult struct is now inherited from TexasHoldemConstants
 
     // ============ Storage ============
 
@@ -131,15 +115,15 @@ contract SimpleTexasHoldem is Ownable, ReentrancyGuard {
     Game private currentGame;
 
     // ============ Events ============
-
-    event GameStarted(uint256 indexed gameId, uint256 startTime, uint256 endTime);
-    event PlayerJoined(uint256 indexed gameId, address indexed player, uint8[2] holeCards);
-    event PlayerFolded(uint256 indexed gameId, address indexed player, uint8[2] returnedCards);
-    event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);
-    event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
-    event GameEnded(uint256 indexed gameId, GameResult result);
-    event HouseFeeWithdrawn(address indexed owner, uint256 amount);
-    event EmergencyPauseToggled(bool gamePaused);
+    // All events are now inherited from TexasHoldemConstants:
+    // - GameStarted
+    // - PlayerJoined
+    // - PlayerFolded
+    // - PlayerBet
+    // - BoardCardsDealt
+    // - GameEnded
+    // - HouseFeeWithdrawn
+    // - EmergencyPauseToggled
 
     // ============ Modifiers ============
 
