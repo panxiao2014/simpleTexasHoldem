@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../contracts/SimpleTexasHoldem.sol";
-import "../contracts/PokerHandEvaluator.sol";
-import "../contracts/TexasHoldemConstants.sol";
+import "../../contracts/SimpleTexasHoldem.sol";
+import "../../contracts/PokerHandEvaluator.sol";
+import "../../contracts/TexasHoldemConstants.sol";
 
 /**
  * @title SimpleTexasHoldemTest
