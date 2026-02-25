@@ -330,35 +330,57 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         );
         
         // INVARIANT 2: Total distributed to players should equal net pot
-        uint256 totalDistributed = 0;
+        // Note: Players can get money from two sources:
+        // 1. Winnings from the pot
+        // 2. Returned excess bets (if they bet more than minimum)
+        
+        uint256 totalPayout = 0;
+        uint256 totalExcessReturned = 0;
+        
         for (uint8 i = 0; i < numPlayers; i++) {
-            // Current balance - (initial - bet) = payout
+            // Calculate what player got back
             uint256 balanceAfterBet = balancesBefore[i] - betAmounts[i];
+            uint256 received = 0;
             if (players[i].balance > balanceAfterBet) {
-                totalDistributed += players[i].balance - balanceAfterBet;
+                received = players[i].balance - balanceAfterBet;
             }
+            
+            // Excess bet returned
+            if (betAmounts[i] > minBet) {
+                uint256 excess = betAmounts[i] - minBet;
+                totalExcessReturned += excess;
+                received -= excess; // Subtract excess from received to get actual payout
+            }
+            
+            totalPayout += received;
         }
         
-        assertEq(
-            totalDistributed,
-            netPot,
-            "Total distributed should equal net pot"
+        // INVARIANT 2: Total payout should approximately equal net pot
+        // Due to Solidity integer division rounding when splitting pot,
+        // there can be a difference of up to numPlayers wei
+        uint256 diff = totalPayout > netPot ? totalPayout - netPot : netPot - totalPayout;
+        assertTrue(
+            diff <= numPlayers,
+            "Payout should match net pot within rounding tolerance"
         );
         
         // INVARIANT 3: No money created or destroyed
         uint256 totalReturned = 0;
         for (uint8 i = 0; i < numPlayers; i++) {
-            // Players get back: their payout + excess bets
             // Balance change = current - (initial - bet)
             uint256 balanceAfterBet = balancesBefore[i] - betAmounts[i];
-            totalReturned += players[i].balance - balanceAfterBet;
+            if (players[i].balance >= balanceAfterBet) {
+                totalReturned += players[i].balance - balanceAfterBet;
+            }
         }
         totalReturned += houseFee; // Owner got house fee
         
-        assertEq(
-            totalReturned,
-            totalBet,
-            "Total returned should equal total bet"
+        // INVARIANT 3 check with rounding tolerance
+        // Same rounding issues apply here
+        uint256 diff3 = totalReturned > totalBet ? totalReturned - totalBet : totalBet - totalReturned;
+        assertTrue(
+            diff3 <= numPlayers,
+            "Total returned should match total bet within rounding tolerance"
         );
     }
     

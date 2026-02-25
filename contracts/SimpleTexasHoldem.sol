@@ -39,16 +39,6 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     error TransferFailed();
     error NoCardsRemaining();
 
-    // ============ Constants ============
-    // All game constants are now inherited from TexasHoldemConstants:
-    // - MIN_PLAYERS = 2
-    // - MAX_PLAYERS = 9
-    // - MAX_TOTAL_PLAYERS = 50
-    // - HOUSE_FEE_PERCENTAGE = 1
-    // - JOIN_CUTOFF = 5 minutes
-    // - MIN_CARDS_REQUIRED = 7
-    // - DECK_SIZE = 52
-
     // ============ State Variables ============
     
     // Packed slot 1: Booleans (3 bytes total, fit in 1 slot)
@@ -113,17 +103,6 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
 
     // Current game
     Game internal currentGame;
-
-    // ============ Events ============
-    // All events are now inherited from TexasHoldemConstants:
-    // - GameStarted
-    // - PlayerJoined
-    // - PlayerFolded
-    // - PlayerBet
-    // - BoardCardsDealt
-    // - GameEnded
-    // - HouseFeeWithdrawn
-    // - EmergencyPauseToggled
 
     // ============ Modifiers ============
 
@@ -262,7 +241,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         }
     }
 
-    // ============ Owner Functions - Configuration ============
+    // ============ Owner Functions ============
 
     /**
      * @dev Withdraw accumulated house fees
@@ -357,7 +336,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
             gameToken.safeTransferFrom(msg.sender, address(this), betAmount);
         }
         
-        // Move cards from playerCards to players and record bet
+        // Move cards from playerCards to active players and record bet
         currentGame.activePlayers[msg.sender].holeCards = currentGame.playerCards[msg.sender];
         currentGame.activePlayers[msg.sender].betAmount = actualBetAmount;
         currentGame.activePlayerAddresses.push(msg.sender);
