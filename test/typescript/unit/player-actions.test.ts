@@ -2,21 +2,25 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import hre from "hardhat";
-import { setupStandardGame } from "../helpers/fixtures";
-import { assertBigIntEqual } from "../helpers/assertions";
-import { parseEther } from "../helpers/utils";
+import { setupStandardGame } from "../helpers/fixtures.js";
+import { assertBigIntEqual } from "../helpers/assertions.js";
+import { parseEther } from "../helpers/utils.js";
 
 describe("Player Actions", () => {
   let viem: any;
+  let publicClient: any;
   let game: any;
   let owner: any;
   let player1: any;
   let player2: any;
   let player3: any;
+  // fetch once so multiple tests can use it
+  let maxPlayers: number;
 
   beforeEach(async () => {
     const network = await hre.network.connect();
     viem = network.viem;
+    publicClient = await viem.getPublicClient();
 
     const setup = await setupStandardGame(viem);
     game = setup.game;
@@ -26,6 +30,9 @@ describe("Player Actions", () => {
 
     const wallets = await viem.getWalletClients();
     player3 = wallets[3];
+
+    // read and cache contract constant
+    maxPlayers = Number(await game.read.MAX_PLAYERS());
   });
 
   describe("joinGame()", () => {
@@ -39,18 +46,17 @@ describe("Player Actions", () => {
     });
 
     it("Should emit PlayerJoined event", async () => {
-      await viem.assertions.emitWithArgs(
+      await viem.assertions.emit(
         game.write.joinGame({ account: player1.account }),
         game,
         "PlayerJoined"
-        // Can't predict cards, so we don't check args
       );
     });
 
     it("Should assign two hole cards to player", async () => {
       await game.write.joinGame({ account: player1.account });
 
-      const [, , holeCards] = await game.read.getPlayerInfo([
+      const [, , ,holeCards] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
 
@@ -74,36 +80,39 @@ describe("Player Actions", () => {
     it("Should revert if no active game", async () => {
       await game.write.endGame({ account: owner.account });
 
-      await assert.rejects(
-        async () => await game.write.joinGame({ account: player1.account }),
-        /NoActiveGame/,
-        "Should revert with NoActiveGame"
+      await viem.assertions.revertWithCustomError(
+        game.write.joinGame({ account: player1.account }),
+        game,
+        "NoActiveGame"
       );
     });
 
     it("Should revert if player already joined", async () => {
       await game.write.joinGame({ account: player1.account });
 
-      await assert.rejects(
-        async () => await game.write.joinGame({ account: player1.account }),
-        /AlreadyParticipated/,
-        "Should revert with AlreadyParticipated"
+      await viem.assertions.revertWithCustomError(
+        game.write.joinGame({ account: player1.account }),
+        game,
+        "AlreadyParticipated"
       );
     });
 
-    it("Should revert if game is full (9 players)", async () => {
+    it(`Should revert if game is full (MAX_PLAYERS)`, async () => {
       const wallets = await viem.getWalletClients();
+      const betAmount = parseEther("1");
 
-      // Join 9 players (skip owner at index 0)
-      for (let i = 1; i <= 9; i++) {
-        await game.write.joinGame({ account: wallets[i].account });
+      // Have maxPlayers join and place a bet so they become active
+      for (let i = 1; i <= maxPlayers; i++) {
+        const acct = wallets[i].account;
+        await game.write.joinGame({ account: acct });
+        await game.write.placeBet([0n], { account: acct, value: betAmount });
       }
 
-      // Try to join 10th player
-      await assert.rejects(
-        async () => await game.write.joinGame({ account: wallets[10].account }),
-        /MaxPlayersReached/,
-        "Should revert with MaxPlayersReached"
+      // Now the active player list should be full, additional joins revert
+      await viem.assertions.revertWithCustomError(
+        game.write.joinGame({ account: wallets[maxPlayers + 1].account }),
+        game,
+        "GameFull"
       );
     });
 
@@ -112,10 +121,10 @@ describe("Player Actions", () => {
       await viem.increaseTime(56 * 60);
       await viem.mine();
 
-      await assert.rejects(
-        async () => await game.write.joinGame({ account: player1.account }),
-        /JoinPeriodClosed/,
-        "Should revert with JoinPeriodClosed"
+      await viem.assertions.revertWithCustomError(
+        game.write.joinGame({ account: player1.account }),
+        game,
+        "JoinPeriodClosed"
       );
     });
   });
@@ -164,14 +173,13 @@ describe("Player Actions", () => {
     });
 
     it("Should revert if player hasn't joined", async () => {
-      await assert.rejects(
-        async () =>
-          await game.write.placeBet([0n], {
-            account: player2.account,
-            value: parseEther("1"),
-          }),
-        /NotParticipating/,
-        "Should revert with NotParticipating"
+      await viem.assertions.revertWithCustomError(
+        game.write.placeBet([0n], {
+          account: player2.account,
+          value: parseEther("1"),
+        }),
+        game,
+        "NotParticipating"
       );
     });
 
@@ -181,26 +189,24 @@ describe("Player Actions", () => {
         value: parseEther("1"),
       });
 
-      await assert.rejects(
-        async () =>
-          await game.write.placeBet([0n], {
-            account: player1.account,
-            value: parseEther("1"),
-          }),
-        /AlreadyBet/,
-        "Should revert with AlreadyBet"
+      await viem.assertions.revertWithCustomError(
+        game.write.placeBet([0n], {
+          account: player1.account,
+          value: parseEther("1"),
+        }),
+        game,
+        "AlreadyBet"
       );
     });
 
     it("Should revert if bet amount is zero", async () => {
-      await assert.rejects(
-        async () =>
-          await game.write.placeBet([0n], {
-            account: player1.account,
-            value: 0n,
-          }),
-        /InvalidBetAmount/,
-        "Should revert with InvalidBetAmount"
+      await viem.assertions.revertWithCustomError(
+        game.write.placeBet([0n], {
+          account: player1.account,
+          value: 0n,
+        }),
+        game,
+        "InvalidBetAmount"
       );
     });
 
@@ -245,7 +251,7 @@ describe("Player Actions", () => {
     });
 
     it("Should emit PlayerFolded event", async () => {
-      await viem.assertions.emitWithArgs(
+      await viem.assertions.emit(
         game.write.fold({ account: player1.account }),
         game,
         "PlayerFolded"
@@ -268,20 +274,20 @@ describe("Player Actions", () => {
     });
 
     it("Should revert if player hasn't joined", async () => {
-      await assert.rejects(
-        async () => await game.write.fold({ account: player3.account }),
-        /NotParticipating/,
-        "Should revert with NotParticipating"
+      await viem.assertions.revertWithCustomError(
+        game.write.fold({ account: player3.account }),
+        game,
+        "NotParticipating"
       );
     });
 
     it("Should revert if player already folded", async () => {
       await game.write.fold({ account: player1.account });
 
-      await assert.rejects(
-        async () => await game.write.fold({ account: player1.account }),
-        /AlreadyFolded/,
-        "Should revert with AlreadyFolded"
+      await viem.assertions.revertWithCustomError(
+        game.write.fold({ account: player1.account }),
+        game,
+        "AlreadyFolded"
       );
     });
 
@@ -291,10 +297,10 @@ describe("Player Actions", () => {
         value: parseEther("1"),
       });
 
-      await assert.rejects(
-        async () => await game.write.fold({ account: player1.account }),
-        /AlreadyBet/,
-        "Should revert with AlreadyBet"
+      await viem.assertions.revertWithCustomError(
+        game.write.fold({ account: player1.account }),
+        game,
+        "AlreadyBet"
       );
     });
 

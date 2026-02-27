@@ -4,7 +4,6 @@ import assert from "node:assert";
 import hre from "hardhat";
 import { deployGameContract } from "../helpers/fixtures.js";
 import { assertBigIntEqual } from "../helpers/assertions.js";
-import { CONSTANTS } from "../helpers/utils.js";
 
 describe("Game Lifecycle", () => {
   let viem: any;
@@ -77,16 +76,13 @@ describe("Game Lifecycle", () => {
     });
 
     it("Should revert if duration is too short", async () => {
-      const shortDuration = 4n * 60n; // 4 minutes (< JOIN_CUTOFF)
+      const shortDuration = await game.read.JOIN_CUTOFF() / 2n; // Half of JOIN_CUTOFF
 
-      await assert.rejects(
-        async () =>
-          await game.write.startGame([shortDuration], {
-            account: owner.account,
-          }),
-        /DurationTooShort/,
-        "Should revert with DurationTooShort"
-      );
+      await viem.assertions.revertWithCustomError(
+        game.write.startGame([shortDuration], {account: owner.account}),
+        game,
+        "DurationTooShort"
+      )
     });
 
     it("Should only allow owner to start game", async () => {
@@ -138,10 +134,10 @@ describe("Game Lifecycle", () => {
     it("Should revert if no active game", async () => {
       await game.write.endGame({ account: owner.account });
 
-      await assert.rejects(
-        async () => await game.write.endGame({ account: owner.account }),
-        /NoActiveGame/,
-        "Should revert with NoActiveGame"
+      await viem.assertions.revertWithCustomError(
+        game.write.endGame({ account: owner.account }),
+        game,
+        "NoActiveGame"
       );
     });
 
@@ -192,10 +188,10 @@ describe("Game Lifecycle", () => {
       await game.write.startGame([3600n], { account: owner.account });
       await game.write.togglePause({ account: owner.account });
 
-      await assert.rejects(
-        async () => await game.write.joinGame({ account: player1.account }),
-        /ContractPaused/,
-        "Should not allow joining when paused"
+      await viem.assertions.revertWithCustomError(
+        game.write.joinGame({ account: player1.account }),
+        game,
+        "ContractPaused"
       );
     });
   });

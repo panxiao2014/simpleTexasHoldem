@@ -79,14 +79,3 @@ export function formatBalanceChanges(
     })
     .join(", ");
 }
-
-/**
- * Constants from contract
- */
-export const CONSTANTS = {
-  MIN_PLAYERS: 2,
-  MAX_PLAYERS: 9,
-  HOUSE_FEE_PERCENTAGE: 1n,
-  JOIN_CUTOFF_SECONDS: 5 * 60, // 5 minutes
-  DEFAULT_GAME_DURATION: 3600n, // 1 hour
-} as const;

@@ -12,6 +12,7 @@ import { parseEther, calculateExpectedPayout } from "../helpers/utils";
 
 describe("House Fees", () => {
   let viem: any;
+  let publicClient: any;
   let game: any;
   let owner: any;
   let player1: any;
@@ -20,6 +21,7 @@ describe("House Fees", () => {
   beforeEach(async () => {
     const network = await hre.network.connect();
     viem = network.viem;
+    publicClient = await viem.getPublicClient();
 
     const setup = await setupStandardGame(viem);
     game = setup.game;
@@ -163,11 +165,10 @@ describe("House Fees", () => {
     });
 
     it("Should revert if no fees accumulated", async () => {
-      await assert.rejects(
-        async () =>
-          await game.write.withdrawHouseFees({ account: owner.account }),
-        /NoFees/,
-        "Should revert with NoFees"
+      await viem.assertions.revertWithCustomError(
+        game.write.withdrawHouseFees({ account: owner.account }),
+        game,
+        "NoFees"
       );
     });
 

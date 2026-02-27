@@ -21,6 +21,7 @@ import {
 
 describe("Pot Distribution", () => {
   let viem: any;
+  let publicClient: any;
   let game: any;
   let owner: any;
   let player1: any;
@@ -30,6 +31,7 @@ describe("Pot Distribution", () => {
   beforeEach(async () => {
     const network = await hre.network.connect();
     viem = network.viem;
+    publicClient = await viem.getPublicClient();
 
     const setup = await setupStandardGame(viem);
     game = setup.game;
