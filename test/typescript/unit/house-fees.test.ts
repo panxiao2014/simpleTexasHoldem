@@ -6,9 +6,9 @@ import {
   setupStandardGame,
   playersJoinGame,
   playersPlaceBets,
-} from "../helpers/fixtures";
-import { assertBigIntEqual, assertBigIntWithinTolerance } from "../helpers/assertions";
-import { parseEther, calculateExpectedPayout } from "../helpers/utils";
+} from "../helpers/fixtures.js";
+import { assertBigIntEqual, assertBigIntWithinTolerance } from "../helpers/assertions.js";
+import { parseEther, calculateExpectedPayout } from "../helpers/utils.js";
 
 describe("House Fees", () => {
   let viem: any;
@@ -31,7 +31,7 @@ describe("House Fees", () => {
   });
 
   describe("Fee Calculation", () => {
-    it("Should calculate 1% house fee correctly", async () => {
+    it("Should calculate house fee correctly", async () => {
       const betAmount = parseEther("10");
 
       await playersJoinGame(game, [player1, player2]);
@@ -40,7 +40,7 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       const houseFees = await game.read.accumulatedHouseFees();
-      const { houseFee } = calculateExpectedPayout([betAmount, betAmount]);
+      const { houseFee } = await calculateExpectedPayout([betAmount, betAmount], game);
 
       assertBigIntEqual(houseFees, houseFee);
       assertBigIntEqual(houseFees, parseEther("0.2")); // 20 ETH * 1% = 0.2 ETH
@@ -241,10 +241,10 @@ describe("House Fees", () => {
       const change1 = player1After - player1Before;
       const change2 = player2After - player2Before;
 
-      const { netPot, houseFee } = calculateExpectedPayout([
+      const { netPot, houseFee } = await calculateExpectedPayout([
         betAmount,
         betAmount,
-      ]);
+      ], game);
 
       console.log("Player1 change:", change1);
       console.log("Player2 change:", change2);

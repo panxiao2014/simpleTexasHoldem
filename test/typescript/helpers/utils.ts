@@ -4,10 +4,14 @@ import { parseEther, formatEther } from "viem";
 /**
  * Calculate expected pot, house fee, and net pot
  */
-export function calculateExpectedPayout(
+export async function calculateExpectedPayout(
   bets: bigint[],
-  houseFeePercent: bigint = 1n
-): { pot: bigint; houseFee: bigint; netPot: bigint; minBet: bigint } {
+  game: any
+): Promise<{ pot: bigint; houseFee: bigint; netPot: bigint; minBet: bigint }> {
+  // always pull the house fee percent from the deployed contract; this keeps
+  // the helper consistent with whatever constant is defined on-chain.
+  const houseFeePercent: bigint = await game.read.HOUSE_FEE_PERCENTAGE();
+
   const minBet = bets.reduce((min, bet) => (bet < min ? bet : min), bets[0]);
   const pot = minBet * BigInt(bets.length);
   const houseFee = (pot * houseFeePercent) / 100n;

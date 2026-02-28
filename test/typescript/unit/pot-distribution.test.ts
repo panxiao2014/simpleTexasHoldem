@@ -27,6 +27,7 @@ describe("Pot Distribution", () => {
   let player1: any;
   let player2: any;
   let player3: any;
+  let maxPlayers: number;
 
   beforeEach(async () => {
     const network = await hre.network.connect();
@@ -41,6 +42,9 @@ describe("Pot Distribution", () => {
 
     const wallets = await viem.getWalletClients();
     player3 = wallets[3];
+    
+    // Read contract constant
+    maxPlayers = Number(await game.read.MAX_PLAYERS());
   });
 
   describe("Single Winner", () => {
@@ -67,7 +71,7 @@ describe("Pot Distribution", () => {
       const changes = balancesAfter.map((after, i) => after - balancesBefore[i]);
 
       // Expected: pot = 2 ETH, fee = 0.02 ETH, winner gets 1.98 ETH
-      const { netPot } = calculateExpectedPayout([betAmount, betAmount]);
+      const { netPot } = await calculateExpectedPayout([betAmount, betAmount], game);
 
       // One player should have won approximately netPot
       assertOnePlayerWon(changes, netPot);
@@ -97,7 +101,7 @@ describe("Pot Distribution", () => {
       const changes = balancesAfter.map((after, i) => after - balancesBefore[i]);
 
       // Pot based on minimum bet (1 ETH)
-      const { netPot, minBet } = calculateExpectedPayout([bet1, bet2]);
+      const { netPot, minBet } = await calculateExpectedPayout([bet1, bet2], game);
 
       // One player wins netPot (1.98 ETH)
       // Player2 should get back excess: 3 - 1 = 2 ETH (if they didn't win)
@@ -146,11 +150,11 @@ describe("Pot Distribution", () => {
       const changes = balancesAfter.map((after, i) => after - balancesBefore[i]);
 
       // Expected: pot = 6 ETH, fee = 0.06 ETH, winner gets 5.94 ETH
-      const { netPot } = calculateExpectedPayout([
+      const { netPot } = await calculateExpectedPayout([
         betAmount,
         betAmount,
         betAmount,
-      ]);
+      ], game);
 
       console.log("Balance changes:", formatBalanceChanges(changes));
 
@@ -183,7 +187,7 @@ describe("Pot Distribution", () => {
       const changes = balancesAfter.map((after, i) => after - balancesBefore[i]);
       const totalDistributed = changes.reduce((sum, c) => sum + c, 0n);
 
-      const { netPot } = calculateExpectedPayout([betAmount, betAmount]);
+      const { netPot } = await calculateExpectedPayout([betAmount, betAmount], game);
 
       // Total distributed should equal netPot (within rounding tolerance)
       assertBigIntWithinTolerance(totalDistributed, netPot, 2n);
@@ -267,7 +271,7 @@ describe("Pot Distribution", () => {
       console.log("Balance changes:", formatBalanceChanges(changes));
 
       const totalDistributed = changes.reduce((sum, c) => sum + c, 0n);
-      const { netPot } = calculateExpectedPayout(bets);
+      const { netPot } = await calculateExpectedPayout(bets, game);
 
       // Total distributed should equal netPot (within rounding)
       // Plus excess returns (4 ETH total excess)
@@ -279,11 +283,11 @@ describe("Pot Distribution", () => {
   });
 
   describe("Edge Cases", () => {
-    it("Should handle maximum players (9)", async () => {
+    it("Should handle maximum players (MAX_PLAYERS)", async () => {
       const wallets = await viem.getWalletClients();
-      const players = wallets.slice(1, 10); // 9 players
+      const players = wallets.slice(1, maxPlayers + 1); // maxPlayers from contract
       const betAmount = parseEther("1");
-      const bets = Array(9).fill(betAmount);
+      const bets = Array(maxPlayers).fill(betAmount);
 
       await playersJoinGame(game, players);
       await playersPlaceBets(game, players, bets);
@@ -302,9 +306,9 @@ describe("Pot Distribution", () => {
 
       const changes = balancesAfter.map((after, i) => after - balancesBefore[i]);
 
-      const { netPot } = calculateExpectedPayout(bets);
+      const { netPot } = await calculateExpectedPayout(bets, game);
 
-      console.log(`9-player game - Expected netPot: ${netPot}`);
+      console.log(`${maxPlayers}-player game - Expected netPot: ${netPot}`);
 
       // At least one winner should exist
       const winnersCount = changes.filter((c) => c > netPot / 2n).length;

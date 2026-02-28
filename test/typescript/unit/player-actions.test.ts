@@ -9,6 +9,7 @@ import { parseEther } from "../helpers/utils.js";
 describe("Player Actions", () => {
   let viem: any;
   let publicClient: any;
+  let testClient: any;
   let game: any;
   let owner: any;
   let player1: any;
@@ -21,6 +22,7 @@ describe("Player Actions", () => {
     const network = await hre.network.connect();
     viem = network.viem;
     publicClient = await viem.getPublicClient();
+    testClient = await viem.getTestClient();
 
     const setup = await setupStandardGame(viem);
     game = setup.game;
@@ -56,7 +58,7 @@ describe("Player Actions", () => {
     it("Should assign two hole cards to player", async () => {
       await game.write.joinGame({ account: player1.account });
 
-      const [, , ,holeCards] = await game.read.getPlayerInfo([
+      const [, , , holeCards] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
 
@@ -118,8 +120,8 @@ describe("Player Actions", () => {
 
     it("Should revert if joining too close to end time", async () => {
       // Fast forward to 56 minutes (cutoff is last 5 minutes)
-      await viem.increaseTime(56 * 60);
-      await viem.mine();
+      await testClient.increaseTime({seconds: 56 * 60});
+      await testClient.mine({ blocks: 1 });
 
       await viem.assertions.revertWithCustomError(
         game.write.joinGame({ account: player1.account }),
@@ -142,7 +144,7 @@ describe("Player Actions", () => {
         value: betAmount,
       });
 
-      const [, , , betAmount_stored] = await game.read.getPlayerInfo([
+      const [, , betAmount_stored] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
       assertBigIntEqual(betAmount_stored, betAmount, "Bet amount should match");
@@ -151,6 +153,10 @@ describe("Player Actions", () => {
     it("Should emit PlayerBet event", async () => {
       const betAmount = parseEther("1");
 
+      // match address with a predicate to ignore checksum casing
+      const matchAddr = (addr: string) =>
+        addr.toLowerCase() === player1.account.address.toLowerCase();
+
       await viem.assertions.emitWithArgs(
         game.write.placeBet([0n], {
           account: player1.account,
@@ -158,7 +164,7 @@ describe("Player Actions", () => {
         }),
         game,
         "PlayerBet",
-        [1n, player1.account.address, betAmount]
+        [1n, matchAddr, betAmount]
       );
     });
 
@@ -179,7 +185,7 @@ describe("Player Actions", () => {
           value: parseEther("1"),
         }),
         game,
-        "NotParticipating"
+        "MustJoinFirst"
       );
     });
 
@@ -206,7 +212,7 @@ describe("Player Actions", () => {
           value: 0n,
         }),
         game,
-        "InvalidBetAmount"
+        "MustBetSome"
       );
     });
 
@@ -223,10 +229,10 @@ describe("Player Actions", () => {
         value: parseEther("3"),
       });
 
-      const [, , , bet1] = await game.read.getPlayerInfo([
+      const [, , bet1] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
-      const [, , , bet2] = await game.read.getPlayerInfo([
+      const [, , bet2] = await game.read.getPlayerInfo([
         player2.account.address,
       ]);
 
@@ -244,10 +250,10 @@ describe("Player Actions", () => {
     it("Should allow player to fold", async () => {
       await game.write.fold({ account: player1.account });
 
-      const [, hasFolded] = await game.read.getPlayerInfo([
+      const [, hasBet] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
-      assert.equal(hasFolded, true, "Player should be marked as folded");
+      assert.equal(hasBet, false, "Player should be marked as not bet");
     });
 
     it("Should emit PlayerFolded event", async () => {
@@ -277,17 +283,17 @@ describe("Player Actions", () => {
       await viem.assertions.revertWithCustomError(
         game.write.fold({ account: player3.account }),
         game,
-        "NotParticipating"
+        "NotInGame"
       );
     });
 
-    it("Should revert if player already folded", async () => {
+    it("Should have no valid card to return if player folds twice", async () => {
       await game.write.fold({ account: player1.account });
 
       await viem.assertions.revertWithCustomError(
         game.write.fold({ account: player1.account }),
         game,
-        "AlreadyFolded"
+        "NoCardsToReturn"
       );
     });
 
@@ -313,7 +319,7 @@ describe("Player Actions", () => {
         value: parseEther("1"),
       });
 
-      const [, , , betAmount] = await game.read.getPlayerInfo([
+      const [, , betAmount] = await game.read.getPlayerInfo([
         player2.account.address,
       ]);
       assertBigIntEqual(betAmount, parseEther("1"));
@@ -339,7 +345,7 @@ describe("Player Actions", () => {
       assertBigIntEqual(
         totalParticipations,
         3n,
-        "Should have 3 total participants"
+        "Should have 3 total participants" //This include players who folded, so should be 3 not 2.
       );
     });
 
@@ -350,11 +356,11 @@ describe("Player Actions", () => {
         value: parseEther("2"),
       });
 
-      const [hasParticipated, hasFolded, holeCards, betAmount] =
+      const [hasParticipated, hasBet, betAmount, holeCards] =
         await game.read.getPlayerInfo([player1.account.address]);
 
       assert.equal(hasParticipated, true);
-      assert.equal(hasFolded, false);
+      assert.equal(hasBet, true);
       assert.equal(holeCards.length, 2);
       assertBigIntEqual(betAmount, parseEther("2"));
     });
