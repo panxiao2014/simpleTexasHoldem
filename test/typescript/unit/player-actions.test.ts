@@ -3,8 +3,7 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import hre from "hardhat";
 import { setupStandardGame } from "../helpers/fixtures.js";
-import { assertBigIntEqual } from "../helpers/assertions.js";
-import { parseEther } from "../helpers/utils.js";
+import { parseEther, addressMatcher } from "../helpers/utils.js";
 
 describe("Player Actions", () => {
   let viem: any;
@@ -72,7 +71,7 @@ describe("Player Actions", () => {
       await game.write.joinGame({ account: player3.account });
 
       const gameInfo = await game.read.getCurrentGameInfo();
-      assertBigIntEqual(
+      assert.equal(
         gameInfo[4],
         3n,
         "Should have 3 total participations"
@@ -147,15 +146,14 @@ describe("Player Actions", () => {
       const [, , betAmount_stored] = await game.read.getPlayerInfo([
         player1.account.address,
       ]);
-      assertBigIntEqual(betAmount_stored, betAmount, "Bet amount should match");
+      assert.equal(betAmount_stored, betAmount, "Bet amount should match");
     });
 
     it("Should emit PlayerBet event", async () => {
       const betAmount = parseEther("1");
 
       // match address with a predicate to ignore checksum casing
-      const matchAddr = (addr: string) =>
-        addr.toLowerCase() === player1.account.address.toLowerCase();
+      const matchAddr = addressMatcher(player1.account.address);
 
       await viem.assertions.emitWithArgs(
         game.write.placeBet([0n], {
@@ -175,7 +173,7 @@ describe("Player Actions", () => {
       });
 
       const gameInfo = await game.read.getCurrentGameInfo();
-      assertBigIntEqual(gameInfo[3], 1n, "Should have 1 betting player");
+      assert.equal(gameInfo[3], 1n, "Should have 1 betting player");
     });
 
     it("Should revert if player hasn't joined", async () => {
@@ -236,8 +234,8 @@ describe("Player Actions", () => {
         player2.account.address,
       ]);
 
-      assertBigIntEqual(bet1, parseEther("1"));
-      assertBigIntEqual(bet2, parseEther("3"));
+      assert.equal(bet1, parseEther("1"));
+      assert.equal(bet2, parseEther("3"));
     });
   });
 
@@ -272,7 +270,7 @@ describe("Player Actions", () => {
 
       const [, , , , , cardsAfterFold] = await game.read.getCurrentGameInfo();
 
-      assertBigIntEqual(
+      assert.equal(
         cardsAfterFold,
         cardsBeforeFold + 2n,
         "Should return 2 cards to pool"
@@ -322,7 +320,7 @@ describe("Player Actions", () => {
       const [, , betAmount] = await game.read.getPlayerInfo([
         player2.account.address,
       ]);
-      assertBigIntEqual(betAmount, parseEther("1"));
+      assert.equal(betAmount, parseEther("1"));
     });
   });
 
@@ -341,8 +339,8 @@ describe("Player Actions", () => {
       const [, , , bettingPlayers, totalParticipations] =
         await game.read.getCurrentGameInfo();
 
-      assertBigIntEqual(bettingPlayers, 1n, "Should have 1 betting player");
-      assertBigIntEqual(
+      assert.equal(bettingPlayers, 1n, "Should have 1 betting player");
+      assert.equal(
         totalParticipations,
         3n,
         "Should have 3 total participants" //This include players who folded, so should be 3 not 2.
@@ -362,7 +360,7 @@ describe("Player Actions", () => {
       assert.equal(hasParticipated, true);
       assert.equal(hasBet, true);
       assert.equal(holeCards.length, 2);
-      assertBigIntEqual(betAmount, parseEther("2"));
+      assert.equal(betAmount, parseEther("2"));
     });
   });
 });

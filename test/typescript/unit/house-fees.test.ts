@@ -7,8 +7,7 @@ import {
   playersJoinGame,
   playersPlaceBets,
 } from "../helpers/fixtures.js";
-import { assertBigIntEqual, assertBigIntWithinTolerance } from "../helpers/assertions.js";
-import { parseEther, calculateExpectedPayout } from "../helpers/utils.js";
+import { parseEther, calculateExpectedPayout, addressMatcher } from "../helpers/utils.js";
 
 describe("House Fees", () => {
   let viem: any;
@@ -42,8 +41,8 @@ describe("House Fees", () => {
       const houseFees = await game.read.accumulatedHouseFees();
       const { houseFee } = await calculateExpectedPayout([betAmount, betAmount], game);
 
-      assertBigIntEqual(houseFees, houseFee);
-      assertBigIntEqual(houseFees, parseEther("0.2")); // 20 ETH * 1% = 0.2 ETH
+      assert.equal(houseFees, houseFee);
+      assert.equal(houseFees, parseEther("0.2")); // 20 ETH * 1% = 0.2 ETH
     });
 
     it("Should accumulate fees from pot calculation", async () => {
@@ -58,7 +57,7 @@ describe("House Fees", () => {
 
       // pot = 5 * 2 = 10 ETH
       // fee = 10 * 1% = 0.1 ETH
-      assertBigIntEqual(houseFees, parseEther("0.1"));
+      assert.equal(houseFees, parseEther("0.1"));
     });
 
     it("Should handle fees with different bet amounts", async () => {
@@ -75,7 +74,7 @@ describe("House Fees", () => {
 
       // pot = min(2, 7) * 2 = 4 ETH
       // fee = 4 * 1% = 0.04 ETH
-      assertBigIntEqual(houseFees, parseEther("0.04"));
+      assert.equal(houseFees, parseEther("0.04"));
     });
   });
 
@@ -89,7 +88,7 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       let houseFees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(houseFees, parseEther("0.02")); // 2 * 1% = 0.02
+      assert.equal(houseFees, parseEther("0.02")); // 2 * 1% = 0.02
 
       // Game 2
       await game.write.startGame([3600n], { account: owner.account });
@@ -98,7 +97,7 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       houseFees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(houseFees, parseEther("0.04")); // 0.02 + 0.02
+      assert.equal(houseFees, parseEther("0.04")); // 0.02 + 0.02
     });
 
     it("Should not accumulate fees on cancelled game", async () => {
@@ -111,7 +110,7 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       const houseFees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(houseFees, 0n);
+      assert.equal(houseFees, 0n);
     });
   });
 
@@ -124,27 +123,27 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       const feesBefore = await game.read.accumulatedHouseFees();
-      const ownerBalanceBefore = await viem.getBalance({
+
+      const ownerBalanceBefore: bigint  = await publicClient.getBalance({
         address: owner.account.address,
       });
 
       // Withdraw fees
-      await game.write.withdrawHouseFees({ account: owner.account });
+      const txHash = await game.write.withdrawHouseFees({ account: owner.account });
+      const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
 
+      const gasCost: bigint = receipt.gasUsed * receipt.effectiveGasPrice;
+
+      // Fees should be zero after withdrawal
       const feesAfter = await game.read.accumulatedHouseFees();
-      const ownerBalanceAfter = await viem.getBalance({
+      assert.equal(feesAfter, 0n);
+
+      const ownerBalanceAfter: bigint  = await publicClient.getBalance({
         address: owner.account.address,
       });
 
-      // Fees should be zero after withdrawal
-      assertBigIntEqual(feesAfter, 0n);
-
       // Owner should receive the fees (minus gas)
-      const balanceChange = ownerBalanceAfter - ownerBalanceBefore;
-      assertBigIntWithinTolerance(balanceChange, feesBefore, parseEther("0.01"));
-
-      console.log("Fees withdrawn:", feesBefore);
-      console.log("Owner balance change:", balanceChange);
+      assert.equal(ownerBalanceAfter, ownerBalanceBefore + feesBefore - gasCost);
     });
 
     it("Should emit HouseFeeWithdrawn event", async () => {
@@ -154,13 +153,14 @@ describe("House Fees", () => {
       await playersPlaceBets(game, [player1, player2], [betAmount, betAmount]);
       await game.write.endGame({ account: owner.account });
 
+      const matchAddr = addressMatcher(owner.account.address);
       const fees = await game.read.accumulatedHouseFees();
 
       await viem.assertions.emitWithArgs(
         game.write.withdrawHouseFees({ account: owner.account }),
         game,
         "HouseFeeWithdrawn",
-        [owner.account.address, fees]
+        [matchAddr, fees]
       );
     });
 
@@ -197,7 +197,7 @@ describe("House Fees", () => {
       await game.write.withdrawHouseFees({ account: owner.account });
 
       let fees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(fees, 0n);
+      assert.equal(fees, 0n);
 
       // Game 2 - accumulate more fees
       await game.write.startGame([3600n], { account: owner.account });
@@ -206,12 +206,12 @@ describe("House Fees", () => {
       await game.write.endGame({ account: owner.account });
 
       fees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(fees, parseEther("0.02"));
+      assert.equal(fees, parseEther("0.02"));
 
       // Withdraw again
       await game.write.withdrawHouseFees({ account: owner.account });
       fees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(fees, 0n);
+      assert.equal(fees, 0n);
     });
   });
 
@@ -222,19 +222,19 @@ describe("House Fees", () => {
       await playersJoinGame(game, [player1, player2]);
       await playersPlaceBets(game, [player1, player2], [betAmount, betAmount]);
 
-      const player1Before = await viem.getBalance({
+      const player1Before = await publicClient.getBalance({
         address: player1.account.address,
       });
-      const player2Before = await viem.getBalance({
+      const player2Before = await publicClient.getBalance({
         address: player2.account.address,
       });
 
       await game.write.endGame({ account: owner.account });
 
-      const player1After = await viem.getBalance({
+      const player1After = await publicClient.getBalance({
         address: player1.account.address,
       });
-      const player2After = await viem.getBalance({
+      const player2After = await publicClient.getBalance({
         address: player2.account.address,
       });
 
@@ -246,19 +246,14 @@ describe("House Fees", () => {
         betAmount,
       ], game);
 
-      console.log("Player1 change:", change1);
-      console.log("Player2 change:", change2);
-      console.log("Expected netPot:", netPot);
-      console.log("Expected houseFee:", houseFee);
-
       // One player should win approximately netPot
       // Total distributed should be close to netPot
       const totalDistributed = change1 + change2;
-      assertBigIntWithinTolerance(totalDistributed, netPot, 2n);
+      assert.equal(totalDistributed, netPot);
 
       // House fee should be accumulated
       const accumulatedFees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(accumulatedFees, houseFee);
+      assert.equal(accumulatedFees, houseFee);
     });
 
     it("Should handle fees with rounding correctly", async () => {
@@ -274,7 +269,7 @@ describe("House Fees", () => {
 
       // pot = 2002 wei
       // fee = 2002 * 1 / 100 = 20.02 = 20 wei (integer division)
-      assertBigIntEqual(houseFees, 20n);
+      assert.equal(houseFees, 20n);
     });
   });
 });

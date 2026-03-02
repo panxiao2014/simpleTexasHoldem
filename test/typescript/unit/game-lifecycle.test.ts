@@ -3,7 +3,6 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import hre from "hardhat";
 import { deployGameContract } from "../helpers/fixtures.js";
-import { assertBigIntEqual } from "../helpers/assertions.js";
 
 describe("Game Lifecycle", () => {
   let viem: any;
@@ -36,11 +35,12 @@ describe("Game Lifecycle", () => {
       const deckSize = await game.read.DECK_SIZE();
 
       assert.equal(gameActive, true, "Game should be active");
-      assertBigIntEqual(currentGameId, 1n, "Game ID should be 1");
-      assertBigIntEqual(gameInfo[0], 1n, "Game info ID should be 1");
-      assertBigIntEqual(gameInfo[3], 0n, "Should have zero players initially");
-      assertBigIntEqual(gameInfo[4], 0n, "Should have zero participants initially");
-      assertBigIntEqual(gameInfo[5], deckSize, `Cards remaining should be ${deckSize}`);
+      //assert.equal(currentGameId, 1n, "Game ID should be 1");
+      assert.equal(currentGameId, 1n, "Game ID should be 1");
+      assert.equal(gameInfo[0], 1n, "Game info ID should be 1");
+      assert.equal(gameInfo[3], 0n, "Should have zero players initially");
+      assert.equal(gameInfo[4], 0n, "Should have zero participants initially");
+      assert.equal(gameInfo[5], deckSize, `Cards remaining should be ${deckSize}`);
       assert.equal(gameInfo[6], true, "Game info should show active");
     });
 
@@ -98,7 +98,7 @@ describe("Game Lifecycle", () => {
       // Start first game
       await game.write.startGame([3600n], { account: owner.account });
       let gameId = await game.read.currentGameId();
-      assertBigIntEqual(gameId, 1n);
+      assert.equal(gameId, 1n);
 
       // End first game (no players, should cancel)
       await game.write.endGame({ account: owner.account });
@@ -106,7 +106,7 @@ describe("Game Lifecycle", () => {
       // Start second game
       await game.write.startGame([3600n], { account: owner.account });
       gameId = await game.read.currentGameId();
-      assertBigIntEqual(gameId, 2n, "Game ID should increment");
+      assert.equal(gameId, 2n, "Game ID should increment");
     });
   });
 
@@ -213,7 +213,7 @@ describe("Game Lifecycle", () => {
 
     it("Should have zero accumulated fees initially", async () => {
       const fees = await game.read.accumulatedHouseFees();
-      assertBigIntEqual(fees, 0n, "Should have no fees initially");
+      assert.equal(fees, 0n, "Should have no fees initially");
     });
   });
 });

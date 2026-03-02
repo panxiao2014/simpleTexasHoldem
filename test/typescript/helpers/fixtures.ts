@@ -62,21 +62,6 @@ export async function playersPlaceBets(
 }
 
 /**
- * Get balances for multiple addresses
- */
-export async function getBalances(
-  viem: any,
-  addresses: string[]
-): Promise<bigint[]> {
-  const balances: bigint[] = [];
-  for (const address of addresses) {
-    const balance = await viem.getBalance({ address });
-    balances.push(balance);
-  }
-  return balances;
-}
-
-/**
  * Standard test game setup - 2 players ready to play
  */
 export async function setupStandardGame(viem: any) {

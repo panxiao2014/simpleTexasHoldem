@@ -83,3 +83,14 @@ export function formatBalanceChanges(
     })
     .join(", ");
 }
+
+/**
+ * Return a predicate that compares another address to `expected` while
+ * ignoring checksum casing.  This is handy when passing callbacks to
+ * `emitWithArgs` so you can match the address without worrying about
+ * capitalization differences.
+ */
+export function addressMatcher(expected: string) {
+  const norm = expected.toLowerCase();
+  return (addr: string) => addr.toLowerCase() === norm;
+}
