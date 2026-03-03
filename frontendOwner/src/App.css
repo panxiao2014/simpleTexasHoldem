@@ -37,6 +37,32 @@
   padding: 2em;
 }
 
+/* layout helpers */
+.app-body {
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.owner-controls, .info-display {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+/* simple button style */
+.app-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.app-button:disabled {
+  background-color: #99c;
+}
+
 .read-the-docs {
   color: #888;
 }
