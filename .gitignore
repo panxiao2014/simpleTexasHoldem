@@ -19,5 +19,3 @@ smartcontract/cache
 
 # Hardhat coverage reports
 /coverage
-
-/frontend/src
