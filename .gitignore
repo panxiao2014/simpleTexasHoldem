@@ -1,5 +1,6 @@
 # Node modules
-/node_modules
+smartcontract/node_modules
+frontend/node_modules
 
 # Compilation output
 /dist
@@ -8,10 +9,10 @@
 /bundle
 
 # Hardhat Build Artifacts
-/artifacts
+smartcontract/artifacts
 
 # Hardhat compilation (v2) support directory
-/cache
+smartcontract/cache
 
 # Typechain output
 /types
