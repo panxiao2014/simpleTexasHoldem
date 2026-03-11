@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
+import { getCurrentGameInfo, type CurrentGameInfo } from "../api/contract-api";
 import { useIsOwner } from "../hooks/use-is-owner";
 
 /**
@@ -15,16 +16,50 @@ import { useIsOwner } from "../hooks/use-is-owner";
  */
 export function OwnerPage(): ReactNode {
 	const { isOwner, isLoading } = useIsOwner();
-	const isDisabled: boolean = isLoading || !isOwner;
+	const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
+	const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
+
+	useEffect((): (() => void) => {
+		let isMounted: boolean = true;
+
+		const loadCurrentGameInfo = async (): Promise<void> => {
+			setIsGameInfoLoading(true);
+
+			try {
+				const currentGameInfo: CurrentGameInfo = await getCurrentGameInfo();
+				if (isMounted) {
+					setGameInfo(currentGameInfo);
+				}
+			} catch {
+				if (isMounted) {
+					setGameInfo(null);
+				}
+			} finally {
+				if (isMounted) {
+					setIsGameInfoLoading(false);
+				}
+			}
+		};
+
+		void loadCurrentGameInfo();
+
+		return (): void => {
+			isMounted = false;
+		};
+	}, []);
+
+	const isOwnerActionDisabled: boolean = isLoading || !isOwner;
+	const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive === true;
+	const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
 
 	return (
 		<section className="w-72 border-r border-secondary px-4 py-6">
 			<div className="flex flex-col gap-3">
-				<Button size="md" isDisabled={isDisabled}>Start game</Button>
-				<Button size="md" color="secondary" isDisabled={isDisabled}>
+				<Button size="md" isDisabled={isStartDisabled}>Start game</Button>
+				<Button size="md" color="secondary" isDisabled={isEndDisabled}>
 					End game
 				</Button>
-				<Button size="md" color="secondary" isDisabled={isDisabled}>
+				<Button size="md" color="secondary" isDisabled={isOwnerActionDisabled}>
 					Collect fee
 				</Button>
 			</div>
