@@ -1,4 +1,5 @@
-import { createPublicClient, custom, type Abi, type Address, type PublicClient } from "viem";
+import { createPublicClient, custom, type Address, type PublicClient } from "viem";
+import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 
 interface EthereumProvider {
@@ -18,24 +19,6 @@ export interface CurrentGameInfo {
     cardsRemaining: bigint;
     gameActive: boolean;
 }
-
-const SIMPLE_TEXAS_HOLDEM_ABI: Abi = [
-    {
-        type: "function",
-        name: "getCurrentGameInfo",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [
-            { name: "gameId", type: "uint256" },
-            { name: "startTime", type: "uint256" },
-            { name: "endTime", type: "uint256" },
-            { name: "playerCount", type: "uint256" },
-            { name: "totalParticipations", type: "uint256" },
-            { name: "cardsRemaining", type: "uint256" },
-            { name: "isActive", type: "bool" },
-        ],
-    },
-];
 
 function createContractPublicClient(): PublicClient {
     const { ethereum } = window as WindowWithEthereum;
