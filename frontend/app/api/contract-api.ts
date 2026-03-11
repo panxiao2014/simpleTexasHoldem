@@ -2,51 +2,51 @@ import { createPublicClient, custom, type Abi, type Address, type PublicClient }
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 
 interface EthereumProvider {
-  request: (args: { method: string; params?: readonly unknown[] | object }) => Promise<unknown>;
+    request: (args: { method: string; params?: readonly unknown[] | object }) => Promise<unknown>;
 }
 
 interface WindowWithEthereum extends Window {
-  ethereum?: EthereumProvider;
+    ethereum?: EthereumProvider;
 }
 
 export interface CurrentGameInfo {
-  gameId: bigint;
-  startTime: bigint;
-  endTime: bigint;
-  playerCount: bigint;
-  totalParticipations: bigint;
-  cardsRemaining: bigint;
-  gameActive: boolean;
+    gameId: bigint;
+    startTime: bigint;
+    endTime: bigint;
+    playerCount: bigint;
+    totalParticipations: bigint;
+    cardsRemaining: bigint;
+    gameActive: boolean;
 }
 
 const SIMPLE_TEXAS_HOLDEM_ABI: Abi = [
-  {
-    type: "function",
-    name: "getCurrentGameInfo",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [
-      { name: "gameId", type: "uint256" },
-      { name: "startTime", type: "uint256" },
-      { name: "endTime", type: "uint256" },
-      { name: "playerCount", type: "uint256" },
-      { name: "totalParticipations", type: "uint256" },
-      { name: "cardsRemaining", type: "uint256" },
-      { name: "isActive", type: "bool" },
-    ],
-  },
+    {
+        type: "function",
+        name: "getCurrentGameInfo",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [
+            { name: "gameId", type: "uint256" },
+            { name: "startTime", type: "uint256" },
+            { name: "endTime", type: "uint256" },
+            { name: "playerCount", type: "uint256" },
+            { name: "totalParticipations", type: "uint256" },
+            { name: "cardsRemaining", type: "uint256" },
+            { name: "isActive", type: "bool" },
+        ],
+    },
 ];
 
 function createContractPublicClient(): PublicClient {
-  const { ethereum } = window as WindowWithEthereum;
+    const { ethereum } = window as WindowWithEthereum;
 
-  if (ethereum === undefined) {
-    throw new Error("Wallet provider not found.");
-  }
+    if (ethereum === undefined) {
+        throw new Error("Wallet provider not found.");
+    }
 
-  return createPublicClient({
-    transport: custom(ethereum),
-  });
+    return createPublicClient({
+        transport: custom(ethereum),
+    });
 }
 
 export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {

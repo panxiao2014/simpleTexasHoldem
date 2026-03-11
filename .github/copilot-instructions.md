@@ -13,3 +13,9 @@
 	- The type of each prop.
 	- How the component should be used.
 - Keep the comment concise but complete enough for another developer to use the component correctly.
+
+## Indentation and formatting requirements
+
+- For all `.ts` and `.tsx` files, use **4 spaces** for indentation.
+- Do not use tabs for indentation.
+- Preserve consistent 4-space indentation in nested blocks, object literals, arrays, JSX, and function bodies.

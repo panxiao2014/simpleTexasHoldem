@@ -15,54 +15,54 @@ import { useIsOwner } from "../hooks/use-is-owner";
  * @returns {ReactNode} The owner control panel section.
  */
 export function OwnerPage(): ReactNode {
-	const { isOwner, isLoading } = useIsOwner();
-	const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
-	const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
+    const { isOwner, isLoading } = useIsOwner();
+    const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
+    const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
 
-	useEffect((): (() => void) => {
-		let isMounted: boolean = true;
+    useEffect((): (() => void) => {
+        let isMounted: boolean = true;
 
-		const loadCurrentGameInfo = async (): Promise<void> => {
-			setIsGameInfoLoading(true);
+        const loadCurrentGameInfo = async (): Promise<void> => {
+            setIsGameInfoLoading(true);
 
-			try {
-				const currentGameInfo: CurrentGameInfo = await getCurrentGameInfo();
-				if (isMounted) {
-					setGameInfo(currentGameInfo);
-				}
-			} catch {
-				if (isMounted) {
-					setGameInfo(null);
-				}
-			} finally {
-				if (isMounted) {
-					setIsGameInfoLoading(false);
-				}
-			}
-		};
+            try {
+                const currentGameInfo: CurrentGameInfo = await getCurrentGameInfo();
+                if (isMounted) {
+                    setGameInfo(currentGameInfo);
+                }
+            } catch {
+                if (isMounted) {
+                    setGameInfo(null);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsGameInfoLoading(false);
+                }
+            }
+        };
 
-		void loadCurrentGameInfo();
+        void loadCurrentGameInfo();
 
-		return (): void => {
-			isMounted = false;
-		};
-	}, []);
+        return (): void => {
+            isMounted = false;
+        };
+    }, []);
 
-	const isOwnerActionDisabled: boolean = isLoading || !isOwner;
-	const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive === true;
-	const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
+    const isOwnerActionDisabled: boolean = isLoading || !isOwner;
+    const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive === true;
+    const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
 
-	return (
-		<section className="w-72 border-r border-secondary px-4 py-6">
-			<div className="flex flex-col gap-3">
-				<Button size="md" isDisabled={isStartDisabled}>Start game</Button>
-				<Button size="md" color="secondary" isDisabled={isEndDisabled}>
-					End game
-				</Button>
-				<Button size="md" color="secondary" isDisabled={isOwnerActionDisabled}>
-					Collect fee
-				</Button>
-			</div>
-		</section>
-	);
+    return (
+        <section className="w-72 border-r border-secondary px-4 py-6">
+            <div className="flex flex-col gap-3">
+                <Button size="md" isDisabled={isStartDisabled}>Start game</Button>
+                <Button size="md" color="secondary" isDisabled={isEndDisabled}>
+                    End game
+                </Button>
+                <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled}>
+                    Collect fee
+                </Button>
+            </div>
+        </section>
+    );
 }
