@@ -7,13 +7,13 @@ import { Select } from "../../src/components/base/select/select";
 import { GAME_MODES, type GameMode } from "../utils/utils";
 
 interface HeaderProps {
-  gameMode: GameMode;
-  onGameModeChange: (mode: GameMode) => void;
+    gameMode: GameMode;
+    onGameModeChange: (mode: GameMode) => void;
 }
 
-const modeItems = [
-  { id: GAME_MODES.OWNER, label: "Owner" },
-  { id: GAME_MODES.PLAYER, label: "Player" },
+const modeItems: Array<{ id: GameMode; label: string }> = [
+    { id: GAME_MODES.OWNER, label: "Owner" },
+    { id: GAME_MODES.PLAYER, label: "Player" },
 ];
 
 /**
@@ -30,27 +30,36 @@ const modeItems = [
  * @returns {ReactNode} The header navigation element
  */
 export function Header({ gameMode, onGameModeChange }: HeaderProps): ReactNode {
-  return (
-    <nav className="fixed top-0 right-0 left-0 z-10 flex justify-between px-4 py-3" data-testid="app-header">
-      <Select
-        aria-label="Select game mode"
-        data-testid="game-mode-select"
-        value={gameMode}
-        onChange={(key) => onGameModeChange(key as GameMode)}
-        items={modeItems}
-        size="sm"
-        className="w-36"
-      >
-        {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
-      </Select>
-      <div className="flex items-center gap-3">
-        <HelpTextModal title="Simplified Texas Hold'em Rules" text={gameRules} />
-        <IconLink
-          icon={FaGithub}
-          url="https://github.com/panxiao2014/simpleTexasHoldem"
-          ariaLabel="Open GitHub repository"
-        />
-      </div>
-    </nav>
-  );
+    return (
+        <nav className="fixed top-0 right-0 left-0 z-10 flex justify-between px-4 py-3" data-testid="app-header">
+
+            {/* Select allows switching between Owner and Player game modes. */}
+            <Select
+                aria-label="Select game mode"
+                data-testid="game-mode-select"
+                value={gameMode}
+                onChange={(key) => onGameModeChange(key as GameMode)}
+                items={modeItems}
+                size="sm"
+                className="w-36"
+            >
+                {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+            </Select>
+
+            <div className="flex items-center gap-3">
+
+                {/* HelpTextModal displays the simplified Texas Hold'em rules for quick reference. */}
+                <HelpTextModal title="Simplified Texas Hold'em Rules" text={gameRules} />
+
+                {/* IconLink renders a clickable GitHub icon that opens the project repository URL. */}
+                <IconLink
+                    icon={FaGithub}
+                    url="https://github.com/panxiao2014/simpleTexasHoldem"
+                    ariaLabel="Open GitHub repository"
+                />
+
+            </div>
+
+        </nav>
+    );
 }

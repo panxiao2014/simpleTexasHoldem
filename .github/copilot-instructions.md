@@ -19,3 +19,6 @@
 - For all `.ts` and `.tsx` files, use **4 spaces** for indentation.
 - Do not use tabs for indentation.
 - Preserve consistent 4-space indentation in nested blocks, object literals, arrays, JSX, and function bodies.
+- For `.ts` and `.tsx` files, add comment start with `//` for single-line comments and `/* */` for multi-line comments, and ensure they are properly indented according to the 4-space rule.
+- For `.tsx` files, always insert a blank line before and after JSX elements to improve readability, and ensure the JSX is indented according to the 4-space rule.
+- For `.tsx` files, always add comment for a React component used in JSX, explaining the purpose of the component and any important details about its usage, and ensure the comment is properly indented according to the 4-space rule.

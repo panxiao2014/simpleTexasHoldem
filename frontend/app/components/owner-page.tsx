@@ -55,15 +55,22 @@ export function OwnerPage(): ReactNode {
     return (
         <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
             <div className="flex flex-col gap-3">
+
+                {/* Button starts a new game and is enabled only for owner when no game is active. */}
                 <Button size="md" isDisabled={isStartDisabled} data-testid="owner-start-game">
                     Start game
                 </Button>
+
+                {/* Button ends the current active game and is enabled only for owner. */}
                 <Button size="md" color="secondary" isDisabled={isEndDisabled} data-testid="owner-end-game">
                     End game
                 </Button>
+
+                {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
                 <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled} data-testid="owner-collect-fee">
                     Collect fee
                 </Button>
+
             </div>
         </section>
     );

@@ -1,24 +1,24 @@
 import { CONTRACT_OWNER_ADDRESS } from "./contractInfo";
 
 export const GAME_MODES = {
-  OWNER: "owner",
-  PLAYER: "player",
+    OWNER: "owner",
+    PLAYER: "player",
 } as const;
 
 export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
 
 interface EthereumProvider {
-  request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
+    request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
 }
 
 interface WindowWithEthereum extends Window {
-  ethereum?: EthereumProvider;
+    ethereum?: EthereumProvider;
 }
 
 const parseAccounts = (response: unknown): string[] =>
-  Array.isArray(response)
-    ? response.filter((v: unknown): v is string => typeof v === "string")
-    : [];
+    Array.isArray(response)
+        ? response.filter((v: unknown): v is string => typeof v === "string")
+        : [];
 
 /**
  * Checks if the currently connected wallet account is the contract owner.
@@ -29,30 +29,30 @@ const parseAccounts = (response: unknown): string[] =>
  * @returns {Promise<boolean>} true if the connected account is the contract owner.
  */
 export async function isOwnerConnected(): Promise<boolean> {
-  const { ethereum } = window as WindowWithEthereum;
+    const { ethereum } = window as WindowWithEthereum;
 
-  if (ethereum === undefined) {
-    console.info("Wallet not detected");
-    return false;
-  }
+    if (ethereum === undefined) {
+        console.info("Wallet not detected");
+        return false;
+    }
 
-  let accounts: string[] = parseAccounts(
-    await ethereum.request({ method: "eth_accounts" }),
-  );
-
-  if (accounts.length === 0) {
-    console.info("Triggering wallet connection...");
-    accounts = parseAccounts(
-      await ethereum.request({ method: "eth_requestAccounts" }),
+    let accounts: string[] = parseAccounts(
+        await ethereum.request({ method: "eth_accounts" }),
     );
-  }
 
-  if (accounts.length === 0) {
-    console.info("No accounts found after connection attempt");
-    return false;
-  }
+    if (accounts.length === 0) {
+        console.info("Triggering wallet connection...");
+        accounts = parseAccounts(
+            await ethereum.request({ method: "eth_requestAccounts" }),
+        );
+    }
 
-  const isOwner = accounts[0].toLowerCase() === CONTRACT_OWNER_ADDRESS.toLowerCase();
-  console.info(`Connected account: ${accounts[0]}, Is owner: ${isOwner}`);
-  return isOwner;
+    if (accounts.length === 0) {
+        console.info("No accounts found after connection attempt");
+        return false;
+    }
+
+    const isOwner: boolean = accounts[0].toLowerCase() === CONTRACT_OWNER_ADDRESS.toLowerCase();
+    console.info(`Connected account: ${accounts[0]}, Is owner: ${isOwner}`);
+    return isOwner;
 }

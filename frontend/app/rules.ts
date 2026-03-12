@@ -1,4 +1,4 @@
-export const gameRules = `## Players
+export const gameRules: string = `## Players
 
 Each game can have 2 to 9 players.
 
