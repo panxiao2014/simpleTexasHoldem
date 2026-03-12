@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
  */
 export function PlayerPage(): ReactNode {
     return (
-        <section className="w-72 border-r border-secondary px-4 py-6">
+        <section className="w-72 border-r border-secondary px-4 py-6" data-testid="player-page">
             {/* Player page content will be added here */}
         </section>
     );

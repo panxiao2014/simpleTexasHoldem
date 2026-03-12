@@ -5,32 +5,32 @@ import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, isOwnerConnected, type GameMode } from "./utils/utils";
 
 function App() {
-  const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
+    const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
 
-  useEffect((): void => {
-    async function initWalletConnection(): Promise<void> {
-      const ownerConnected: boolean = await isOwnerConnected();
-      if (ownerConnected) {
-        setGameMode(GAME_MODES.OWNER);
-      }
-      else {
-        setGameMode(GAME_MODES.PLAYER);
-      }
-    }
+    useEffect((): void => {
+        async function initWalletConnection(): Promise<void> {
+            const ownerConnected: boolean = await isOwnerConnected();
+            if (ownerConnected) {
+                setGameMode(GAME_MODES.OWNER);
+            }
+            else {
+                setGameMode(GAME_MODES.PLAYER);
+            }
+        }
 
-    void initWalletConnection();
-  }, []);
+        void initWalletConnection();
+    }, []);
 
-  return (
-    <div className="min-h-screen">
-      <Header gameMode={gameMode} onGameModeChange={setGameMode} />
-      <main className="flex min-h-screen pt-16">
-        {gameMode === GAME_MODES.OWNER ? <OwnerPage /> : <PlayerPage />}
+    return (
+        <div className="min-h-screen" data-testid="app-root">
+            <Header gameMode={gameMode} onGameModeChange={setGameMode} />
+            <main className="flex min-h-screen pt-16" data-testid="app-main">
+                {gameMode === GAME_MODES.OWNER ? <OwnerPage /> : <PlayerPage />}
 
-        <section className="flex-1" />
-      </main>
-    </div>
-  );
+                <section className="flex-1" data-testid="app-content-spacer" />
+            </main>
+        </div>
+    );
 }
 
 export default App;

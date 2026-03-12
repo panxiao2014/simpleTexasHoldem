@@ -31,9 +31,10 @@ const modeItems = [
  */
 export function Header({ gameMode, onGameModeChange }: HeaderProps): ReactNode {
   return (
-    <nav className="fixed top-0 right-0 left-0 z-10 flex justify-between px-4 py-3">
+    <nav className="fixed top-0 right-0 left-0 z-10 flex justify-between px-4 py-3" data-testid="app-header">
       <Select
         aria-label="Select game mode"
+        data-testid="game-mode-select"
         value={gameMode}
         onChange={(key) => onGameModeChange(key as GameMode)}
         items={modeItems}

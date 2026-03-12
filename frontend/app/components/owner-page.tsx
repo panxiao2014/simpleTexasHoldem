@@ -53,13 +53,15 @@ export function OwnerPage(): ReactNode {
     const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
 
     return (
-        <section className="w-72 border-r border-secondary px-4 py-6">
+        <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
             <div className="flex flex-col gap-3">
-                <Button size="md" isDisabled={isStartDisabled}>Start game</Button>
-                <Button size="md" color="secondary" isDisabled={isEndDisabled}>
+                <Button size="md" isDisabled={isStartDisabled} data-testid="owner-start-game">
+                    Start game
+                </Button>
+                <Button size="md" color="secondary" isDisabled={isEndDisabled} data-testid="owner-end-game">
                     End game
                 </Button>
-                <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled}>
+                <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled} data-testid="owner-collect-fee">
                     Collect fee
                 </Button>
             </div>
