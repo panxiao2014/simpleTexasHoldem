@@ -1,8 +1,7 @@
 import { HelpCircle } from "@untitledui/icons";
 import { Button } from "../../src/components/base/buttons/button";
-import { CloseButton } from "../../src/components/base/buttons/close-button";
-import { Dialog, DialogTrigger, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import type { ReactNode } from "react";
+import { TextDisplayModal } from "./text-display-modal";
 
 type HelpTextModalProps = {
     text: string;
@@ -21,49 +20,19 @@ type HelpTextModalProps = {
  */
 export function HelpTextModal({ text, title = "Rules" }: HelpTextModalProps): ReactNode {
     return (
-        <DialogTrigger>
+        <TextDisplayModal
+            title={title}
+            text={text}
+            trigger={(
 
-            {/* Button opens the help modal with rules content. */}
-            <Button
-                color="link-gray"
-                iconLeading={<HelpCircle data-icon style={{ width: "24px", height: "24px" }} />}
-                aria-label="Open help modal"
-            />
+                /* Button opens the shared text modal with rules content. */
+                <Button
+                    color="link-gray"
+                    iconLeading={<HelpCircle data-icon style={{ width: "24px", height: "24px" }} />}
+                    aria-label="Open help modal"
+                />
 
-            {/* ModalOverlay renders a dismissible backdrop for the modal dialog. */}
-            <ModalOverlay isDismissable>
-                <Modal>
-
-                    {/* Dialog provides accessible modal semantics and close action. */}
-                    <Dialog>
-                        {({ close }) => (
-                            <div className="w-full max-w-3xl rounded-xl border border-secondary bg-primary shadow-xl">
-                                <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                                    <h2 className="text-lg font-semibold text-primary">{title}</h2>
-
-                                    {/* CloseButton closes the modal through dialog close handler. */}
-                                    <CloseButton onPress={close} />
-                                </div>
-
-                                <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-                                    <pre className="whitespace-pre-wrap text-sm leading-6 text-tertiary">{text}</pre>
-                                </div>
-
-                                <div className="flex justify-end border-t border-secondary px-5 py-4">
-
-                                    {/* Button closes the modal from the footer action area. */}
-                                    <Button color="secondary" onPress={close}>
-                                        Close
-                                    </Button>
-
-                                </div>
-                            </div>
-                        )}
-                    </Dialog>
-
-                </Modal>
-            </ModalOverlay>
-
-        </DialogTrigger>
+            )}
+        />
     );
 }

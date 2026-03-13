@@ -1,7 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { getCurrentGameInfo, type CurrentGameInfo } from "../api/contract-api";
+import { getCurrentGameInfo, startGame, type CurrentGameInfo, type StartGameResult } from "../api/contract-api";
 import { useIsOwner } from "../hooks/use-is-owner";
+import { TextDisplayModal } from "./text-display-modal";
+
+const DEFAULT_GAME_DURATION_SECONDS: bigint = 3600n;
 
 /**
  * OwnerPage component for contract owner controls.
@@ -18,6 +21,20 @@ export function OwnerPage(): ReactNode {
     const { isOwner, isLoading } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
+    const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
+    const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
+
+    const formatGameInfoText = (currentInfo: CurrentGameInfo): string => {
+        return [
+            `Game ID: ${currentInfo.gameId.toString()}`,
+            `Start Time: ${currentInfo.startTime.toString()}`,
+            `End Time: ${currentInfo.endTime.toString()}`,
+            `Player Count: ${currentInfo.playerCount.toString()}`,
+            `Total Participations: ${currentInfo.totalParticipations.toString()}`,
+            `Cards Remaining: ${currentInfo.cardsRemaining.toString()}`,
+            `Game Active: ${currentInfo.gameActive ? "Yes" : "No"}`,
+        ].join("\n");
+    };
 
     useEffect((): (() => void) => {
         let isMounted: boolean = true;
@@ -48,8 +65,46 @@ export function OwnerPage(): ReactNode {
         };
     }, []);
 
+    const handleStartGameClick = async (): Promise<void> => {
+        setIsStartGameLoading(true);
+
+        try {
+            const startGameResult: StartGameResult = await startGame(DEFAULT_GAME_DURATION_SECONDS);
+
+            if (startGameResult.events.length === 0) {
+                console.log("Start game succeeded, but no decodable events were found in receipt.", {
+                    transactionHash: startGameResult.transactionHash,
+                });
+            } else {
+                console.log("Start game succeeded.", {
+                    transactionHash: startGameResult.transactionHash,
+                    events: startGameResult.events,
+                });
+            }
+
+        } catch (error: unknown) {
+            console.error("Start game failed.", error);
+        } finally {
+            setIsStartGameLoading(false);
+        }
+    };
+
+    const handleGameInfoClick = async (): Promise<void> => {
+        setGameInfoModalText("Loading latest game info...");
+
+        try {
+            const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
+            setGameInfo(latestGameInfo);
+            setGameInfoModalText(formatGameInfoText(latestGameInfo));
+            console.log("Game info loaded.", latestGameInfo);
+        } catch (error: unknown) {
+            setGameInfoModalText("Failed to load game info.");
+            console.error("Game info load failed.", error);
+        }
+    };
+
     const isOwnerActionDisabled: boolean = isLoading || !isOwner;
-    const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive === true;
+    const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isStartGameLoading || gameInfo?.gameActive === true;
     const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
 
     return (
@@ -57,7 +112,15 @@ export function OwnerPage(): ReactNode {
             <div className="flex flex-col gap-3">
 
                 {/* Button starts a new game and is enabled only for owner when no game is active. */}
-                <Button size="md" isDisabled={isStartDisabled} data-testid="owner-start-game">
+                <Button
+                    size="md"
+                    isDisabled={isStartDisabled}
+                    isLoading={isStartGameLoading}
+                    data-testid="owner-start-game"
+                    onClick={(): void => {
+                        void handleStartGameClick();
+                    }}
+                >
                     Start game
                 </Button>
 
@@ -70,6 +133,28 @@ export function OwnerPage(): ReactNode {
                 <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled} data-testid="owner-collect-fee">
                     Collect fee
                 </Button>
+
+                {/* Button opens shared text modal and displays latest game information. */}
+                <TextDisplayModal
+                    title="Current Game Info"
+                    text={gameInfoModalText}
+                    trigger={(
+
+                        /* Button requests latest game info before opening shared modal content. */
+                        <Button
+                            size="md"
+                            color="secondary"
+                            isDisabled={isOwnerActionDisabled}
+                            data-testid="owner-game-info"
+                            onClick={(): void => {
+                                void handleGameInfoClick();
+                            }}
+                        >
+                            Game info
+                        </Button>
+
+                    )}
+                />
 
             </div>
         </section>
