@@ -1,12 +1,24 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { endGame, getCurrentGameInfo, getNativeBalance, startGame, type ContractCallResult } from "../api/contract-api";
-import { type CurrentGameInfo, formatCurrentGameInfoText, formatBalanceInfoText } from "../utils/contractParse";
+
+import { 
+    endGame,
+    getCurrentGameInfo,
+    getNativeBalance,
+    startGame,
+    type ContractCallResult
+} from "../api/contract-api";
+
+import { 
+    type CurrentGameInfo,
+    formatCurrentGameInfoText,
+    formatBalanceInfoText
+} from "../utils/contractParse";
+
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
-
-const DEFAULT_GAME_DURATION_SECONDS: bigint = 3600n;
+import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 
 /**
  * OwnerPage component for contract owner controls.

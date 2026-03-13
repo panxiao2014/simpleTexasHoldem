@@ -4,7 +4,7 @@ import { FaGithub } from "react-icons/fa";
 import { HelpTextModal } from "./help-text-modal";
 import { IconLink } from "./icon-link";
 import { Select } from "../../src/components/base/select/select";
-import { GAME_MODES, type GameMode } from "../utils/utils";
+import { GAME_MODES, type GameMode } from "../utils/gameConfig";
 
 interface HeaderProps {
     gameMode: GameMode;

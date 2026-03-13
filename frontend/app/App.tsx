@@ -2,7 +2,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
-import { GAME_MODES, isOwnerConnected, type GameMode } from "./utils/utils";
+import { GAME_MODES, type GameMode } from "./utils/gameConfig";
+import { isOwnerConnected } from "./utils/utils";
 
 /**
  * Root application component for the frontend app shell.
