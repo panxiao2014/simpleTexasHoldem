@@ -10,9 +10,11 @@ import {
     type Transport,
     type WalletClient,
 } from "viem";
+
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { HARDHAT_CHAIN } from "../utils/utils";
+import { type CurrentGameInfo } from "../utils/contractParse";
 
 interface EthereumProvider {
     request: (args: { method: string; params?: readonly unknown[] | object }) => Promise<unknown>;
@@ -133,6 +135,11 @@ async function getConnectedAccount(): Promise<Address> {
     }
 
     return account;
+}
+
+export async function getNativeBalance(address: Address): Promise<bigint> {
+    const publicClient: PublicClient = createContractPublicClient();
+    return await publicClient.getBalance({ address });
 }
 
 export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {

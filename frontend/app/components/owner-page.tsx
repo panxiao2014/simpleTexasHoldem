@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { endGame, getCurrentGameInfo, startGame, type ContractCallResult } from "../api/contract-api";
-import { type CurrentGameInfo, formatCurrentGameInfoText } from "../utils/contractParse";
+import { endGame, getCurrentGameInfo, getNativeBalance, startGame, type ContractCallResult } from "../api/contract-api";
+import { type CurrentGameInfo, formatCurrentGameInfoText, formatBalanceInfoText } from "../utils/contractParse";
+import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 
@@ -25,6 +26,7 @@ export function OwnerPage(): ReactNode {
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
+    const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
 
     useEffect((): (() => void) => {
         let isMounted: boolean = true;
@@ -140,6 +142,31 @@ export function OwnerPage(): ReactNode {
         }
     };
 
+    const handleOwnerBalanceClick = async (): Promise<void> => {
+        setOwnerBalanceModalText("Loading owner balance...");
+
+        try {
+            const ownerBalance: bigint = await getNativeBalance(CONTRACT_OWNER_ADDRESS);
+            const formattedOwnerBalance: string = formatBalanceInfoText(CONTRACT_OWNER_ADDRESS, ownerBalance);
+
+            setOwnerBalanceModalText(formattedOwnerBalance);
+
+            console.log("Owner balance loaded.", {
+                status: "success",
+                ownerAddress: CONTRACT_OWNER_ADDRESS,
+                balance: ownerBalance,
+                formattedBalance: formattedOwnerBalance,
+            });
+        } catch (error: unknown) {
+            setOwnerBalanceModalText("Failed to load owner balance.");
+            console.error("Owner balance load failed.", {
+                status: "revert",
+                ownerAddress: CONTRACT_OWNER_ADDRESS,
+                error,
+            });
+        }
+    };
+
     const isOwnerActionDisabled: boolean = isLoading || !isOwner;
     const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isStartGameLoading || gameInfo?.gameActive === true;
     const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isEndGameLoading || gameInfo?.gameActive !== true;
@@ -197,6 +224,28 @@ export function OwnerPage(): ReactNode {
                             }}
                         >
                             Game info
+                        </Button>
+
+                    )}
+                />
+
+                {/* Button opens shared text modal and displays owner balance information. */}
+                <TextDisplayModal
+                    title="Owner Balance"
+                    text={ownerBalanceModalText}
+                    trigger={(
+
+                        /* Button requests owner balance before opening shared modal content. */
+                        <Button
+                            size="md"
+                            color="secondary"
+                            isDisabled={isOwnerActionDisabled}
+                            data-testid="owner-get-balance"
+                            onClick={(): void => {
+                                void handleOwnerBalanceClick();
+                            }}
+                        >
+                            Check Balance
                         </Button>
 
                     )}

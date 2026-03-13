@@ -1,3 +1,5 @@
+import { formatEther } from "viem";
+
 export interface CurrentGameInfo {
     gameId: bigint;
     startTime: bigint;
@@ -17,5 +19,14 @@ export function formatCurrentGameInfoText(currentInfo: CurrentGameInfo): string 
         `Total Participations: ${currentInfo.totalParticipations.toString()}`,
         `Cards Remaining: ${currentInfo.cardsRemaining.toString()}`,
         `Game Active: ${currentInfo.gameActive ? "Yes" : "No"}`,
+    ].join("\n");
+}
+
+export function formatBalanceInfoText(address: string, balanceWei: bigint): string {
+    const balanceEth: string = formatEther(balanceWei);
+    return [
+        `Address: ${address}`,
+        `Balance (wei): ${balanceWei.toString()}`,
+        `Balance (ETH): ${balanceEth}`,
     ].join("\n");
 }
