@@ -33,4 +33,11 @@ export const SIMPLE_TEXAS_HOLDEM_ABI: Abi = [
         inputs: [{ name: "duration", type: "uint256" }],
         outputs: [],
     },
+    {
+        type: "function",
+        name: "endGame",
+        stateMutability: "nonpayable",
+        inputs: [],
+        outputs: [],
+    },
 ];

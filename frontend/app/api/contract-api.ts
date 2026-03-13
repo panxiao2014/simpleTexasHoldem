@@ -33,12 +33,16 @@ export interface CurrentGameInfo {
 }
 
 export interface ContractEventLog {
-    eventName: string;
+    eventName: string | null;
     args: unknown;
+    address: Address;
+    data: Hash;
+    topics: Hash[];
 }
 
-export interface StartGameResult {
+export interface ContractCallResult {
     transactionHash: Hash;
+    status: TransactionReceipt["status"];
     events: ContractEventLog[];
 }
 
@@ -96,11 +100,20 @@ function extractDecodedEvents(receipt: TransactionReceipt): ContractEventLog[] {
             });
 
             decodedEvents.push({
-                eventName: decodedLog.eventName ?? "unknown",
+                eventName: decodedLog.eventName ?? null,
                 args: decodedLog.args,
+                address: log.address,
+                data: log.data,
+                topics: [...log.topics],
             });
         } catch {
-            continue;
+            decodedEvents.push({
+                eventName: null,
+                args: null,
+                address: log.address,
+                data: log.data,
+                topics: [...log.topics],
+            });
         }
     }
 
@@ -156,7 +169,7 @@ export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
     return gameInfo;
 }
 
-export async function startGame(duration: bigint): Promise<StartGameResult> {
+export async function startGame(duration: bigint): Promise<ContractCallResult> {
     const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
     const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
     const account: Address = await getConnectedAccount();
@@ -177,6 +190,33 @@ export async function startGame(duration: bigint): Promise<StartGameResult> {
 
     return {
         transactionHash,
+        status: receipt.status,
+        events,
+    };
+}
+
+export async function endGame(): Promise<ContractCallResult> {
+    const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
+    const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
+    const account: Address = await getConnectedAccount();
+
+    const transactionHash: Hash = await walletClient.writeContract({
+        account,
+        address: CONTRACT_ADDRESS as Address,
+        abi: SIMPLE_TEXAS_HOLDEM_ABI,
+        functionName: "endGame",
+        args: [],
+    });
+
+    const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
+        hash: transactionHash,
+    });
+
+    const events: ContractEventLog[] = extractDecodedEvents(receipt);
+
+    return {
+        transactionHash,
+        status: receipt.status,
         events,
     };
 }

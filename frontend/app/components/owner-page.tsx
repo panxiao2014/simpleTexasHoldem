@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { getCurrentGameInfo, startGame, type CurrentGameInfo, type StartGameResult } from "../api/contract-api";
+import { endGame, getCurrentGameInfo, startGame, type ContractCallResult, type CurrentGameInfo } from "../api/contract-api";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 
@@ -22,6 +22,7 @@ export function OwnerPage(): ReactNode {
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
+    const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
 
     const formatGameInfoText = (currentInfo: CurrentGameInfo): string => {
@@ -69,14 +70,23 @@ export function OwnerPage(): ReactNode {
         setIsStartGameLoading(true);
 
         try {
-            const startGameResult: StartGameResult = await startGame(DEFAULT_GAME_DURATION_SECONDS);
+            const startGameResult: ContractCallResult = await startGame(DEFAULT_GAME_DURATION_SECONDS);
+            const isSuccessStatus: boolean = startGameResult.status === "success";
 
-            if (startGameResult.events.length === 0) {
+            if (!isSuccessStatus) {
+                console.error("Start game failed.", {
+                    status: startGameResult.status,
+                    transactionHash: startGameResult.transactionHash,
+                    events: startGameResult.events,
+                });
+            } else if (startGameResult.events.length === 0) {
                 console.log("Start game succeeded, but no decodable events were found in receipt.", {
+                    status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
             } else {
                 console.log("Start game succeeded.", {
+                    status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
@@ -96,16 +106,54 @@ export function OwnerPage(): ReactNode {
             const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
             setGameInfo(latestGameInfo);
             setGameInfoModalText(formatGameInfoText(latestGameInfo));
-            console.log("Game info loaded.", latestGameInfo);
+            console.log("Game info loaded.", {
+                status: "success",
+                gameInfo: latestGameInfo,
+            });
         } catch (error: unknown) {
             setGameInfoModalText("Failed to load game info.");
-            console.error("Game info load failed.", error);
+            console.error("Game info load failed.", {
+                status: "revert",
+                error,
+            });
+        }
+    };
+
+    const handleEndGameClick = async (): Promise<void> => {
+        setIsEndGameLoading(true);
+
+        try {
+            const endGameResult: ContractCallResult = await endGame();
+            const isSuccessStatus: boolean = endGameResult.status === "success";
+
+            if (!isSuccessStatus) {
+                console.error("End game failed.", {
+                    status: endGameResult.status,
+                    transactionHash: endGameResult.transactionHash,
+                    events: endGameResult.events,
+                });
+            } else if (endGameResult.events.length === 0) {
+                console.log("End game succeeded, but no events were found in receipt.", {
+                    status: endGameResult.status,
+                    transactionHash: endGameResult.transactionHash,
+                });
+            } else {
+                console.log("End game succeeded.", {
+                    status: endGameResult.status,
+                    transactionHash: endGameResult.transactionHash,
+                    events: endGameResult.events,
+                });
+            }
+        } catch (error: unknown) {
+            console.error("End game failed.", error);
+        } finally {
+            setIsEndGameLoading(false);
         }
     };
 
     const isOwnerActionDisabled: boolean = isLoading || !isOwner;
     const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isStartGameLoading || gameInfo?.gameActive === true;
-    const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || gameInfo?.gameActive !== true;
+    const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isEndGameLoading || gameInfo?.gameActive !== true;
 
     return (
         <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
@@ -125,7 +173,16 @@ export function OwnerPage(): ReactNode {
                 </Button>
 
                 {/* Button ends the current active game and is enabled only for owner. */}
-                <Button size="md" color="secondary" isDisabled={isEndDisabled} data-testid="owner-end-game">
+                <Button
+                    size="md"
+                    color="secondary"
+                    isDisabled={isEndDisabled}
+                    isLoading={isEndGameLoading}
+                    data-testid="owner-end-game"
+                    onClick={(): void => {
+                        void handleEndGameClick();
+                    }}
+                >
                     End game
                 </Button>
 
