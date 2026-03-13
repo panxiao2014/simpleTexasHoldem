@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { endGame, getCurrentGameInfo, startGame, type ContractCallResult, type CurrentGameInfo } from "../api/contract-api";
+import { endGame, getCurrentGameInfo, startGame, type ContractCallResult } from "../api/contract-api";
+import { type CurrentGameInfo, formatCurrentGameInfoText } from "../utils/contractParse";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 
@@ -24,18 +25,6 @@ export function OwnerPage(): ReactNode {
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
-
-    const formatGameInfoText = (currentInfo: CurrentGameInfo): string => {
-        return [
-            `Game ID: ${currentInfo.gameId.toString()}`,
-            `Start Time: ${currentInfo.startTime.toString()}`,
-            `End Time: ${currentInfo.endTime.toString()}`,
-            `Player Count: ${currentInfo.playerCount.toString()}`,
-            `Total Participations: ${currentInfo.totalParticipations.toString()}`,
-            `Cards Remaining: ${currentInfo.cardsRemaining.toString()}`,
-            `Game Active: ${currentInfo.gameActive ? "Yes" : "No"}`,
-        ].join("\n");
-    };
 
     useEffect((): (() => void) => {
         let isMounted: boolean = true;
@@ -105,7 +94,7 @@ export function OwnerPage(): ReactNode {
         try {
             const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
             setGameInfo(latestGameInfo);
-            setGameInfoModalText(formatGameInfoText(latestGameInfo));
+            setGameInfoModalText(formatCurrentGameInfoText(latestGameInfo));
             console.log("Game info loaded.", {
                 status: "success",
                 gameInfo: latestGameInfo,

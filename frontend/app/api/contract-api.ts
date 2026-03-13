@@ -22,15 +22,6 @@ interface WindowWithEthereum extends Window {
     ethereum?: EthereumProvider;
 }
 
-export interface CurrentGameInfo {
-    gameId: bigint;
-    startTime: bigint;
-    endTime: bigint;
-    playerCount: bigint;
-    totalParticipations: bigint;
-    cardsRemaining: bigint;
-    gameActive: boolean;
-}
 
 export interface ContractEventLog {
     eventName: string | null;
