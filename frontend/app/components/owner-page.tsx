@@ -18,6 +18,7 @@ import {
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
+import { GameInfoLog } from "./game-info-log";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 
 /**
@@ -39,6 +40,7 @@ export function OwnerPage(): ReactNode {
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
+    const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
 
     const syncGameInfoState = async (): Promise<void> => {
         try {
@@ -97,6 +99,7 @@ export function OwnerPage(): ReactNode {
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
+                setLatestGameActionInfo("Game started");
                 await syncGameInfoState();
             } else {
                 console.log("Start game succeeded.", {
@@ -104,6 +107,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
+                setLatestGameActionInfo("Game started");
                 await syncGameInfoState();
             }
 
@@ -152,6 +156,7 @@ export function OwnerPage(): ReactNode {
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                 });
+                setLatestGameActionInfo("Game ended");
                 await syncGameInfoState();
             } else {
                 console.log("End game succeeded.", {
@@ -159,6 +164,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: endGameResult.transactionHash,
                     events: endGameResult.events,
                 });
+                setLatestGameActionInfo("Game ended");
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
@@ -201,8 +207,9 @@ export function OwnerPage(): ReactNode {
     const isEndDisabled: boolean = isOwnerBlocked || isUiBusy || !isGameActive;
 
     return (
-        <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
-            <div className="flex flex-col gap-3">
+        <>
+            <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
+                <div className="flex flex-col gap-3">
 
                 {/* Button starts a new game and is enabled only for owner when no game is active. */}
                 <Button
@@ -258,29 +265,37 @@ export function OwnerPage(): ReactNode {
                     )}
                 />
 
-                {/* Button opens shared text modal and displays owner balance information. */}
-                <TextDisplayModal
-                    title="Owner Balance"
-                    text={ownerBalanceModalText}
-                    trigger={(
+                    {/* Button opens shared text modal and displays owner balance information. */}
+                    <TextDisplayModal
+                        title="Owner Balance"
+                        text={ownerBalanceModalText}
+                        trigger={(
 
-                        /* Button requests owner balance before opening shared modal content. */
-                        <Button
-                            size="md"
-                            color="secondary"
-                            isDisabled={isOwnerBlocked}
-                            data-testid="owner-get-balance"
-                            onClick={(): void => {
-                                void handleOwnerBalanceClick();
-                            }}
-                        >
-                            Check Balance
-                        </Button>
+                            /* Button requests owner balance before opening shared modal content. */
+                            <Button
+                                size="md"
+                                color="secondary"
+                                isDisabled={isOwnerBlocked}
+                                data-testid="owner-get-balance"
+                                onClick={(): void => {
+                                    void handleOwnerBalanceClick();
+                                }}
+                            >
+                                Check Balance
+                            </Button>
 
-                    )}
-                />
+                        )}
+                    />
 
-            </div>
-        </section>
+                </div>
+            </section>
+
+            <section className="w-[28rem] px-4 py-6" data-testid="owner-game-info-panel">
+
+                {/* GameInfoLog shows timestamped game action history in a scrollable read-only panel. */}
+                <GameInfoLog info={latestGameActionInfo} />
+
+            </section>
+        </>
     );
 }

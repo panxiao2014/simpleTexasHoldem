@@ -24,3 +24,8 @@ export const GAME_MODES = {
 export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
 
 export const DEFAULT_GAME_DURATION_SECONDS: bigint = 3600n;
+
+// consts related to game info history display:
+export const STORAGE_KEY: string = "game-info-log-entries";
+export const MAX_GAME_HIST_ENTRIES: number = 1000;
+export const MAX_GAME_HIST_DISPLAY_ENTRIES: number = 8;

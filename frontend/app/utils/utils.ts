@@ -14,6 +14,28 @@ const parseAccounts = (response: unknown): string[] =>
         : [];
 
 /**
+ * Appends a new history entry and enforces a maximum entry count.
+ *
+ * @param {string[]} previousEntries Existing history entries.
+ * @param {string} nextEntry New entry to append.
+ * @param {number} maxEntries Maximum number of entries to keep.
+ * @returns {string[]} Updated history entries capped to maxEntries.
+ */
+export const appendCappedHistoryEntry = (
+    previousEntries: string[],
+    nextEntry: string,
+    maxEntries: number,
+): string[] => {
+    const entriesAfterAppend: string[] = [...previousEntries, nextEntry];
+
+    if (entriesAfterAppend.length <= maxEntries) {
+        return entriesAfterAppend;
+    }
+
+    return entriesAfterAppend.slice(entriesAfterAppend.length - maxEntries);
+};
+
+/**
  * Checks if the currently connected wallet account is the contract owner.
  *
  * If no account is connected, triggers MetaMask connection prompt first.
