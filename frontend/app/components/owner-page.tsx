@@ -193,9 +193,12 @@ export function OwnerPage(): ReactNode {
         }
     };
 
-    const isOwnerActionDisabled: boolean = isCheckingWalletOwnership || !isOwner;
-    const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isStartGameLoading || gameInfo?.gameActive === true;
-    const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isEndGameLoading || gameInfo?.gameActive !== true;
+    const isOwnerBlocked: boolean = isCheckingWalletOwnership || !isOwner;
+    const isGameActive: boolean = gameInfo?.gameActive === true;
+    const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading;
+
+    const isStartDisabled: boolean = isOwnerBlocked || isUiBusy || isGameActive;
+    const isEndDisabled: boolean = isOwnerBlocked || isUiBusy || !isGameActive;
 
     return (
         <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
@@ -229,7 +232,7 @@ export function OwnerPage(): ReactNode {
                 </Button>
 
                 {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
-                <Button size="md" color="secondary" isDisabled={isOwnerActionDisabled} data-testid="owner-collect-fee">
+                <Button size="md" color="secondary" isDisabled={isOwnerBlocked} data-testid="owner-collect-fee">
                     Collect fee
                 </Button>
 
@@ -243,7 +246,7 @@ export function OwnerPage(): ReactNode {
                         <Button
                             size="md"
                             color="secondary"
-                            isDisabled={isOwnerActionDisabled}
+                            isDisabled={isOwnerBlocked}
                             data-testid="owner-game-info"
                             onClick={(): void => {
                                 void handleGameInfoClick();
@@ -265,7 +268,7 @@ export function OwnerPage(): ReactNode {
                         <Button
                             size="md"
                             color="secondary"
-                            isDisabled={isOwnerActionDisabled}
+                            isDisabled={isOwnerBlocked}
                             data-testid="owner-get-balance"
                             onClick={(): void => {
                                 void handleOwnerBalanceClick();
