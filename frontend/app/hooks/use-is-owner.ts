@@ -12,16 +12,19 @@ interface WindowWithEthereumEvents extends Window {
 
 interface UseIsOwnerResult {
     isOwner: boolean;
-    isLoading: boolean;
+    isCheckingWalletOwnership: boolean;
 }
 
 export function useIsOwner(): UseIsOwnerResult {
+    console.info("useIsOwner: Hook initialized");
+
     const [isOwner, setIsOwner] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isCheckingWalletOwnership, setIsCheckingWalletOwnership] = useState<boolean>(true);
 
     useEffect((): (() => void) => {
+        console.info("useIsOwner: useEffect triggered - checking wallet connection...");
         const checkOwnerStatus = async (): Promise<void> => {
-            setIsLoading(true);
+            setIsCheckingWalletOwnership(true);
 
             try {
                 const connectedAsOwner: boolean = await isOwnerConnected();
@@ -29,7 +32,7 @@ export function useIsOwner(): UseIsOwnerResult {
             } catch {
                 setIsOwner(false);
             } finally {
-                setIsLoading(false);
+                setIsCheckingWalletOwnership(false);
             }
         };
 
@@ -52,5 +55,5 @@ export function useIsOwner(): UseIsOwnerResult {
         };
     }, []);
 
-    return { isOwner, isLoading };
+    return { isOwner, isCheckingWalletOwnership };
 }

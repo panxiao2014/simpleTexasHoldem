@@ -20,6 +20,7 @@ function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
 
     useEffect((): void => {
+        console.info("App: useEffect triggered - checking wallet connection...");
         async function initWalletConnection(): Promise<void> {
             const ownerConnected: boolean = await isOwnerConnected();
             if (ownerConnected) {

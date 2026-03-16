@@ -32,7 +32,7 @@ import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
  * @returns {ReactNode} The owner control panel section.
  */
 export function OwnerPage(): ReactNode {
-    const { isOwner, isLoading } = useIsOwner();
+    const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
@@ -40,6 +40,16 @@ export function OwnerPage(): ReactNode {
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
 
+    const syncGameInfoState = async (): Promise<void> => {
+        try {
+            const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
+            setGameInfo(latestGameInfo);
+        } catch (error: unknown) {
+            console.error("Failed to sync game info state.", error);
+        }
+    };
+
+    // Loads current game info once on component mount and avoids state updates after unmount.
     useEffect((): (() => void) => {
         let isMounted: boolean = true;
 
@@ -87,12 +97,14 @@ export function OwnerPage(): ReactNode {
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
+                await syncGameInfoState();
             } else {
                 console.log("Start game succeeded.", {
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
+                await syncGameInfoState();
             }
 
         } catch (error: unknown) {
@@ -140,12 +152,14 @@ export function OwnerPage(): ReactNode {
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                 });
+                await syncGameInfoState();
             } else {
                 console.log("End game succeeded.", {
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                     events: endGameResult.events,
                 });
+                await syncGameInfoState();
             }
         } catch (error: unknown) {
             console.error("End game failed.", error);
@@ -179,7 +193,7 @@ export function OwnerPage(): ReactNode {
         }
     };
 
-    const isOwnerActionDisabled: boolean = isLoading || !isOwner;
+    const isOwnerActionDisabled: boolean = isCheckingWalletOwnership || !isOwner;
     const isStartDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isStartGameLoading || gameInfo?.gameActive === true;
     const isEndDisabled: boolean = isOwnerActionDisabled || isGameInfoLoading || isEndGameLoading || gameInfo?.gameActive !== true;
 
