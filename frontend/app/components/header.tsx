@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { type Key, type ReactNode } from "react";
 import { gameRules } from "../rules";
 import { FaGithub } from "react-icons/fa";
 import { HelpTextModal } from "./help-text-modal";
@@ -14,13 +14,14 @@ interface HeaderProps {
 const modeItems: Array<{ id: GameMode; label: string }> = [
     { id: GAME_MODES.OWNER, label: "Owner" },
     { id: GAME_MODES.PLAYER, label: "Player" },
+    { id: GAME_MODES.CARDS, label: "Cards" },
 ];
 
 /**
  * Header component for the Texas Hold'em application.
  *
  * Displays a navigation bar with:
- * - Game mode selector (Owner/Player) on the left
+ * - Game mode selector (Owner/Player/Cards) on the left
  * - Help modal and GitHub link on the right
  *
  * @component
@@ -38,7 +39,7 @@ export function Header({ gameMode, onGameModeChange }: HeaderProps): ReactNode {
                 aria-label="Select game mode"
                 data-testid="game-mode-select"
                 value={gameMode}
-                onChange={(key) => onGameModeChange(key as GameMode)}
+                onChange={(key: Key) => onGameModeChange(key as GameMode)}
                 items={modeItems}
                 size="sm"
                 className="w-36"

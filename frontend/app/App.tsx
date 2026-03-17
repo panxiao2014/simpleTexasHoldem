@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { CardsPage } from "./components/cards-page";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
@@ -18,6 +19,14 @@ import { isOwnerConnected } from "./utils/utils";
  */
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
+
+    let currentPage: ReactNode = <OwnerPage />;
+
+    if (gameMode === GAME_MODES.PLAYER) {
+        currentPage = <PlayerPage />;
+    } else if (gameMode === GAME_MODES.CARDS) {
+        currentPage = <CardsPage />;
+    }
 
     useEffect((): void => {
         console.info("App: useEffect triggered - checking wallet connection...");
@@ -42,10 +51,8 @@ function App(): ReactNode {
 
             <main className="flex min-h-screen pt-16" data-testid="app-main">
 
-                {/* Render OwnerPage when the current mode is owner; otherwise show PlayerPage. */}
-                {gameMode === GAME_MODES.OWNER ? <OwnerPage /> : <PlayerPage />}
-
-                <section className="flex-1" data-testid="app-content-spacer" />
+                {/* Render the page that matches the current selected mode. */}
+                {currentPage}
 
             </main>
 
