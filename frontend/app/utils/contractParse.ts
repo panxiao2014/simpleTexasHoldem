@@ -22,6 +22,14 @@ export function formatCurrentGameInfoText(currentInfo: CurrentGameInfo): string 
     ].join("\n");
 }
 
+export function formatHouseFeesText(feesWei: bigint): string {
+    const feesEth: string = formatEther(feesWei);
+    return [
+        `Accumulated House Fees (wei): ${feesWei.toString()}`,
+        `Accumulated House Fees (ETH): ${feesEth}`,
+    ].join("\n");
+}
+
 export function formatBalanceInfoText(address: string, balanceWei: bigint): string {
     const balanceEth: string = formatEther(balanceWei);
     return [

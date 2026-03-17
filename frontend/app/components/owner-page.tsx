@@ -3,6 +3,7 @@ import { Button } from "../../src/components/base/buttons/button";
 
 import { 
     endGame,
+    getAccumulatedHouseFees,
     getCurrentGameInfo,
     getNativeBalance,
     startGame,
@@ -12,7 +13,8 @@ import {
 import { 
     type CurrentGameInfo,
     formatCurrentGameInfoText,
-    formatBalanceInfoText
+    formatBalanceInfoText,
+    formatHouseFeesText
 } from "../utils/contractParse";
 
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
@@ -39,6 +41,7 @@ export function OwnerPage(): ReactNode {
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
+    const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
 
@@ -174,6 +177,19 @@ export function OwnerPage(): ReactNode {
         }
     };
 
+    const handleHouseFeeClick = async (): Promise<void> => {
+        setHouseFeeModalText("Loading accumulated house fees...");
+
+        try {
+            const fees: bigint = await getAccumulatedHouseFees();
+            setHouseFeeModalText(formatHouseFeesText(fees));
+            console.log("House fees loaded.", { status: "success", fees });
+        } catch (error: unknown) {
+            setHouseFeeModalText("Failed to load house fees.");
+            console.error("House fees load failed.", { status: "revert", error });
+        }
+    };
+
     const handleOwnerBalanceClick = async (): Promise<void> => {
         setOwnerBalanceModalText("Loading owner balance...");
 
@@ -237,6 +253,28 @@ export function OwnerPage(): ReactNode {
                 >
                     End game
                 </Button>
+
+                {/* Button opens shared text modal and displays accumulated house fees from the contract. */}
+                <TextDisplayModal
+                    title="House Fee"
+                    text={houseFeeModalText}
+                    trigger={(
+
+                        /* Button requests accumulated house fees before opening shared modal content. */
+                        <Button
+                            size="md"
+                            color="secondary"
+                            isDisabled={isOwnerBlocked}
+                            data-testid="owner-house-fee"
+                            onClick={(): void => {
+                                void handleHouseFeeClick();
+                            }}
+                        >
+                            House fee
+                        </Button>
+
+                    )}
+                />
 
                 {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
                 <Button size="md" color="secondary" isDisabled={isOwnerBlocked} data-testid="owner-collect-fee">

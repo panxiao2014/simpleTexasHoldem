@@ -40,4 +40,11 @@ export const SIMPLE_TEXAS_HOLDEM_ABI: Abi = [
         inputs: [],
         outputs: [],
     },
+    {
+        type: "function",
+        name: "accumulatedHouseFees",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ name: "", type: "uint256" }],
+    },
 ];

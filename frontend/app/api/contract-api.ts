@@ -193,6 +193,16 @@ export async function startGame(duration: bigint): Promise<ContractCallResult> {
     };
 }
 
+export async function getAccumulatedHouseFees(): Promise<bigint> {
+    const publicClient: PublicClient = createContractPublicClient();
+
+    return (await publicClient.readContract({
+        address: CONTRACT_ADDRESS as Address,
+        abi: SIMPLE_TEXAS_HOLDEM_ABI,
+        functionName: "accumulatedHouseFees",
+    })) as bigint;
+}
+
 export async function endGame(): Promise<ContractCallResult> {
     const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
     const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
