@@ -319,7 +319,7 @@ export function OwnerPage(): ReactNode {
                                     void handleOwnerBalanceClick();
                                 }}
                             >
-                                Check Balance
+                                Check balance
                             </Button>
 
                         )}
