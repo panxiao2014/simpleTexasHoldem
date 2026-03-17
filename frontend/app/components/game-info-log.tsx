@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TextArea } from "../../src/components/base/textarea/textarea";
+import { Button } from "../../src/components/base/buttons/button";
 import { MAX_GAME_HIST_ENTRIES, MAX_GAME_HIST_DISPLAY_ENTRIES } from "../utils/gameConfig";
 import { appendCappedHistoryEntry } from "../utils/utils";
 
@@ -49,6 +50,11 @@ export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
     const [entries, setEntries] = useState<string[]>((): string[] => loadEntriesFromStorage(storageKey));
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
+    const handleClearClick = (): void => {
+        setEntries([]);
+        localStorage.removeItem(storageKey);
+    };
+
     useEffect((): void => {
         setEntries(loadEntriesFromStorage(storageKey));
     }, [storageKey]);
@@ -83,7 +89,19 @@ export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
 
     return (
         <section className="rounded-lg border border-secondary bg-primary p-4" data-testid="game-info-log">
-            <h3 className="mb-3 text-sm font-semibold text-primary">Game History</h3>
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-primary">Game History</h3>
+
+                <Button
+                    size="sm"
+                    color="secondary"
+                    isDisabled={entries.length === 0}
+                    data-testid="game-info-log-clear"
+                    onClick={handleClearClick}
+                >
+                    Clear
+                </Button>
+            </div>
 
             {/* TextArea displays read-only history and keeps vertical scrolling for older entries. */}
             <TextArea
