@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TextArea } from "../../src/components/base/textarea/textarea";
-import { STORAGE_KEY, MAX_GAME_HIST_ENTRIES, MAX_GAME_HIST_DISPLAY_ENTRIES } from "../utils/gameConfig";
+import { MAX_GAME_HIST_ENTRIES, MAX_GAME_HIST_DISPLAY_ENTRIES } from "../utils/gameConfig";
 import { appendCappedHistoryEntry } from "../utils/utils";
 
 
 // Reads persisted log entries from localStorage.
 // Returns an empty array if no entries exist or parsing fails.
-const loadEntriesFromStorage = (): string[] => {
+const loadEntriesFromStorage = (storageKey: string): string[] => {
     try {
-        const stored: string | null = localStorage.getItem(STORAGE_KEY);
+        const stored: string | null = localStorage.getItem(storageKey);
         if (stored === null) {
             return [];
         }
@@ -24,6 +24,7 @@ const loadEntriesFromStorage = (): string[] => {
 
 type GameInfoLogProps = {
     info: string;
+    storageKey: string;
 };
 
 /**
@@ -36,7 +37,7 @@ type GameInfoLogProps = {
  *
  * Props:
  * - `info` (string): Latest game info message to append to the log when it changes.
- *
+ * - `storageKey` (string): localStorage key used to persist/reload history for this page.
  * Usage:
  * Render this component in a page and pass new info strings over time (for example, "Game started").
  * The component keeps older entries and auto-scrolls to the latest message.
@@ -44,9 +45,13 @@ type GameInfoLogProps = {
  * @param {GameInfoLogProps} props - Game info log props.
  * @returns {ReactNode} A titled, scrollable game info log display.
  */
-export function GameInfoLog({ info }: GameInfoLogProps): ReactNode {
-    const [entries, setEntries] = useState<string[]>(loadEntriesFromStorage);
+export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
+    const [entries, setEntries] = useState<string[]>((): string[] => loadEntriesFromStorage(storageKey));
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    useEffect((): void => {
+        setEntries(loadEntriesFromStorage(storageKey));
+    }, [storageKey]);
 
     useEffect((): void => {
         const trimmedInfo: string = info.trim();
@@ -65,8 +70,8 @@ export function GameInfoLog({ info }: GameInfoLogProps): ReactNode {
 
     // Persists entries to localStorage so history survives page reloads and browser close/reopen.
     useEffect((): void => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    }, [entries]);
+        localStorage.setItem(storageKey, JSON.stringify(entries));
+    }, [entries, storageKey]);
 
     useEffect((): void => {
         if (textAreaRef.current !== null) {

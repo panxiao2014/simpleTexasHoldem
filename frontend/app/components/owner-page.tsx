@@ -21,7 +21,7 @@ import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
-import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
+import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
 
 /**
  * OwnerPage component for contract owner controls.
@@ -331,7 +331,7 @@ export function OwnerPage(): ReactNode {
             <section className="w-[28rem] px-4 py-6" data-testid="owner-game-info-panel">
 
                 {/* GameInfoLog shows timestamped game action history in a scrollable read-only panel. */}
-                <GameInfoLog info={latestGameActionInfo} />
+                <GameInfoLog info={latestGameActionInfo} storageKey={OWNER_STORAGE_KEY} />
 
             </section>
         </>
