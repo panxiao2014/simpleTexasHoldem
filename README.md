@@ -20,10 +20,6 @@ A simplified Texas Hold'em project with:
 - pnpm 9+
 - MetaMask (for browser wallet interaction)
 
-## Notes
-- The frontend reads/writes game state through the configured contract address and ABI in `frontend/app/api`.
-- Owner and player logs are persisted separately via storage keys in `frontend/app/utils/gameConfig.ts`.
-
 ## Additional Documentation
 - Architecture: `ARCHITECTURE.md`
 - Frontend notes: `frontend/READMD.md`
