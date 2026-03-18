@@ -167,7 +167,7 @@ export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
     return gameInfo;
 }
 
-export async function startGame(duration: bigint): Promise<ContractCallResult> {
+export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
     const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
     const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
     const account: Address = await getConnectedAccount();
@@ -203,7 +203,7 @@ export async function getAccumulatedHouseFees(): Promise<bigint> {
     })) as bigint;
 }
 
-export async function endGame(): Promise<ContractCallResult> {
+export async function endGameApi(): Promise<ContractCallResult> {
     const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
     const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
     const account: Address = await getConnectedAccount();

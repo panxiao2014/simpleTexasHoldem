@@ -2,11 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 
 import { 
-    endGame,
+    endGameApi,
     getAccumulatedHouseFees,
     getCurrentGameInfo,
     getNativeBalance,
-    startGame,
+    startGameApi,
     type ContractCallResult
 } from "../api/contract-api";
 
@@ -88,7 +88,7 @@ export function OwnerPage(): ReactNode {
         setIsStartGameLoading(true);
 
         try {
-            const startGameResult: ContractCallResult = await startGame(DEFAULT_GAME_DURATION_SECONDS);
+            const startGameResult: ContractCallResult = await startGameApi(DEFAULT_GAME_DURATION_SECONDS);
             const isSuccessStatus: boolean = startGameResult.status === "success";
 
             if (!isSuccessStatus) {
@@ -145,7 +145,7 @@ export function OwnerPage(): ReactNode {
         setIsEndGameLoading(true);
 
         try {
-            const endGameResult: ContractCallResult = await endGame();
+            const endGameResult: ContractCallResult = await endGameApi();
             const isSuccessStatus: boolean = endGameResult.status === "success";
 
             if (!isSuccessStatus) {
