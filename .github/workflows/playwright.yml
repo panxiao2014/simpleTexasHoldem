@@ -20,6 +20,15 @@ jobs:
       run: npm install -g pnpm
     - name: Install dependencies
       run: pnpm install
+
+    #this is needed to avoid errors related to missing api key during tests, since the tests will import the api key file, but it is not committed to the repo for security reasons. In CI, we can create a fake api key file with dummy values to allow the tests to run without errors.
+    - name: Create fake api key file for CI
+      run: |
+        mkdir -p keys
+        cat > keys/api-keys.ts <<'EOF'
+        export const METAMASK_INFURA_API_KEY: string = "ci-fake-key";
+        EOF
+        
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
     - name: Run Playwright tests
