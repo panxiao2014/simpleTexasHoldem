@@ -14,7 +14,7 @@ import {
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { USING_CHAIN } from "../utils/gameConfig";
+import { USING_CHAIN } from "../utils/netConfig";
 import { type CurrentGameInfo } from "../utils/contractParse";
 
 interface EthereumProvider {
