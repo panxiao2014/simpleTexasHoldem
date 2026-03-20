@@ -66,7 +66,7 @@ export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
             return;
         }
 
-        const timestamp: string = new Date().toLocaleTimeString();
+        const timestamp: string = new Date().toLocaleString();
         const prefixedInfo: string = `[${timestamp}] ${trimmedInfo}`;
 
         setEntries((previousEntries: string[]): string[] => {
