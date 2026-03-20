@@ -2,6 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
+import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api";
+//import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api2";
 
 /**
  * PlayerPage component for the player mode area.
@@ -15,7 +17,30 @@ import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
  * @returns {ReactNode} The player page section.
  */
 export function PlayerPage(): ReactNode {
-    const [latestGameActionInfo] = useState<string>("");
+    const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
+    const [isJoining, setIsJoining] = useState<boolean>(false);
+
+    async function handleJoinGame(): Promise<void> {
+        setIsJoining(true);
+        try {
+            const result: JoinGameApiResult = await joinGameApi();
+            const stage: string = result.stage;
+
+            if (result.success) {
+                const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
+                setLatestGameActionInfo(eventText);
+            } else {
+                const errorMsg: string = result.message ?? "Failed to join game.";
+                setLatestGameActionInfo(`${stage}: Join reverted: ${errorMsg}`);
+            }
+        } catch (error: unknown) {
+            const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
+            console.error("[PlayerPage] handleJoinGame unexpected error:", error);
+            setLatestGameActionInfo(`Join failed: ${message}`);
+        } finally {
+            setIsJoining(false);
+        }
+    }
 
     return (
         <>
@@ -26,6 +51,9 @@ export function PlayerPage(): ReactNode {
                 <Button
                     size="md"
                     data-testid="player-join-game"
+                    isLoading={isJoining}
+                    disabled={isJoining}
+                    onClick={handleJoinGame}
                 >
                     Join game
                 </Button>
