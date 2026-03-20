@@ -68,7 +68,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Constructor_ETHMode() public view {
         // setUp() already created ETH mode contract, just verify it
-        assertTrue(game.useETH());
+        assertTrue(game.useEth());
         assertEq(game.currentGameId(), 0);
         assertFalse(game.gameActive());
     }

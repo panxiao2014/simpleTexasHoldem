@@ -42,7 +42,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     // ============ State Variables ============
     
     // Packed slot 1: Booleans (3 bytes total, fit in 1 slot)
-    bool public useETH;              // 1 byte - If true, use ETH instead of ERC20 token
+    bool public useEth;              // 1 byte - If true, use ETH instead of ERC20 token
     bool public gameActive;          // 1 byte - Is there an active game?
     bool public gamePaused;          // 1 byte - Emergency pause
     
@@ -129,10 +129,10 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      */
     constructor(address _gameToken) Ownable(msg.sender) {
         if (_gameToken == address(0)) {
-            useETH = true;
+            useEth = true;
         } else {
             gameToken = IERC20(_gameToken);
-            useETH = false;
+            useEth = false;
         }
         currentGameId = 0; // Will increment to 1 on first game
         gameActive = false;
@@ -326,7 +326,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         
         uint256 actualBetAmount;
         
-        if (useETH) {
+        if (useEth) {
             if (msg.value == 0) revert MustBetSome();
             actualBetAmount = msg.value;
         } else {
@@ -557,7 +557,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      * @param amount Amount to transfer
      */
     function _transferTokens(address to, uint256 amount) internal {
-        if (useETH) {
+        if (useEth) {
             (bool success, ) = payable(to).call{value: amount}("");
             if (!success) revert TransferFailed();
         } else {

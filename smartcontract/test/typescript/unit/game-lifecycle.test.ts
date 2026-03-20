@@ -207,8 +207,8 @@ describe("Game Lifecycle", () => {
     });
 
     it("Should be in ETH mode", async () => {
-      const useETH = await game.read.useETH();
-      assert.equal(useETH, true, "Should use ETH");
+      const useEth = await game.read.useEth();
+      assert.equal(useEth, true, "Should use ETH");
     });
 
     it("Should have zero accumulated fees initially", async () => {
