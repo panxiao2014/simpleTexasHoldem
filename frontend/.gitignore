@@ -24,6 +24,9 @@ dist-ssr
 *.sw?
 .env
 
+# API keys — keep out of version control
+keys/*
+
 # Playwright
 /test-results/
 /playwright-report/

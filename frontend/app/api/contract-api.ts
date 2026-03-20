@@ -4,6 +4,7 @@ import {
     custom,
     decodeEventLog,
     type Address,
+    type Chain,
     type Hash,
     type PublicClient,
     type TransactionReceipt,
@@ -13,7 +14,7 @@ import {
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { HARDHAT_CHAIN } from "../utils/gameConfig";
+import { USING_CHAIN } from "../utils/gameConfig";
 import { type CurrentGameInfo } from "../utils/contractParse";
 
 interface EthereumProvider {
@@ -39,7 +40,9 @@ export interface ContractCallResult {
     events: ContractEventLog[];
 }
 
-function createContractPublicClient(): PublicClient<Transport, typeof HARDHAT_CHAIN> {
+export function createContractPublicClient(
+    chain: Chain
+): PublicClient<Transport, Chain> {
     const { ethereum } = window as WindowWithEthereum;
 
     if (ethereum === undefined) {
@@ -47,12 +50,14 @@ function createContractPublicClient(): PublicClient<Transport, typeof HARDHAT_CH
     }
 
     return createPublicClient({
-        chain: HARDHAT_CHAIN,
+        chain,
         transport: custom(ethereum),
     });
 }
 
-function createContractWalletClient(): WalletClient<Transport, typeof HARDHAT_CHAIN> {
+export function createContractWalletClient(
+    chain: Chain
+): WalletClient<Transport, Chain> {
     const { ethereum } = window as WindowWithEthereum;
 
     if (ethereum === undefined) {
@@ -60,7 +65,7 @@ function createContractWalletClient(): WalletClient<Transport, typeof HARDHAT_CH
     }
 
     return createWalletClient({
-        chain: HARDHAT_CHAIN,
+        chain,
         transport: custom(ethereum),
     });
 }
@@ -113,14 +118,14 @@ function extractDecodedEvents(receipt: TransactionReceipt): ContractEventLog[] {
     return decodedEvents;
 }
 
-async function getConnectedAccount(): Promise<Address> {
+export async function getConnectedAccount(): Promise<Address> {
     const { ethereum } = window as WindowWithEthereum;
 
     if (ethereum === undefined) {
         throw new Error("Wallet provider not found.");
     }
 
-    const walletClient: WalletClient = createContractWalletClient();
+    const walletClient: WalletClient = createContractWalletClient(USING_CHAIN);
     let accounts: readonly Address[] = await walletClient.getAddresses();
 
     if (accounts.length === 0) {
@@ -138,12 +143,12 @@ async function getConnectedAccount(): Promise<Address> {
 }
 
 export async function getNativeBalance(address: Address): Promise<bigint> {
-    const publicClient: PublicClient = createContractPublicClient();
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
     return await publicClient.getBalance({ address });
 }
 
 export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
-    const publicClient: PublicClient = createContractPublicClient();
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
 
     const result: readonly [bigint, bigint, bigint, bigint, bigint, bigint, boolean] =
         (await publicClient.readContract({
@@ -168,8 +173,8 @@ export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
 }
 
 export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
-    const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
-    const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
+    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN);
+    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN);
     const account: Address = await getConnectedAccount();
 
     const transactionHash: Hash = await walletClient.writeContract({
@@ -194,7 +199,7 @@ export async function startGameApi(duration: bigint): Promise<ContractCallResult
 }
 
 export async function getAccumulatedHouseFees(): Promise<bigint> {
-    const publicClient: PublicClient = createContractPublicClient();
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
 
     return (await publicClient.readContract({
         address: CONTRACT_ADDRESS as Address,
@@ -204,8 +209,8 @@ export async function getAccumulatedHouseFees(): Promise<bigint> {
 }
 
 export async function endGameApi(): Promise<ContractCallResult> {
-    const walletClient: WalletClient<Transport, typeof HARDHAT_CHAIN> = createContractWalletClient();
-    const publicClient: PublicClient<Transport, typeof HARDHAT_CHAIN> = createContractPublicClient();
+    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN);
+    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN);
     const account: Address = await getConnectedAccount();
 
     const transactionHash: Hash = await walletClient.writeContract({
