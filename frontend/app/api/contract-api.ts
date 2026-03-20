@@ -14,7 +14,7 @@ import {
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { USING_CHAIN } from "../utils/netConfig";
+import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { type CurrentGameInfo } from "../utils/contractParse";
 
 interface EthereumProvider {
@@ -125,7 +125,7 @@ export async function getConnectedAccount(): Promise<Address> {
         throw new Error("Wallet provider not found.");
     }
 
-    const walletClient: WalletClient = createContractWalletClient(USING_CHAIN);
+    const walletClient: WalletClient = createContractWalletClient(USING_CHAIN_CONFIG.chain);
     let accounts: readonly Address[] = await walletClient.getAddresses();
 
     if (accounts.length === 0) {
@@ -143,12 +143,12 @@ export async function getConnectedAccount(): Promise<Address> {
 }
 
 export async function getNativeBalance(address: Address): Promise<bigint> {
-    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     return await publicClient.getBalance({ address });
 }
 
 export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
-    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
 
     const result: readonly [bigint, bigint, bigint, bigint, bigint, bigint, boolean] =
         (await publicClient.readContract({
@@ -173,8 +173,8 @@ export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
 }
 
 export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
-    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN);
-    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN);
+    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
+    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const account: Address = await getConnectedAccount();
 
     const transactionHash: Hash = await walletClient.writeContract({
@@ -199,7 +199,7 @@ export async function startGameApi(duration: bigint): Promise<ContractCallResult
 }
 
 export async function getAccumulatedHouseFees(): Promise<bigint> {
-    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN);
+    const publicClient: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
 
     return (await publicClient.readContract({
         address: CONTRACT_ADDRESS as Address,
@@ -209,8 +209,8 @@ export async function getAccumulatedHouseFees(): Promise<bigint> {
 }
 
 export async function endGameApi(): Promise<ContractCallResult> {
-    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN);
-    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN);
+    const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
+    const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const account: Address = await getConnectedAccount();
 
     const transactionHash: Hash = await walletClient.writeContract({

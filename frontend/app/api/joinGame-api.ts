@@ -15,11 +15,11 @@ import {
 } from "viem";
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { USING_CHAIN } from "../utils/netConfig";
+import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./contract-api";
 
 function extractRevertReason(err: unknown): string {
-    console.error('Furr error object:', JSON.stringify(err, (key, value) => {
+    console.error('Full error object:', JSON.stringify(err, (key, value) => {
         if (typeof value === 'bigint') return value.toString();
         return value;
     }, 2));
@@ -53,8 +53,8 @@ export type JoinGameApiResult = {
 };
 
 export async function joinGameApi(): Promise<JoinGameApiResult> {
-    const walletClient: WalletClient<Transport, typeof USING_CHAIN> = createContractWalletClient(USING_CHAIN);
-    const publicClient: PublicClient<Transport, typeof USING_CHAIN> = createContractPublicClient(USING_CHAIN);
+    const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
+    const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const connectedAccount: Address = await getConnectedAccount();
 
     try {

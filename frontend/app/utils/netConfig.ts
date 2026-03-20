@@ -1,8 +1,13 @@
-import { defineChain } from 'viem'
+import { defineChain, type Chain } from 'viem'
 import { sepolia } from 'viem/chains'
 import { METAMASK_INFURA_API_KEY } from '../../keys/api-keys'
 
-export const SEPOLIA_CHAIN = defineChain({
+type ChainConfig = {
+  chain: Chain;
+  chainId: number;
+};
+
+const SEPOLIA_CHAIN = defineChain({
     ...sepolia,
     rpcUrls: {
         default: {
@@ -11,7 +16,12 @@ export const SEPOLIA_CHAIN = defineChain({
     },
 });
 
-export const HARDHAT_CHAIN = defineChain({
+const SEPOLIA_CHAIN_CONFIG: ChainConfig = {
+  chain: SEPOLIA_CHAIN,
+  chainId: SEPOLIA_CHAIN.id,
+};
+
+const HARDHAT_CHAIN = defineChain({
   id: 31337,
   name: 'Hardhat',
   network: 'hardhat',
@@ -25,6 +35,11 @@ export const HARDHAT_CHAIN = defineChain({
       http: ['http://127.0.0.1:8545'],
     },
   },
-})
+});
 
-export const USING_CHAIN = HARDHAT_CHAIN;
+const HARDHAT_CHAIN_CONFIG: ChainConfig = {
+  chain: HARDHAT_CHAIN,
+  chainId: HARDHAT_CHAIN.id,
+};
+
+export const USING_CHAIN_CONFIG = SEPOLIA_CHAIN_CONFIG;
