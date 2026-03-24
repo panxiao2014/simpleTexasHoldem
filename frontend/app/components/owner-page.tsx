@@ -23,6 +23,8 @@ import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
 
+import { formatLogString } from "../utils/utils";
+
 /**
  * OwnerPage component for contract owner controls.
  *
@@ -102,7 +104,7 @@ export function OwnerPage(): ReactNode {
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
-                setLatestGameActionInfo("Game started");
+                setLatestGameActionInfo(formatLogString("Game started"));
                 await syncGameInfoState();
             } else {
                 console.log("Start game succeeded.", {
@@ -110,7 +112,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
-                setLatestGameActionInfo("Game started");
+                setLatestGameActionInfo(formatLogString("Game started"));
                 await syncGameInfoState();
             }
 
@@ -159,7 +161,7 @@ export function OwnerPage(): ReactNode {
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                 });
-                setLatestGameActionInfo("Game ended");
+                setLatestGameActionInfo(formatLogString("Game ended"));
                 await syncGameInfoState();
             } else {
                 console.log("End game succeeded.", {
@@ -167,7 +169,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: endGameResult.transactionHash,
                     events: endGameResult.events,
                 });
-                setLatestGameActionInfo("Game ended");
+                setLatestGameActionInfo(formatLogString("Game ended"));
                 await syncGameInfoState();
             }
         } catch (error: unknown) {

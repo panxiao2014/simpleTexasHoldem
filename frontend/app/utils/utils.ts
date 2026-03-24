@@ -14,6 +14,17 @@ const parseAccounts = (response: unknown): string[] =>
         : [];
 
 /**
+ * Formats a log string by prepending a timestamp.
+ *
+ * @param {string} message The raw log message to format.
+ * @returns {string} The message prefixed with a locale timestamp, e.g. "[3/24/2026, 10:00:00 AM] message".
+ */
+export const formatLogString = (message: string): string => {
+    const timestamp: string = new Date().toLocaleString();
+    return `[${timestamp}] ${message}`;
+};
+
+/**
  * Appends a new history entry and enforces a maximum entry count.
  *
  * @param {string[]} previousEntries Existing history entries.

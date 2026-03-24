@@ -66,11 +66,8 @@ export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
             return;
         }
 
-        const timestamp: string = new Date().toLocaleString();
-        const prefixedInfo: string = `[${timestamp}] ${trimmedInfo}`;
-
         setEntries((previousEntries: string[]): string[] => {
-            return appendCappedHistoryEntry(previousEntries, prefixedInfo, MAX_GAME_HIST_ENTRIES);
+            return appendCappedHistoryEntry(previousEntries, trimmedInfo, MAX_GAME_HIST_ENTRIES);
         });
     }, [info]);
 

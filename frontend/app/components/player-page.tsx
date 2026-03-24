@@ -4,6 +4,7 @@ import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
 import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api";
 //import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api2";
+import { formatLogString } from "../utils/utils";
 
 /**
  * PlayerPage component for the player mode area.
@@ -28,15 +29,15 @@ export function PlayerPage(): ReactNode {
 
             if (result.success) {
                 const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
-                setLatestGameActionInfo(eventText);
+                setLatestGameActionInfo(formatLogString(eventText));
             } else {
                 const errorMsg: string = result.message ?? "Failed to join game.";
-                setLatestGameActionInfo(`${stage}: Join reverted: ${errorMsg}`);
+                setLatestGameActionInfo(formatLogString(`${stage}: Join reverted: ${errorMsg}`));
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
             console.error("[PlayerPage] handleJoinGame unexpected error:", error);
-            setLatestGameActionInfo(`Join failed: ${message}`);
+            setLatestGameActionInfo(formatLogString(`Join failed: ${message}`));
         } finally {
             setIsJoining(false);
         }
