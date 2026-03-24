@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   console.log(`Contract owner (deployer): ${ownerAddress}`);
 
   //write contract info to frontend file
-  writeContractInfoFile(contractAddress, ownerAddress);
+  //writeContractInfoFile(contractAddress, ownerAddress);
 }
 
 main().catch((error: unknown): void => {
