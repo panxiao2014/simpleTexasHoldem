@@ -17,13 +17,15 @@ import {
     formatHouseFeesText
 } from "../utils/contractParse";
 
-import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
+import { CONTRACT_ADDRESS, CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
+import { subscribeToSimpleTexasHoldemEvents } from "../events/contract-event";
 
 import { formatLogString } from "../utils/utils";
+import type { Address } from "viem";
 
 /**
  * OwnerPage component for contract owner controls.
@@ -83,6 +85,15 @@ export function OwnerPage(): ReactNode {
 
         return (): void => {
             isMounted = false;
+        };
+    }, []);
+
+    // Subscribes owner page to SimpleTexasHoldem contract events and logs them in the browser console.
+    useEffect((): (() => void) => {
+        const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(CONTRACT_ADDRESS as Address);
+
+        return (): void => {
+            unsubscribe();
         };
     }, []);
 
