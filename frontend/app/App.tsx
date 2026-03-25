@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { CardsPage } from "./components/cards-page";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
+import type { PlayerInfoListItem } from "./components/player-info-list";
 import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
 import { isOwnerConnected } from "./utils/utils";
@@ -19,8 +20,14 @@ import { isOwnerConnected } from "./utils/utils";
  */
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
+    const [ownerPlayerInfoItems, setOwnerPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
 
-    let currentPage: ReactNode = <OwnerPage />;
+    let currentPage: ReactNode = (
+        <OwnerPage
+            playerInfoItems={ownerPlayerInfoItems}
+            setPlayerInfoItems={setOwnerPlayerInfoItems}
+        />
+    );
 
     if (gameMode === GAME_MODES.PLAYER) {
         currentPage = <PlayerPage />;
