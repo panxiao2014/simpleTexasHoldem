@@ -15,7 +15,7 @@ contract PokerHandEvaluatorTest {
     /**
      * @dev Create a card index from rank and suit
      * @param rank Card rank (2-14, where 14 is Ace)
-     * @param suit Card suit (0=Clubs, 1=Diamonds, 2=Hearts, 3=Spades)
+     * @param suit Card suit (0=Spades, 1=Hearts, 2=Diamonds, 3=Clubs)
      * @return cardIndex Card index (0-51)
      */
     function makeCard(uint8 rank, uint8 suit) internal pure returns (uint8) {
@@ -48,19 +48,19 @@ contract PokerHandEvaluatorTest {
     }
     
     function test_getCardSuit_AllSuits() public pure {
-        // Clubs (0)
+        // Spades (0) — cards 0-12
         assert(PokerHandEvaluator.getCardSuit(0) == 0);
         assert(PokerHandEvaluator.getCardSuit(12) == 0);
         
-        // Diamonds (1)
+        // Hearts (1) — cards 13-25
         assert(PokerHandEvaluator.getCardSuit(13) == 1);
         assert(PokerHandEvaluator.getCardSuit(25) == 1);
         
-        // Hearts (2)
+        // Diamonds (2) — cards 26-38
         assert(PokerHandEvaluator.getCardSuit(26) == 2);
         assert(PokerHandEvaluator.getCardSuit(38) == 2);
         
-        // Spades (3)
+        // Clubs (3) — cards 39-51
         assert(PokerHandEvaluator.getCardSuit(39) == 3);
         assert(PokerHandEvaluator.getCardSuit(51) == 3);
     }
@@ -70,11 +70,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_HighCard() public pure {
         // High card: A-K-Q-J-9 (different suits, no straight)
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(13, 1), // King of Diamonds
-            makeCard(12, 2), // Queen of Hearts
-            makeCard(11, 3), // Jack of Spades
-            makeCard(9, 0)   // 9 of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(13, 2), // King of Diamonds
+            makeCard(12, 1), // Queen of Hearts
+            makeCard(11, 0), // Jack of Spades
+            makeCard(9, 3)   // 9 of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -86,11 +86,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_OnePair() public pure {
         // One pair: A-A-K-Q-J
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(14, 1), // Ace of Diamonds
-            makeCard(13, 2), // King of Hearts
-            makeCard(12, 3), // Queen of Spades
-            makeCard(11, 0)  // Jack of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(14, 2), // Ace of Diamonds
+            makeCard(13, 1), // King of Hearts
+            makeCard(12, 0), // Queen of Spades
+            makeCard(11, 3)  // Jack of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -102,11 +102,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_TwoPair() public pure {
         // Two pair: A-A-K-K-Q
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(14, 1), // Ace of Diamonds
-            makeCard(13, 2), // King of Hearts
-            makeCard(13, 3), // King of Spades
-            makeCard(12, 0)  // Queen of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(14, 2), // Ace of Diamonds
+            makeCard(13, 1), // King of Hearts
+            makeCard(13, 0), // King of Spades
+            makeCard(12, 3)  // Queen of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -118,11 +118,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_ThreeOfAKind() public pure {
         // Three of a kind: A-A-A-K-Q
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(14, 1), // Ace of Diamonds
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(13, 3), // King of Spades
-            makeCard(12, 0)  // Queen of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(14, 2), // Ace of Diamonds
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(13, 0), // King of Spades
+            makeCard(12, 3)  // Queen of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -134,11 +134,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_Straight() public pure {
         // Straight: 10-9-8-7-6 (different suits)
         uint8[5] memory cards = [
-            makeCard(10, 0), // 10 of Clubs
-            makeCard(9, 1),  // 9 of Diamonds
-            makeCard(8, 2),  // 8 of Hearts
-            makeCard(7, 3),  // 7 of Spades
-            makeCard(6, 0)   // 6 of Clubs
+            makeCard(10, 3), // 10 of Clubs
+            makeCard(9, 2),  // 9 of Diamonds
+            makeCard(8, 1),  // 8 of Hearts
+            makeCard(7, 0),  // 7 of Spades
+            makeCard(6, 3)   // 6 of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -150,11 +150,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_Straight_AceLow() public pure {
         // Ace-low straight: A-2-3-4-5 (wheel)
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(2, 1),  // 2 of Diamonds
-            makeCard(3, 2),  // 3 of Hearts
-            makeCard(4, 3),  // 4 of Spades
-            makeCard(5, 0)   // 5 of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(2, 2),  // 2 of Diamonds
+            makeCard(3, 1),  // 3 of Hearts
+            makeCard(4, 0),  // 4 of Spades
+            makeCard(5, 3)   // 5 of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -166,11 +166,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_Flush() public pure {
         // Flush: A-K-Q-J-9 all hearts (not a straight)
         uint8[5] memory cards = [
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(13, 2), // King of Hearts
-            makeCard(12, 2), // Queen of Hearts
-            makeCard(11, 2), // Jack of Hearts
-            makeCard(9, 2)   // 9 of Hearts
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(13, 1), // King of Hearts
+            makeCard(12, 1), // Queen of Hearts
+            makeCard(11, 1), // Jack of Hearts
+            makeCard(9, 1)   // 9 of Hearts
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -182,11 +182,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_FullHouse() public pure {
         // Full house: A-A-A-K-K
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(14, 1), // Ace of Diamonds
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(13, 3), // King of Spades
-            makeCard(13, 0)  // King of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(14, 2), // Ace of Diamonds
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(13, 0), // King of Spades
+            makeCard(13, 3)  // King of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -198,11 +198,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_FourOfAKind() public pure {
         // Four of a kind: A-A-A-A-K
         uint8[5] memory cards = [
-            makeCard(14, 0), // Ace of Clubs
-            makeCard(14, 1), // Ace of Diamonds
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(14, 3), // Ace of Spades
-            makeCard(13, 0)  // King of Clubs
+            makeCard(14, 3), // Ace of Clubs
+            makeCard(14, 2), // Ace of Diamonds
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(14, 0), // Ace of Spades
+            makeCard(13, 3)  // King of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -214,11 +214,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_StraightFlush() public pure {
         // Straight flush: 10-9-8-7-6 all hearts
         uint8[5] memory cards = [
-            makeCard(10, 2), // 10 of Hearts
-            makeCard(9, 2),  // 9 of Hearts
-            makeCard(8, 2),  // 8 of Hearts
-            makeCard(7, 2),  // 7 of Hearts
-            makeCard(6, 2)   // 6 of Hearts
+            makeCard(10, 1), // 10 of Hearts
+            makeCard(9, 1),  // 9 of Hearts
+            makeCard(8, 1),  // 8 of Hearts
+            makeCard(7, 1),  // 7 of Hearts
+            makeCard(6, 1)   // 6 of Hearts
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -230,11 +230,11 @@ contract PokerHandEvaluatorTest {
     function test_evaluateFiveCardHand_RoyalFlush() public pure {
         // Royal flush: A-K-Q-J-10 all spades
         uint8[5] memory cards = [
-            makeCard(14, 3), // Ace of Spades
-            makeCard(13, 3), // King of Spades
-            makeCard(12, 3), // Queen of Spades
-            makeCard(11, 3), // Jack of Spades
-            makeCard(10, 3)  // 10 of Spades
+            makeCard(14, 0), // Ace of Spades
+            makeCard(13, 0), // King of Spades
+            makeCard(12, 0), // Queen of Spades
+            makeCard(11, 0), // Jack of Spades
+            makeCard(10, 0)  // 10 of Spades
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -249,12 +249,12 @@ contract PokerHandEvaluatorTest {
     function test_tiebreaker_HigherPairWins() public pure {
         // Pair of Aces vs Pair of Kings
         uint8[5] memory acePair = [
-            makeCard(14, 0), makeCard(14, 1), 
-            makeCard(10, 2), makeCard(9, 3), makeCard(8, 0)
+            makeCard(14, 3), makeCard(14, 2), 
+            makeCard(10, 1), makeCard(9, 0), makeCard(8, 3)
         ];
         uint8[5] memory kingPair = [
-            makeCard(13, 0), makeCard(13, 1), 
-            makeCard(10, 2), makeCard(9, 3), makeCard(8, 0)
+            makeCard(13, 3), makeCard(13, 2), 
+            makeCard(10, 1), makeCard(9, 0), makeCard(8, 3)
         ];
         
         (, uint256 aceValue) = PokerHandEvaluator.evaluateFiveCardHand(acePair);
@@ -266,12 +266,12 @@ contract PokerHandEvaluatorTest {
     function test_tiebreaker_SamePairHigherKicker() public pure {
         // Pair of Aces with King kicker vs Pair of Aces with Queen kicker
         uint8[5] memory aceKingKicker = [
-            makeCard(14, 0), makeCard(14, 1), 
-            makeCard(13, 2), makeCard(10, 3), makeCard(9, 0)
+            makeCard(14, 3), makeCard(14, 2), 
+            makeCard(13, 1), makeCard(10, 0), makeCard(9, 3)
         ];
         uint8[5] memory aceQueenKicker = [
-            makeCard(14, 0), makeCard(14, 1), 
-            makeCard(12, 2), makeCard(10, 3), makeCard(9, 0)
+            makeCard(14, 3), makeCard(14, 2), 
+            makeCard(12, 1), makeCard(10, 0), makeCard(9, 3)
         ];
         
         (, uint256 kingValue) = PokerHandEvaluator.evaluateFiveCardHand(aceKingKicker);
@@ -287,15 +287,15 @@ contract PokerHandEvaluatorTest {
         // Board: Q-J-10 (spades), 2-3 (clubs)
         // Best hand: Royal Flush (A-K-Q-J-10 of spades) - uses both hole cards
         uint8[2] memory holeCards = [
-            makeCard(14, 3), // Ace of Spades
-            makeCard(13, 3)  // King of Spades
+            makeCard(14, 0), // Ace of Spades
+            makeCard(13, 0)  // King of Spades
         ];
         uint8[5] memory boardCards = [
-            makeCard(12, 3), // Queen of Spades
-            makeCard(11, 3), // Jack of Spades
-            makeCard(10, 3), // 10 of Spades
-            makeCard(2, 0),  // 2 of Clubs
-            makeCard(3, 0)   // 3 of Clubs
+            makeCard(12, 0), // Queen of Spades
+            makeCard(11, 0), // Jack of Spades
+            makeCard(10, 0), // 10 of Spades
+            makeCard(2, 3),  // 2 of Clubs
+            makeCard(3, 3)   // 3 of Clubs
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -309,15 +309,15 @@ contract PokerHandEvaluatorTest {
         // Board: A-K-Q-J-10 all hearts (royal flush on board)
         // Best hand: Straight flush (using all 5 board cards)
         uint8[2] memory holeCards = [
-            makeCard(2, 0), // 2 of Clubs
-            makeCard(3, 1)  // 3 of Diamonds
+            makeCard(2, 3), // 2 of Clubs
+            makeCard(3, 2)  // 3 of Diamonds
         ];
         uint8[5] memory boardCards = [
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(13, 2), // King of Hearts
-            makeCard(12, 2), // Queen of Hearts
-            makeCard(11, 2), // Jack of Hearts
-            makeCard(10, 2)  // 10 of Hearts
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(13, 1), // King of Hearts
+            makeCard(12, 1), // Queen of Hearts
+            makeCard(11, 1), // Jack of Hearts
+            makeCard(10, 1)  // 10 of Hearts
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -331,15 +331,15 @@ contract PokerHandEvaluatorTest {
         // Board: 3-4-5 of hearts, K of clubs, 7 of diamonds
         // Best hand: Straight flush (A-2-3-4-5 of hearts)
         uint8[2] memory holeCards = [
-            makeCard(14, 2), // Ace of Hearts
-            makeCard(2, 2)   // 2 of Hearts
+            makeCard(14, 1), // Ace of Hearts
+            makeCard(2, 1)   // 2 of Hearts
         ];
         uint8[5] memory boardCards = [
-            makeCard(3, 2),  // 3 of Hearts
-            makeCard(4, 2),  // 4 of Hearts
-            makeCard(5, 2),  // 5 of Hearts
-            makeCard(13, 0), // King of Clubs
-            makeCard(7, 1)   // 7 of Diamonds
+            makeCard(3, 1),  // 3 of Hearts
+            makeCard(4, 1),  // 4 of Hearts
+            makeCard(5, 1),  // 5 of Hearts
+            makeCard(13, 3), // King of Clubs
+            makeCard(7, 2)   // 7 of Diamonds
         ];
         
         (PokerHandEvaluator.HandRank rank, ) = 
@@ -380,12 +380,12 @@ contract PokerHandEvaluatorTest {
     
     function test_handComparison_StraightFlushBeatsQuads() public pure {
         uint8[5] memory straightFlush = [
-            makeCard(10, 2), makeCard(9, 2), makeCard(8, 2), 
-            makeCard(7, 2), makeCard(6, 2)
+            makeCard(10, 1), makeCard(9, 1), makeCard(8, 1), 
+            makeCard(7, 1), makeCard(6, 1)
         ];
         uint8[5] memory fourOfKind = [
-            makeCard(14, 0), makeCard(14, 1), makeCard(14, 2), 
-            makeCard(14, 3), makeCard(13, 0)
+            makeCard(14, 3), makeCard(14, 2), makeCard(14, 1), 
+            makeCard(14, 0), makeCard(13, 3)
         ];
         
         (PokerHandEvaluator.HandRank rank1, ) = PokerHandEvaluator.evaluateFiveCardHand(straightFlush);
@@ -396,12 +396,12 @@ contract PokerHandEvaluatorTest {
     
     function test_handComparison_FullHouseBeatsFlush() public pure {
         uint8[5] memory fullHouse = [
-            makeCard(10, 0), makeCard(10, 1), makeCard(10, 2),
-            makeCard(9, 3), makeCard(9, 0)
+            makeCard(10, 3), makeCard(10, 2), makeCard(10, 1),
+            makeCard(9, 0), makeCard(9, 3)
         ];
         uint8[5] memory flush = [
-            makeCard(14, 2), makeCard(13, 2), makeCard(11, 2),
-            makeCard(9, 2), makeCard(7, 2)
+            makeCard(14, 1), makeCard(13, 1), makeCard(11, 1),
+            makeCard(9, 1), makeCard(7, 1)
         ];
         
         (PokerHandEvaluator.HandRank rank1, ) = PokerHandEvaluator.evaluateFiveCardHand(fullHouse);

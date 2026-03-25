@@ -44,7 +44,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     /**
      * @dev Create card index from rank and suit
      * @param rank 2-14 (2-10, J=11, Q=12, K=13, A=14)
-     * @param suit 0=Clubs, 1=Diamonds, 2=Hearts, 3=Spades
+     * @param suit 0=Spades, 1=Hearts, 2=Diamonds, 3=Clubs
      */
     function makeCard(uint8 rank, uint8 suit) internal pure returns (uint8) {
         require(rank >= 2 && rank <= 14, "Invalid rank");
@@ -63,15 +63,15 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         // Board: Q♠ J♠ 10♠ K♣ Q♣
         
         uint8[] memory cards = new uint8[](9);
-        cards[0] = makeCard(14, 3); // A♠
-        cards[1] = makeCard(13, 3); // K♠
-        cards[2] = makeCard(13, 2); // K♥
-        cards[3] = makeCard(13, 1); // K♦
-        cards[4] = makeCard(12, 3); // Q♠
-        cards[5] = makeCard(11, 3); // J♠
-        cards[6] = makeCard(10, 3); // 10♠
-        cards[7] = makeCard(13, 0); // K♣
-        cards[8] = makeCard(12, 0); // Q♣
+        cards[0] = makeCard(14, 0); // A♠
+        cards[1] = makeCard(13, 0); // K♠
+        cards[2] = makeCard(13, 1); // K♥
+        cards[3] = makeCard(13, 2); // K♦
+        cards[4] = makeCard(12, 0); // Q♠
+        cards[5] = makeCard(11, 0); // J♠
+        cards[6] = makeCard(10, 0); // 10♠
+        cards[7] = makeCard(13, 3); // K♣
+        cards[8] = makeCard(12, 3); // Q♣
         
         vm.prank(owner);
         game.setTestCards(cards);
@@ -111,15 +111,15 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         // Board: 7♣ 6♣ 5♣ 2♦ 3♦ (both make 9-high straight: 9-8-7-6-5)
         
         uint8[] memory cards = new uint8[](9);
-        cards[0] = makeCard(9, 3);  // 9♠
-        cards[1] = makeCard(8, 3);  // 8♠
-        cards[2] = makeCard(9, 2);  // 9♥
-        cards[3] = makeCard(8, 2);  // 8♥
-        cards[4] = makeCard(7, 0);  // 7♣
-        cards[5] = makeCard(6, 0);  // 6♣
-        cards[6] = makeCard(5, 0);  // 5♣
-        cards[7] = makeCard(2, 1);  // 2♦
-        cards[8] = makeCard(3, 1);  // 3♦
+        cards[0] = makeCard(9, 0);  // 9♠
+        cards[1] = makeCard(8, 0);  // 8♠
+        cards[2] = makeCard(9, 1);  // 9♥
+        cards[3] = makeCard(8, 1);  // 8♥
+        cards[4] = makeCard(7, 3);  // 7♣
+        cards[5] = makeCard(6, 3);  // 6♣
+        cards[6] = makeCard(5, 3);  // 5♣
+        cards[7] = makeCard(2, 2);  // 2♦
+        cards[8] = makeCard(3, 2);  // 3♦
         
         vm.prank(owner);
         game.setTestCards(cards);
@@ -159,15 +159,15 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         // Board: 7♣ 4♦ 2♠ 9♥ 3♣ (rainbow, no help)
         
         uint8[] memory cards = new uint8[](9);
-        cards[0] = makeCard(14, 3); // A♠
-        cards[1] = makeCard(14, 2); // A♥
-        cards[2] = makeCard(13, 3); // K♠
-        cards[3] = makeCard(13, 2); // K♥
-        cards[4] = makeCard(7, 0);  // 7♣
-        cards[5] = makeCard(4, 1);  // 4♦
-        cards[6] = makeCard(2, 3);  // 2♠
-        cards[7] = makeCard(9, 2);  // 9♥
-        cards[8] = makeCard(3, 0);  // 3♣
+        cards[0] = makeCard(14, 0); // A♠
+        cards[1] = makeCard(14, 1); // A♥
+        cards[2] = makeCard(13, 0); // K♠
+        cards[3] = makeCard(13, 1); // K♥
+        cards[4] = makeCard(7, 3);  // 7♣
+        cards[5] = makeCard(4, 2);  // 4♦
+        cards[6] = makeCard(2, 0);  // 2♠
+        cards[7] = makeCard(9, 1);  // 9♥
+        cards[8] = makeCard(3, 3);  // 3♣
         
         vm.prank(owner);
         game.setTestCards(cards);
@@ -206,17 +206,17 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         // All players make spade flush with A-high
         
         uint8[] memory cards = new uint8[](11);
-        cards[0] = makeCard(2, 3);  // 2♠
-        cards[1] = makeCard(3, 3);  // 3♠
-        cards[2] = makeCard(2, 2);  // 2♥
-        cards[3] = makeCard(3, 2);  // 3♥
-        cards[4] = makeCard(2, 1);  // 2♦
-        cards[5] = makeCard(3, 1);  // 3♦
-        cards[6] = makeCard(14, 3); // A♠
-        cards[7] = makeCard(13, 3); // K♠
-        cards[8] = makeCard(12, 3); // Q♠
-        cards[9] = makeCard(11, 3); // J♠
-        cards[10] = makeCard(10, 3); // 10♠
+        cards[0] = makeCard(2, 0);  // 2♠
+        cards[1] = makeCard(3, 0);  // 3♠
+        cards[2] = makeCard(2, 1);  // 2♥
+        cards[3] = makeCard(3, 1);  // 3♥
+        cards[4] = makeCard(2, 2);  // 2♦
+        cards[5] = makeCard(3, 2);  // 3♦
+        cards[6] = makeCard(14, 0); // A♠
+        cards[7] = makeCard(13, 0); // K♠
+        cards[8] = makeCard(12, 0); // Q♠
+        cards[9] = makeCard(11, 0); // J♠
+        cards[10] = makeCard(10, 0); // 10♠
         
         vm.prank(owner);
         game.setTestCards(cards);

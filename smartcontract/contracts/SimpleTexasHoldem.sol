@@ -611,7 +611,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Get card suit (0-3: Clubs, Diamonds, Hearts, Spades)
+     * @dev Get card suit (0-3: Spades, Hearts, Diamonds, Clubs)
      * @param cardIndex Card index (0-51)
      * @return suit Card suit (0-3)
      */

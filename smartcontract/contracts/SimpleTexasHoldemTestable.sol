@@ -39,9 +39,9 @@ contract SimpleTexasHoldemTestable is SimpleTexasHoldem {
      * - Cards 0-51 represent all cards in deck
      * - cardIndex = (rank - 2) + (suit * 13)
      * - Ranks: 2-14 (2-10, J=11, Q=12, K=13, A=14)
-     * - Suits: 0=Clubs, 1=Diamonds, 2=Hearts, 3=Spades
+     * - Suits: 0=Spades, 1=Hearts, 2=Diamonds, 3=Clubs
      * 
-     * Example: A♠ = (14-2) + (3*13) = 12 + 39 = 51
+     * Example: A♠ = (14-2) + (0*13) = 12 + 0 = 12
      * 
      * Card dealing order:
      * 1-2: Player1 hole cards
