@@ -29,10 +29,10 @@ export function PlayerPage(): ReactNode {
 
             if (result.success) {
                 const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
-                setLatestGameActionInfo(formatLogString(eventText));
+                setLatestGameActionInfo(formatLogString(eventText, stage));
             } else {
                 const errorMsg: string = result.message ?? "Failed to join game.";
-                setLatestGameActionInfo(formatLogString(`${stage}: Join reverted: ${errorMsg}`));
+                setLatestGameActionInfo(formatLogString(`Join reverted: ${errorMsg}`, stage));
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
