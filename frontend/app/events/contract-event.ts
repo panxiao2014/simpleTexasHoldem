@@ -15,6 +15,38 @@ type DecodedEventLog = {
     args: unknown;
 };
 
+interface BaseParsedEvent {
+    eventName: SupportedEventName;
+}
+
+interface PlayerJoinedParsedEvent extends BaseParsedEvent {
+    eventName: "PlayerJoined";
+    gameId: bigint;
+    player: Address;
+    holeCards: readonly [bigint, bigint];
+}
+
+interface PlayerFoldedParsedEvent extends BaseParsedEvent {
+    eventName: "PlayerFolded";
+    gameId: bigint;
+    player: Address;
+    returnedCards: readonly [bigint, bigint];
+}
+
+interface PlayerBetParsedEvent extends BaseParsedEvent {
+    eventName: "PlayerBet";
+    gameId: bigint;
+    player: Address;
+    amount: bigint;
+}
+
+export type ParsedSimpleTexasHoldemEvent =
+    | PlayerJoinedParsedEvent
+    | PlayerFoldedParsedEvent
+    | PlayerBetParsedEvent;
+
+export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
@@ -22,6 +54,41 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isSupportedEventName(eventName: string | undefined): eventName is SupportedEventName {
     return eventName === "PlayerJoined" || eventName === "PlayerFolded" || eventName === "PlayerBet";
+}
+
+function isAddressValue(value: unknown): value is Address {
+    return typeof value === "string";
+}
+
+function isBigIntValue(value: unknown): value is bigint {
+    return typeof value === "bigint";
+}
+
+function toCardBigInt(value: unknown): bigint | undefined {
+    if (typeof value === "bigint") {
+        return value;
+    }
+
+    if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 51) {
+        return BigInt(value);
+    }
+
+    return undefined;
+}
+
+function parseCardPair(value: unknown): readonly [bigint, bigint] | undefined {
+    if (!Array.isArray(value) || value.length !== 2) {
+        return undefined;
+    }
+
+    const first: bigint | undefined = toCardBigInt(value[0]);
+    const second: bigint | undefined = toCardBigInt(value[1]);
+
+    if (first === undefined || second === undefined) {
+        return undefined;
+    }
+
+    return [first, second] as const;
 }
 
 
@@ -34,9 +101,11 @@ function isSupportedEventName(eventName: string | undefined): eventName is Suppo
  * - PlayerBet: gameId, player, amount
  *
  * @param {readonly Log[]} logs Logs received from watchContractEvent callback.
- * @returns {void} No return value.
+ * @returns {ParsedSimpleTexasHoldemEvent[]} Parsed events with event-specific payload fields.
  */
-export function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): void {
+function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexasHoldemEvent[] {
+    const parsedEvents: ParsedSimpleTexasHoldemEvent[] = [];
+
     for (const log of logs) {
         try {
             const parsedLog: DecodedEventLog = decodeEventLog({
@@ -68,11 +137,33 @@ export function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): void {
                 const gameId: unknown = args.gameId;
                 const player: unknown = args.player;
                 const holeCards: unknown = args.holeCards;
-                console.log("[parseSimpleTexasHoldemEventLogs] PlayerJoined args:", {
+
+                if (!isBigIntValue(gameId) || !isAddressValue(player)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerJoined payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedHoleCards: readonly [bigint, bigint] | undefined = parseCardPair(holeCards);
+                if (parsedHoleCards === undefined) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid holeCards payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: PlayerJoinedParsedEvent = {
+                    eventName,
                     gameId,
                     player,
-                    holeCards,
-                });
+                    holeCards: parsedHoleCards,
+                };
+
+                parsedEvents.push(parsedEvent);
+                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
             }
 
@@ -80,22 +171,57 @@ export function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): void {
                 const gameId: unknown = args.gameId;
                 const player: unknown = args.player;
                 const returnedCards: unknown = args.returnedCards;
-                console.log("[parseSimpleTexasHoldemEventLogs] PlayerFolded args:", {
+
+                if (!isBigIntValue(gameId) || !isAddressValue(player)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerFolded payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedReturnedCards: readonly [bigint, bigint] | undefined = parseCardPair(returnedCards);
+                if (parsedReturnedCards === undefined) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid returnedCards payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: PlayerFoldedParsedEvent = {
+                    eventName,
                     gameId,
                     player,
-                    returnedCards,
-                });
+                    returnedCards: parsedReturnedCards,
+                };
+
+                parsedEvents.push(parsedEvent);
+                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
             }
 
             const gameId: unknown = args.gameId;
             const player: unknown = args.player;
             const amount: unknown = args.amount;
-            console.log("[parseSimpleTexasHoldemEventLogs] PlayerBet args:", {
+
+            if (!isBigIntValue(gameId) || !isAddressValue(player) || !isBigIntValue(amount)) {
+                console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerBet payload:", {
+                    eventName,
+                    args,
+                });
+                continue;
+            }
+
+            const parsedEvent: PlayerBetParsedEvent = {
+                eventName,
                 gameId,
                 player,
                 amount,
-            });
+            };
+
+            parsedEvents.push(parsedEvent);
+            console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
         } catch (error: unknown) {
             console.warn("[parseSimpleTexasHoldemEventLogs] Failed to decode event log:", {
                 error,
@@ -103,23 +229,33 @@ export function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): void {
             });
         }
     }
+
+    return parsedEvents;
 }
 
 /**
- * Subscribes to SimpleTexasHoldem contract events and logs each received event to the console.
+ * Subscribes to SimpleTexasHoldem contract events and forwards parsed results to a callback.
  *
  * @param {Address} contractAddress Contract address of SimpleTexasHoldem.
+ * @param {OnParsedSimpleTexasHoldemEvents} [onParsedEvents] Optional callback invoked with parsed events on each batch.
  * @returns {() => void} Cleanup function that unsubscribes the event watcher.
  */
-export function subscribeToSimpleTexasHoldemEvents(contractAddress: Address): () => void {
+export function subscribeToSimpleTexasHoldemEvents(
+    contractAddress: Address,
+    onParsedEvents?: OnParsedSimpleTexasHoldemEvents,
+): () => void {
     try {
         const client: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
 
         const unwatch = client.watchContractEvent({
             address: contractAddress,
             abi: SIMPLE_TEXAS_HOLDEM_ABI,
-            onLogs: (logs): void => {
-                parseSimpleTexasHoldemEventLogs(logs);
+            onLogs: (logs: readonly Log[]): void => {
+                const parsedEvents: ParsedSimpleTexasHoldemEvent[] = parseSimpleTexasHoldemEventLogs(logs);
+
+                if (typeof onParsedEvents === "function" && parsedEvents.length > 0) {
+                    onParsedEvents(parsedEvents);
+                }
             },
             onError: (error: Error): void => {
                 console.error("[SimpleTexasHoldem] Event watch failed:", error);

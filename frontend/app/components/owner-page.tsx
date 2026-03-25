@@ -22,9 +22,13 @@ import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
-import { subscribeToSimpleTexasHoldemEvents } from "../events/contract-event";
+import {
+    subscribeToSimpleTexasHoldemEvents,
+    type ParsedSimpleTexasHoldemEvent,
+    type OnParsedSimpleTexasHoldemEvents,
+} from "../events/contract-event";
 
-import { formatLogString } from "../utils/utils";
+import { formatLogString, getCardComponentKeyFromIndex } from "../utils/utils";
 import type { Address } from "viem";
 
 /**
@@ -88,9 +92,36 @@ export function OwnerPage(): ReactNode {
         };
     }, []);
 
-    // Subscribes owner page to SimpleTexasHoldem contract events and logs them in the browser console.
+    // Subscribes owner page to SimpleTexasHoldem contract events and updates the game action log.
     useEffect((): (() => void) => {
-        const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(CONTRACT_ADDRESS as Address);
+        const handleParsedEvents: OnParsedSimpleTexasHoldemEvents = (
+            events: ParsedSimpleTexasHoldemEvent[],
+        ): void => {
+            for (const event of events) {
+                if (event.eventName === "PlayerJoined") {
+                    const card0: string = getCardComponentKeyFromIndex(Number(event.holeCards[0]));
+                    const card1: string = getCardComponentKeyFromIndex(Number(event.holeCards[1]));
+                    setLatestGameActionInfo(
+                        formatLogString(`player=${event.player}, cards=[${card0}, ${card1}]`, "PlayerJoined"),
+                    );
+                } else if (event.eventName === "PlayerFolded") {
+                    const card0: string = getCardComponentKeyFromIndex(Number(event.returnedCards[0]));
+                    const card1: string = getCardComponentKeyFromIndex(Number(event.returnedCards[1]));
+                    setLatestGameActionInfo(
+                        formatLogString(`player=${event.player}, returned=[${card0}, ${card1}]`, "PlayerFolded"),
+                    );
+                } else if (event.eventName === "PlayerBet") {
+                    setLatestGameActionInfo(
+                        formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
+                    );
+                }
+            }
+        };
+
+        const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(
+            CONTRACT_ADDRESS as Address,
+            handleParsedEvents,
+        );
 
         return (): void => {
             unsubscribe();
