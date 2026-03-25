@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
+import { getCardComponentKey } from "../utils/utils";
 
 type CardKey = string;
 
@@ -11,12 +12,6 @@ const ranks: string[] = [
 
 const cardGridStyle: CSSProperties = {
     gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))",
-};
-
-const getCardComponentKey = (rank: string, suit: string): string => {
-    const normalizedRank: string = rank === "10" ? rank : rank.toLowerCase();
-
-    return `${suit}${normalizedRank}`;
 };
 
 /**
