@@ -21,6 +21,7 @@ import { CONTRACT_ADDRESS, CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo"
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
+import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
 import {
     subscribeToSimpleTexasHoldemEvents,
@@ -52,6 +53,7 @@ export function OwnerPage(): ReactNode {
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
+    const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
 
     const syncGameInfoState = async (): Promise<void> => {
         try {
@@ -101,6 +103,27 @@ export function OwnerPage(): ReactNode {
                 if (event.eventName === "PlayerJoined") {
                     const card0: string = getCardComponentKeyFromIndex(Number(event.holeCards[0]));
                     const card1: string = getCardComponentKeyFromIndex(Number(event.holeCards[1]));
+
+                    // Add new player info item only if the player is not already in the list.
+                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
+                        const isAlreadyInList: boolean = prevItems.some(
+                            (item: PlayerInfoListItem): boolean => item.player === event.player,
+                        );
+
+                        if (isAlreadyInList) {
+                            return prevItems;
+                        }
+
+                        return [
+                            ...prevItems,
+                            {
+                                player: event.player,
+                                holeCards: [card0, card1],
+                                betAmount: BigInt(0),
+                            },
+                        ];
+                    });
+
                     setLatestGameActionInfo(
                         formatLogString(`player=${event.player}, cards=[${card0}, ${card1}]`, "PlayerJoined"),
                     );
@@ -377,6 +400,8 @@ export function OwnerPage(): ReactNode {
                 {/* GameInfoLog shows timestamped game action history in a scrollable read-only panel. */}
                 <GameInfoLog info={latestGameActionInfo} storageKey={OWNER_STORAGE_KEY} />
 
+                {/* PlayerInfoList shows live player rows from parsed contract events. */}
+                <PlayerInfoList items={playerInfoItems} />
             </section>
         </>
     );
