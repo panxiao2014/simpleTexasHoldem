@@ -16,7 +16,7 @@ import {
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
-import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./contract-api";
+import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 
 function extractRevertReason(err: unknown): string {
     console.error('Full error object:', JSON.stringify(err, (key, value) => {

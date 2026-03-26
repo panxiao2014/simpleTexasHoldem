@@ -5,7 +5,7 @@ import {
     type PublicClient,
 } from "viem";
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
-import { createContractPublicClient } from "../api/contract-api";
+import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 
 type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet";

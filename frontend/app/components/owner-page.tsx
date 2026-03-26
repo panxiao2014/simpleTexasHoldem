@@ -5,10 +5,10 @@ import {
     endGameApi,
     getAccumulatedHouseFees,
     getCurrentGameInfo,
-    getNativeBalance,
     startGameApi,
     type ContractCallResult
 } from "../api/contract-api";
+import { getNativeBalance } from "../api/ether-api";
 
 import { 
     type CurrentGameInfo,
