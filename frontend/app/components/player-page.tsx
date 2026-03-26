@@ -24,6 +24,7 @@ import type { Address } from "viem";
 export function PlayerPage(): ReactNode {
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
     const [isJoining, setIsJoining] = useState<boolean>(false);
+    const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
 
     async function handleJoinGame(): Promise<void> {
@@ -35,14 +36,17 @@ export function PlayerPage(): ReactNode {
             if (result.success) {
                 const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
                 setLatestGameActionInfo(formatLogString(eventText, stage));
+                setIsJoinedGame(true);
             } else {
                 const errorMsg: string = result.message ?? "Failed to join game.";
                 setLatestGameActionInfo(formatLogString(`Join reverted: ${errorMsg}`, stage));
+                setIsJoinedGame(false);
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
             console.error("[PlayerPage] handleJoinGame unexpected error:", error);
             setLatestGameActionInfo(formatLogString(`Join failed: ${message}`));
+            setIsJoinedGame(false);
         } finally {
             setIsJoining(false);
         }
@@ -83,7 +87,7 @@ export function PlayerPage(): ReactNode {
                     size="md"
                     data-testid="player-join-game"
                     isLoading={isJoining}
-                    disabled={isJoining}
+                    isDisabled={isJoining || isJoinedGame}
                     onClick={handleJoinGame}
                 >
                     Join game
@@ -94,6 +98,7 @@ export function PlayerPage(): ReactNode {
                     size="md"
                     color="secondary"
                     data-testid="player-fold"
+                    isDisabled={!isJoinedGame}
                 >
                     Fold
                 </Button>
@@ -103,6 +108,7 @@ export function PlayerPage(): ReactNode {
                     size="md"
                     color="secondary"
                     data-testid="player-bet"
+                    isDisabled={!isJoinedGame}
                 >
                     Bet
                 </Button>
