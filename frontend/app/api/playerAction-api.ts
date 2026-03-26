@@ -3,7 +3,6 @@ Contract interaction API for joining a game of Simple Texas Hold'em. This module
 */
 
 import {
-    decodeErrorResult,
     decodeEventLog,
     BaseError,
     ContractFunctionRevertedError,

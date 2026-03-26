@@ -92,33 +92,6 @@ export async function isOwnerConnected(): Promise<boolean> {
 }
 
 
-async function getConnectedAccount(): Promise<string | null> {
-    const { ethereum } = window as WindowWithEthereum;
-
-    if (ethereum === undefined) {
-        console.info("Wallet not detected");
-        return null;
-    }
-
-    try {
-        const accounts: string[] = parseAccounts(
-            await ethereum.request({ method: "eth_accounts" }),
-        );
-
-        if (accounts.length > 0) {
-            const address: string = accounts[0];
-            console.info(`getConnectedAccount account: ${address}`);
-            return address;
-        }
-
-        console.error("getConnectedAccount no accounts found");
-        return null;
-    } catch (error) {
-        console.error("getConnectedAccount error occurred: ", error);
-        return null;
-    }
-}
-
 
 /* *************************  Poker card utilities  ************************* */
 /**
