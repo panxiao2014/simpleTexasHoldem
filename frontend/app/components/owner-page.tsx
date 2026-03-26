@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 
 import { 
@@ -21,7 +21,6 @@ import { CONTRACT_ADDRESS, CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo"
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoLog } from "./game-info-log";
-import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
 import {
     subscribeToSimpleTexasHoldemEvents,
@@ -32,25 +31,18 @@ import {
 import { formatLogString, getCardComponentKeyFromIndex } from "../utils/utils";
 import type { Address } from "viem";
 
-interface OwnerPageProps {
-    playerInfoItems: PlayerInfoListItem[];
-    setPlayerInfoItems: Dispatch<SetStateAction<PlayerInfoListItem[]>>;
-}
-
 /**
  * OwnerPage component for contract owner controls.
  *
  * Renders the owner-only sidebar actions used to manage the game.
- * Props:
- * - `playerInfoItems` (PlayerInfoListItem[]): current owner-visible player info rows.
- * - `setPlayerInfoItems` (Dispatch<SetStateAction<PlayerInfoListItem[]>>): setter for updating owner player info rows.
+ * Props: none.
  *
  * Usage:
  * Render this component when the selected game mode is owner.
  *
  * @returns {ReactNode} The owner control panel section.
  */
-export function OwnerPage({ playerInfoItems, setPlayerInfoItems }: OwnerPageProps): ReactNode {
+export function OwnerPage(): ReactNode {
     const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
@@ -60,7 +52,6 @@ export function OwnerPage({ playerInfoItems, setPlayerInfoItems }: OwnerPageProp
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
-    const playerInfoItemsRef = useRef<PlayerInfoListItem[]>([]);
 
     const syncGameInfoState = async (): Promise<void> => {
         try {
@@ -101,10 +92,6 @@ export function OwnerPage({ playerInfoItems, setPlayerInfoItems }: OwnerPageProp
         };
     }, []);
 
-    useEffect((): void => {
-        playerInfoItemsRef.current = playerInfoItems;
-    }, [playerInfoItems]);
-
     // Subscribes owner page to SimpleTexasHoldem contract events and updates the game action log.
     useEffect((): (() => void) => {
         const handleParsedEvents: OnParsedSimpleTexasHoldemEvents = (
@@ -114,23 +101,6 @@ export function OwnerPage({ playerInfoItems, setPlayerInfoItems }: OwnerPageProp
                 if (event.eventName === "PlayerJoined") {
                     const card0: string = getCardComponentKeyFromIndex(Number(event.holeCards[0]));
                     const card1: string = getCardComponentKeyFromIndex(Number(event.holeCards[1]));
-
-                    const playerAlreadyExists: boolean = playerInfoItemsRef.current.some(
-                        (item: PlayerInfoListItem): boolean => item.player.toLowerCase() === event.player.toLowerCase(),
-                    );
-
-                    if (!playerAlreadyExists) {
-                        const nextItem: PlayerInfoListItem = {
-                            player: event.player,
-                            holeCards: [card0, card1],
-                            betAmount: 0n,
-                        };
-
-                        const nextItems: PlayerInfoListItem[] = [...playerInfoItemsRef.current, nextItem];
-                        playerInfoItemsRef.current = nextItems;
-                        setPlayerInfoItems(nextItems);
-                    }
-
                     setLatestGameActionInfo(
                         formatLogString(`player=${event.player}, cards=[${card0}, ${card1}]`, "PlayerJoined"),
                     );
@@ -406,9 +376,6 @@ export function OwnerPage({ playerInfoItems, setPlayerInfoItems }: OwnerPageProp
 
                 {/* GameInfoLog shows timestamped game action history in a scrollable read-only panel. */}
                 <GameInfoLog info={latestGameActionInfo} storageKey={OWNER_STORAGE_KEY} />
-
-                {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                <PlayerInfoList items={playerInfoItems} />
 
             </section>
         </>
