@@ -3,8 +3,12 @@ import { Button } from "../../src/components/base/buttons/button";
 import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
 import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api";
-//import { joinGameApi, type JoinGameApiResult } from "../api/joinGame-api2";
+import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
+import { formatBalanceInfoText } from "../utils/contractParse";
+
+import { TextDisplayModal } from "./text-display-modal";
+import type { Address } from "viem";
 
 /**
  * PlayerPage component for the player mode area.
@@ -20,6 +24,7 @@ import { formatLogString } from "../utils/utils";
 export function PlayerPage(): ReactNode {
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
     const [isJoining, setIsJoining] = useState<boolean>(false);
+    const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
 
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
@@ -42,6 +47,31 @@ export function PlayerPage(): ReactNode {
             setIsJoining(false);
         }
     }
+
+    const handlePlayerBalanceClick = async (): Promise<void> => {
+        setPlayerBalanceModalText("Loading player balance...");
+
+        try {
+            const account: Address = await getConnectedAccount();
+            const balance: bigint = await getConnectedAccountBalance();
+            const formattedBalance: string = formatBalanceInfoText(account, balance);
+
+            setPlayerBalanceModalText(formattedBalance);
+
+            console.log("Player balance loaded.", {
+                status: "success",
+                playerAddress: account,
+                balance: balance,
+                formattedBalance: formattedBalance,
+            });
+        } catch (error: unknown) {
+            setPlayerBalanceModalText("Failed to load player balance.");
+            console.error("Player balance load failed.", {
+                status: "revert",
+                error,
+            });
+        }
+    };
 
     return (
         <>
@@ -78,13 +108,25 @@ export function PlayerPage(): ReactNode {
                 </Button>
 
                 {/* Button opens a modal displaying the player's current wallet balance. */}
-                <Button
-                    size="md"
-                    color="secondary"
-                    data-testid="player-check-balance"
-                >
-                    Check balance
-                </Button>
+                    <TextDisplayModal
+                        title="Player Balance"
+                        text={playerBalanceModalText}
+                        trigger={(
+
+                            /* Button requests player balance before opening shared modal content. */
+                            <Button
+                                size="md"
+                                color="secondary"
+                                data-testid="player-get-balance"
+                                onClick={(): void => {
+                                    void handlePlayerBalanceClick();
+                                }}
+                            >
+                                Check balance
+                            </Button>
+
+                        )}
+                    />
 
                 </div>
             </section>

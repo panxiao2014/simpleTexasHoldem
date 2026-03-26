@@ -137,3 +137,8 @@ export async function getNativeBalance(address: Address): Promise<bigint> {
     const publicClient: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     return await publicClient.getBalance({ address });
 }
+
+export async function getConnectedAccountBalance(): Promise<bigint> {
+    const account: Address = await getConnectedAccount();
+    return await getNativeBalance(account);
+}
