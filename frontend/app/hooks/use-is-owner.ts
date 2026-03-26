@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isOwnerConnected } from "../utils/utils";
+import { isOwnerConnected } from "../utils/contractUtils";
 
 interface EthereumProviderWithEvents {
     on: (event: "accountsChanged", handler: (accounts: string[]) => void) => void;

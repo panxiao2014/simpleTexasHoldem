@@ -4,7 +4,7 @@ import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
-import { isOwnerConnected } from "./utils/utils";
+import { isOwnerConnected } from "./utils/contractUtils";
 
 /**
  * Root application component for the frontend app shell.
