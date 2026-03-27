@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
-import { GameInfoLog } from "./game-info-log";
+import { GameInfoBox } from "./game-info-box";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
 import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult, playerBetApi, type BetGameApiResult } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
@@ -221,8 +221,8 @@ export function PlayerPage(): ReactNode {
 
             <section className="w-[28rem] px-4 py-6" data-testid="player-info-panel">
 
-                {/* GameInfoLog shows timestamped game action history for player-side actions. */}
-                <GameInfoLog info={latestGameActionInfo} storageKey={PLAYER_STORAGE_KEY} />
+                {/* GameInfoBox shows game-related information lines for player-side actions. */}
+                <GameInfoBox info={latestGameActionInfo} storageKey={PLAYER_STORAGE_KEY} />
 
             </section>
         </>

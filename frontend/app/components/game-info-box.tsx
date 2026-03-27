@@ -23,13 +23,13 @@ const loadEntriesFromStorage = (storageKey: string): string[] => {
     }
 };
 
-type GameInfoLogProps = {
+type GameInfoBoxProps = {
     info: string;
     storageKey: string;
 };
 
 /**
- * GameInfoLog component for timestamped game information history.
+ * GameInfoBox component for timestamped game information history.
  *
  * Purpose:
  * Displays game info messages in a scrollable log where each entry is prefixed with a timestamp.
@@ -43,10 +43,10 @@ type GameInfoLogProps = {
  * Render this component in a page and pass new info strings over time (for example, "Game started").
  * The component keeps older entries and auto-scrolls to the latest message.
  *
- * @param {GameInfoLogProps} props - Game info log props.
+ * @param {GameInfoBoxProps} props - Game info box props.
  * @returns {ReactNode} A titled, scrollable game info log display.
  */
-export function GameInfoLog({ info, storageKey }: GameInfoLogProps): ReactNode {
+export function GameInfoBox({ info, storageKey }: GameInfoBoxProps): ReactNode {
     const [entries, setEntries] = useState<string[]>((): string[] => loadEntriesFromStorage(storageKey));
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
