@@ -22,7 +22,7 @@ import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoBox } from "./game-info-box";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
-import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY } from "../utils/gameConfig";
+import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY, CONTRACT_EVENT_STORAGE_KEY } from "../utils/gameConfig";
 import {
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
@@ -52,7 +52,13 @@ export function OwnerPage(): ReactNode {
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
-    const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
+
+    // Game logs:
+    const [latestGameLog, setLatestGameLog] = useState<string>("");
+
+    // Game events:
+    const [latestGameEvent, setLatestGameEvent] = useState<string>("");
+
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
 
     const syncGameInfoState = async (): Promise<void> => {
@@ -124,7 +130,7 @@ export function OwnerPage(): ReactNode {
                         ];
                     });
 
-                    setLatestGameActionInfo(
+                    setLatestGameEvent(
                         formatLogString(`player=${event.player}, cards=[${card0}, ${card1}]`, "PlayerJoined"),
                     );
                 } else if (event.eventName === "PlayerFolded") {
@@ -149,7 +155,7 @@ export function OwnerPage(): ReactNode {
                         );
                     });
 
-                    setLatestGameActionInfo(
+                    setLatestGameEvent(
                         formatLogString(`player=${event.player}, returned=[${card0}, ${card1}]`, "PlayerFolded"),
                     );
                 } else if (event.eventName === "PlayerBet") {
@@ -174,7 +180,7 @@ export function OwnerPage(): ReactNode {
                         );
                     });
 
-                    setLatestGameActionInfo(
+                    setLatestGameEvent(
                         formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
                     );
                 }
@@ -209,7 +215,7 @@ export function OwnerPage(): ReactNode {
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
-                setLatestGameActionInfo(formatLogString("Game started"));
+                setLatestGameLog(formatLogString("Game started"));
                 await syncGameInfoState();
             } else {
                 console.log("Start game succeeded.", {
@@ -217,7 +223,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
-                setLatestGameActionInfo(formatLogString("Game started"));
+                setLatestGameLog(formatLogString("Game started"));
                 await syncGameInfoState();
             }
 
@@ -266,7 +272,7 @@ export function OwnerPage(): ReactNode {
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                 });
-                setLatestGameActionInfo(formatLogString("Game ended"));
+                setLatestGameLog(formatLogString("Game ended"));
                 await syncGameInfoState();
             } else {
                 console.log("End game succeeded.", {
@@ -274,7 +280,7 @@ export function OwnerPage(): ReactNode {
                     transactionHash: endGameResult.transactionHash,
                     events: endGameResult.events,
                 });
-                setLatestGameActionInfo(formatLogString("Game ended"));
+                setLatestGameLog(formatLogString("Game ended"));
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
@@ -437,8 +443,15 @@ export function OwnerPage(): ReactNode {
 
             <section className="w-[28rem] px-4 py-6" data-testid="owner-game-info-panel">
 
-                {/* GameInfoBox shows game-related information lines in a scrollable read-only panel. */}
-                <GameInfoBox info={latestGameActionInfo} storageKey={OWNER_STORAGE_KEY} />
+                <div className="space-y-3">
+
+                    {/* GameInfoBox shows logs: */}
+                    <GameInfoBox info={latestGameLog} storageKey={OWNER_STORAGE_KEY} title="Game Logs" />
+
+                    {/* GameInfoBox shows contract events: */}
+                    <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />
+
+                </div>
 
                 {/* PlayerInfoList shows live player rows from parsed contract events. */}
                 <PlayerInfoList items={playerInfoItems} />

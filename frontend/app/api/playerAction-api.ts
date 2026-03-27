@@ -115,7 +115,7 @@ export async function playerJoinApi(): Promise<JoinGameApiResult> {
                     const { gameId, player, holeCards } = (decoded.args as unknown) as PlayerJoinedParsedEvent;
 
                     const message: string = `
-                        PlayerJoined Event:
+                        PlayerJoined transaction succeeded:
                         - gameId: ${gameId.toString()}
                         - player: ${player}
                         - holeCards: [${holeCards[0]}, ${holeCards[1]}]

@@ -222,7 +222,7 @@ export function PlayerPage(): ReactNode {
             <section className="w-[28rem] px-4 py-6" data-testid="player-info-panel">
 
                 {/* GameInfoBox shows game-related information lines for player-side actions. */}
-                <GameInfoBox info={latestGameActionInfo} storageKey={PLAYER_STORAGE_KEY} />
+                <GameInfoBox info={latestGameActionInfo} storageKey={PLAYER_STORAGE_KEY} title="Game Logs" />
 
             </section>
         </>

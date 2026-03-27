@@ -26,6 +26,24 @@ const loadEntriesFromStorage = (storageKey: string): string[] => {
 type GameInfoBoxProps = {
     info: string;
     storageKey: string;
+    title: string;
+};
+
+// Maps known title strings to distinct section and heading UI class sets.
+type GameInfoBoxStyle = {
+    sectionClass: string;
+    titleClass: string;
+};
+
+const GAME_INFO_BOX_STYLES: Record<string, GameInfoBoxStyle> = {
+    "Game Logs": {
+        sectionClass: "rounded-lg border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-700 dark:bg-emerald-950/30",
+        titleClass: "text-sm font-semibold text-emerald-700 dark:text-emerald-300",
+    },
+    "Contract Events": {
+        sectionClass: "rounded-lg border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-950/30",
+        titleClass: "text-sm font-semibold text-indigo-700 dark:text-indigo-300",
+    },
 };
 
 /**
@@ -39,6 +57,7 @@ type GameInfoBoxProps = {
  * Props:
  * - `info` (string): Latest game info message to append to the log when it changes.
  * - `storageKey` (string): localStorage key used to persist/reload history for this page.
+ * - `title` (string): Header text shown at the top of the box.
  * Usage:
  * Render this component in a page and pass new info strings over time (for example, "Game started").
  * The component keeps older entries and auto-scrolls to the latest message.
@@ -46,7 +65,8 @@ type GameInfoBoxProps = {
  * @param {GameInfoBoxProps} props - Game info box props.
  * @returns {ReactNode} A titled, scrollable game info log display.
  */
-export function GameInfoBox({ info, storageKey }: GameInfoBoxProps): ReactNode {
+export function GameInfoBox({ info, storageKey, title }: GameInfoBoxProps): ReactNode {
+    const { sectionClass, titleClass }: GameInfoBoxStyle = GAME_INFO_BOX_STYLES[title];
     const [entries, setEntries] = useState<string[]>((): string[] => loadEntriesFromStorage(storageKey));
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -85,9 +105,9 @@ export function GameInfoBox({ info, storageKey }: GameInfoBoxProps): ReactNode {
     const entriesText: string = entries.join("\n");
 
     return (
-        <section className="rounded-lg border border-secondary bg-primary p-4" data-testid="game-info-log">
+        <section className={sectionClass} data-testid="game-info-log">
             <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-primary">Game History</h3>
+                <h3 className={titleClass}>{title}</h3>
 
                 <Button
                     size="sm"
