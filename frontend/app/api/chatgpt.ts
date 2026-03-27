@@ -9,7 +9,7 @@ import {
     decodeEventLog,
 } from "viem";
 
-async function joinGameApi(): Promise<JoinGameApiResult> {
+async function playerJoinApi(): Promise<JoinGameApiResult> {
     try {
         // 1. 发送交易
         const hash = await walletClient.writeContract({

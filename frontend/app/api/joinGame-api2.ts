@@ -1,6 +1,6 @@
 /*
 Contract interaction API for joining a game of Simple Texas Hold'em using ethers.js.
-This module provides the `joinGameApi` function which allows a user to join an
+This module provides the `playerJoinApi` function which allows a user to join an
 active game by interacting with the smart contract. It also handles custom error
 parsing and `PlayerJoined` event decoding.
 */
@@ -131,7 +131,7 @@ function stringifyError(error: unknown): string {
 }
 
 function extractRevertReason(error: unknown, contractInterface: Interface): string {
-    console.error("ethers joinGameApi error:", stringifyError(error));
+    console.error("ethers playerJoinApi error:", stringifyError(error));
 
     if (typeof error !== "object" || error === null) {
         return error instanceof Error ? error.message : "Unknown error";
@@ -201,7 +201,7 @@ function buildPlayerJoinedMessage(log: Log, contractInterface: Interface): strin
     }
 }
 
-export async function joinGameApi(): Promise<JoinGameApiResult> {
+export async function playerJoinApi(): Promise<JoinGameApiResult> {
     const provider: BrowserProvider = await createBrowserProvider();
     const signer = await provider.getSigner();
     const ethersAbi: InterfaceAbi = SIMPLE_TEXAS_HOLDEM_ABI as unknown as InterfaceAbi;

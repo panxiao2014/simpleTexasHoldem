@@ -1,5 +1,5 @@
 /*
-Contract interaction API for joining a game of Simple Texas Hold'em. This module provides the `joinGameApi` function which allows a user to join an active game by interacting with the smart contract. It also defines error handling and event parsing related to the join game process.
+Contract interaction API for joining a game of Simple Texas Hold'em. This module provides the `playerJoinApi` function which allows a user to join an active game by interacting with the smart contract. It also defines error handling and event parsing related to the join game process.
 */
 
 import {
@@ -52,7 +52,7 @@ export type JoinGameApiResult = {
     stage: "Simulate" | "Execution";
 };
 
-export async function joinGameApi(): Promise<JoinGameApiResult> {
+export async function playerJoinApi(): Promise<JoinGameApiResult> {
     const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
     const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const connectedAccount: Address = await getConnectedAccount();
@@ -115,7 +115,7 @@ export async function joinGameApi(): Promise<JoinGameApiResult> {
                     };
                 }
             } catch (e: unknown) {
-                console.error("joinGameApi decodeEventLog error: ", e);
+                console.error("playerJoinApi decodeEventLog error: ", e);
             }
         }
 
@@ -140,7 +140,7 @@ export async function joinGameApi(): Promise<JoinGameApiResult> {
             } else {
                 return {
                     success: false,
-                    message: "joinGameApi Failed, no ContractFunctionRevertedError caught",
+                    message: "playerJoinApi Failed, no ContractFunctionRevertedError caught",
                     stage: "Execution",
                 };
             }
@@ -149,7 +149,7 @@ export async function joinGameApi(): Promise<JoinGameApiResult> {
         // 5. fallback
         return {
             success: false,
-            message: err instanceof Error ? err.message : "joinGameApi Unknown error",
+            message: err instanceof Error ? err.message : "playerJoinApi Unknown error",
             stage: "Execution",
         };
     }

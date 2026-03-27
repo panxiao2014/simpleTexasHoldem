@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
-import { joinGameApi, type JoinGameApiResult } from "../api/playerAction-api";
+import { playerJoinApi, type JoinGameApiResult } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
 import { formatBalanceInfoText } from "../utils/contractParse";
@@ -30,7 +30,7 @@ export function PlayerPage(): ReactNode {
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
         try {
-            const result: JoinGameApiResult = await joinGameApi();
+            const result: JoinGameApiResult = await playerJoinApi();
             const stage: string = result.stage;
 
             if (result.success) {

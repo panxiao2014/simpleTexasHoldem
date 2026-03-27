@@ -50,7 +50,7 @@ export const appendCappedHistoryEntry = (
 export const getCardComponentKey = (rank: string, suit: string): string => {
     const normalizedRank: string = rank === "10" ? rank : rank.toLowerCase();
 
-    console.info(`getCardComponentKey called with rank: ${rank}, suit: ${suit}, returning key: ${suit}${normalizedRank}`);
+    //console.info(`getCardComponentKey called with rank: ${rank}, suit: ${suit}, returning key: ${suit}${normalizedRank}`);
 
     return `${suit}${normalizedRank}`;
 };

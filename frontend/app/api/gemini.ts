@@ -14,7 +14,7 @@ const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const walletClient = createWalletClient({ chain: mainnet, transport: http() });
 const CONTRACT_ADDRESS = '0x...';
 
-async function joinGameApi(): Promise<JoinGameApiResult> {
+async function playerJoinApi(): Promise<JoinGameApiResult> {
   try {
     // 1. 模拟调用 (建议在实际写入前模拟，以便捕获大部分 Revert)
     const { request } = await publicClient.simulateContract({

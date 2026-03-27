@@ -108,7 +108,7 @@ function extractErrorMessage(err: unknown): string {
 
 // ── Main function ────────────────────────────────────────────────────────────
 
-export async function joinGameApi(
+export async function playerJoinApi(
   contractAddress: `0x${string}`
 ): Promise<JoinGameApiResult> {
   // Set up clients (assumes MetaMask / EIP-1193 provider in the browser)
