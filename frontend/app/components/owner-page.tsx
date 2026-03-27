@@ -130,6 +130,25 @@ export function OwnerPage(): ReactNode {
                 } else if (event.eventName === "PlayerFolded") {
                     const card0: string = getCardComponentKeyFromIndex(Number(event.returnedCards[0]));
                     const card1: string = getCardComponentKeyFromIndex(Number(event.returnedCards[1]));
+
+                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
+                        const isInList: boolean = prevItems.some(
+                            (item: PlayerInfoListItem): boolean => item.player === event.player,
+                        );
+
+                        if (!isInList) {
+                            console.warn(
+                                "[OwnerPage] PlayerFolded event received but player is not in playerInfoItems.",
+                                { player: event.player },
+                            );
+                            return prevItems;
+                        }
+
+                        return prevItems.filter(
+                            (item: PlayerInfoListItem): boolean => item.player !== event.player,
+                        );
+                    });
+
                     setLatestGameActionInfo(
                         formatLogString(`player=${event.player}, returned=[${card0}, ${card1}]`, "PlayerFolded"),
                     );

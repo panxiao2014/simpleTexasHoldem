@@ -26,7 +26,7 @@ export interface PlayerJoinedParsedEvent extends BaseParsedEvent {
     holeCards: readonly [bigint, bigint];
 }
 
-interface PlayerFoldedParsedEvent extends BaseParsedEvent {
+export interface PlayerFoldedParsedEvent extends BaseParsedEvent {
     eventName: "PlayerFolded";
     gameId: bigint;
     player: Address;

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
-import { playerJoinApi, type JoinGameApiResult } from "../api/playerAction-api";
+import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
 import { formatBalanceInfoText } from "../utils/contractParse";
@@ -25,6 +25,8 @@ export function PlayerPage(): ReactNode {
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
+    const [isFolding, setIsFolding] = useState<boolean>(false);
+    const [isFolded, setIsFolded] = useState<boolean>(false);
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
 
     async function handleJoinGame(): Promise<void> {
@@ -49,6 +51,30 @@ export function PlayerPage(): ReactNode {
             setIsJoinedGame(false);
         } finally {
             setIsJoining(false);
+        }
+    }
+
+    async function handleFold(): Promise<void> {
+        setIsFolding(true);
+        try {
+            const result: FoldGameApiResult = await playerFoldApi();
+            const stage: string = result.stage;
+
+            if (result.success) {
+                const eventText: string = result.message ?? "Folded successfully, but no event info available.";
+                setLatestGameActionInfo(formatLogString(eventText, stage));
+                setIsFolded(true);
+                setIsJoinedGame(false);
+            } else {
+                const errorMsg: string = result.message ?? "Failed to fold.";
+                setLatestGameActionInfo(formatLogString(`Fold reverted: ${errorMsg}`, stage));
+            }
+        } catch (error: unknown) {
+            const message: string = error instanceof Error ? error.message : "Unexpected error folding.";
+            console.error("[PlayerPage] handleFold unexpected error:", error);
+            setLatestGameActionInfo(formatLogString(`Fold failed: ${message}`));
+        } finally {
+            setIsFolding(false);
         }
     }
 
@@ -98,7 +124,9 @@ export function PlayerPage(): ReactNode {
                     size="md"
                     color="secondary"
                     data-testid="player-fold"
-                    isDisabled={!isJoinedGame}
+                    isLoading={isFolding}
+                    isDisabled={!isJoinedGame || isFolding || isFolded}
+                    onClick={handleFold}
                 >
                     Fold
                 </Button>
