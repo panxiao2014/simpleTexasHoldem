@@ -6,6 +6,7 @@ import {
     decodeEventLog,
     BaseError,
     ContractFunctionRevertedError,
+    parseEther,
     type Address,
     type PublicClient,
     type TransactionReceipt,
@@ -14,12 +15,12 @@ import {
 } from "viem";
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent } from "../events/contract-event";
+import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent, type PlayerBetParsedEvent } from "../events/contract-event";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 
 function extractRevertReason(err: unknown): string {
-    console.error('Full error object:', JSON.stringify(err, (key, value) => {
+    console.error('Full error object:', JSON.stringify(err, (_key: string, value: unknown) => {
         if (typeof value === 'bigint') return value.toString();
         return value;
     }, 2));
@@ -53,6 +54,12 @@ export type JoinGameApiResult = {
 };
 
 export type FoldGameApiResult = {
+    success: boolean;
+    message: string;
+    stage: "Simulate" | "Execution";
+};
+
+export type BetGameApiResult = {
     success: boolean;
     message: string;
     stage: "Simulate" | "Execution";
@@ -259,6 +266,113 @@ export async function playerFoldApi(): Promise<FoldGameApiResult> {
         return {
             success: false,
             message: err instanceof Error ? err.message : "playerFoldApi Unknown error",
+            stage: "Execution",
+        };
+    }
+}
+
+export async function playerBetApi(betAmountEth: string): Promise<BetGameApiResult> {
+    const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
+    const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
+    const connectedAccount: Address = await getConnectedAccount();
+
+    try {
+        const betAmountWei: bigint = parseEther(betAmountEth);
+
+        // 0. simulate
+        try {
+            await publicClient.simulateContract({
+                address: CONTRACT_ADDRESS,
+                abi: SIMPLE_TEXAS_HOLDEM_ABI,
+                functionName: "placeBet",
+                args: [betAmountWei],
+                account: connectedAccount,
+                value: betAmountWei,
+            });
+        } catch (simErr: unknown) {
+            return {
+                success: false,
+                message: extractRevertReason(simErr),
+                stage: "Simulate",
+            };
+        }
+
+        // 1. send transaction
+        const transactionHash: `0x${string}` = await walletClient.writeContract({
+            account: connectedAccount,
+            address: CONTRACT_ADDRESS,
+            abi: SIMPLE_TEXAS_HOLDEM_ABI,
+            functionName: "placeBet",
+            args: [betAmountWei],
+            value: betAmountWei,
+        });
+
+        // 2. wait for transaction confirmation
+        const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
+            hash: transactionHash,
+        });
+
+        // 3. find PlayerBet event
+        const logs = receipt.logs;
+
+        for (const log of logs) {
+            try {
+                const decoded = decodeEventLog({
+                    abi: SIMPLE_TEXAS_HOLDEM_ABI,
+                    data: log.data,
+                    topics: log.topics,
+                });
+
+                if (decoded.eventName === "PlayerBet") {
+                    const { gameId, player, amount } = (decoded.args as unknown) as PlayerBetParsedEvent;
+
+                    const message: string = `
+                        PlayerBet Event:
+                        - gameId: ${gameId.toString()}
+                        - player: ${player}
+                        - amount: ${amount.toString()} wei
+                        `.trim();
+
+                    return {
+                        success: true,
+                        message,
+                        stage: "Execution",
+                    };
+                }
+            } catch (e: unknown) {
+                console.error("playerBetApi decodeEventLog error: ", e);
+            }
+        }
+
+        return {
+            success: true,
+            message: "Transaction succeeded, but PlayerBet event not found",
+            stage: "Execution",
+        };
+    } catch (err: unknown) {
+        if (err instanceof BaseError) {
+            const revertError: Error | null = err.walk(
+                (e: unknown): boolean => e instanceof ContractFunctionRevertedError
+            );
+
+            if (revertError instanceof ContractFunctionRevertedError && revertError.data?.errorName) {
+                return {
+                    success: false,
+                    message: revertError.data.errorName,
+                    stage: "Execution",
+                };
+            }
+
+            return {
+                success: false,
+                message: "playerBetApi Failed, no ContractFunctionRevertedError caught",
+                stage: "Execution",
+            };
+        }
+
+        return {
+            success: false,
+            message: err instanceof Error ? err.message : "playerBetApi Unknown error",
             stage: "Execution",
         };
     }

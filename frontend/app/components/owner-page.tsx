@@ -153,6 +153,27 @@ export function OwnerPage(): ReactNode {
                         formatLogString(`player=${event.player}, returned=[${card0}, ${card1}]`, "PlayerFolded"),
                     );
                 } else if (event.eventName === "PlayerBet") {
+                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
+                        const isInList: boolean = prevItems.some(
+                            (item: PlayerInfoListItem): boolean => item.player === event.player,
+                        );
+
+                        if (!isInList) {
+                            console.warn(
+                                "[OwnerPage] PlayerBet event received but player is not in playerInfoItems.",
+                                { player: event.player },
+                            );
+                            return prevItems;
+                        }
+
+                        return prevItems.map(
+                            (item: PlayerInfoListItem): PlayerInfoListItem =>
+                                item.player === event.player
+                                    ? { ...item, betAmount: event.amount }
+                                    : item,
+                        );
+                    });
+
                     setLatestGameActionInfo(
                         formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
                     );

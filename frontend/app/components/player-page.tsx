@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
+import { Input } from "../../src/components/base/input/input";
 import { GameInfoLog } from "./game-info-log";
 import { PLAYER_STORAGE_KEY } from "../utils/gameConfig";
-import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult } from "../api/playerAction-api";
+import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult, playerBetApi, type BetGameApiResult } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
 import { formatBalanceInfoText } from "../utils/contractParse";
@@ -27,7 +28,13 @@ export function PlayerPage(): ReactNode {
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
     const [isFolded, setIsFolded] = useState<boolean>(false);
+    const [isBetting, setIsBetting] = useState<boolean>(false);
+    const [betAmount, setBetAmount] = useState<string>("");
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
+
+    const handleBetAmountChange = (value: string): void => {
+        setBetAmount(value);
+    };
 
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
@@ -75,6 +82,33 @@ export function PlayerPage(): ReactNode {
             setLatestGameActionInfo(formatLogString(`Fold failed: ${message}`));
         } finally {
             setIsFolding(false);
+        }
+    }
+
+    async function handleBet(): Promise<void> {
+        if (betAmount.trim() === "") {
+            setLatestGameActionInfo(formatLogString("Bet failed: enter an ETH amount."));
+            return;
+        }
+
+        setIsBetting(true);
+        try {
+            const result: BetGameApiResult = await playerBetApi(betAmount);
+            const stage: string = result.stage;
+
+            if (result.success) {
+                const eventText: string = result.message ?? "Bet placed successfully, but no event info available.";
+                setLatestGameActionInfo(formatLogString(eventText, stage));
+            } else {
+                const errorMsg: string = result.message ?? "Failed to place bet.";
+                setLatestGameActionInfo(formatLogString(`Bet reverted: ${errorMsg}`, stage));
+            }
+        } catch (error: unknown) {
+            const message: string = error instanceof Error ? error.message : "Unexpected error placing bet.";
+            console.error("[PlayerPage] handleBet unexpected error:", error);
+            setLatestGameActionInfo(formatLogString(`Bet failed: ${message}`));
+        } finally {
+            setIsBetting(false);
         }
     }
 
@@ -131,15 +165,35 @@ export function PlayerPage(): ReactNode {
                     Fold
                 </Button>
 
-                {/* Button allows the player to place a bet in the current game. */}
-                <Button
-                    size="md"
-                    color="secondary"
-                    data-testid="player-bet"
-                    isDisabled={!isJoinedGame}
+                {/* Group bet input and bet button together. */}
+                <div
+                    className="flex flex-col gap-2 rounded-lg border border-secondary/60 p-3"
+                    style={{ backgroundColor: "var(--color-brand-100)" }}
                 >
-                    Bet
-                </Button>
+
+                    {/* Input captures the player's bet amount and follows the same enabled state as the Bet button. */}
+                    <Input
+                        size="md"
+                        placeholder="Enter bet amount in ETH"
+                        inputMode="decimal"
+                        value={betAmount}
+                        isDisabled={!isJoinedGame || isBetting}
+                        onChange={handleBetAmountChange}
+                    />
+
+                    {/* Button allows the player to place a bet in the current game. */}
+                    <Button
+                        size="md"
+                        color="secondary"
+                        data-testid="player-bet"
+                        isLoading={isBetting}
+                        isDisabled={!isJoinedGame || isBetting || betAmount.trim() === ""}
+                        onClick={handleBet}
+                    >
+                        Bet
+                    </Button>
+
+                </div>
 
                 {/* Button opens a modal displaying the player's current wallet balance. */}
                     <TextDisplayModal

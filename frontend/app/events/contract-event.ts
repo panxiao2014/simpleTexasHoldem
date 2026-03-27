@@ -33,7 +33,7 @@ export interface PlayerFoldedParsedEvent extends BaseParsedEvent {
     returnedCards: readonly [bigint, bigint];
 }
 
-interface PlayerBetParsedEvent extends BaseParsedEvent {
+export interface PlayerBetParsedEvent extends BaseParsedEvent {
     eventName: "PlayerBet";
     gameId: bigint;
     player: Address;

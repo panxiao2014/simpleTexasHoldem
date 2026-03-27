@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
+import { formatEther } from "viem";
 
 export interface PlayerInfoListItem {
     player: string;
@@ -72,7 +73,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
 
                             </div>
 
-                            <span>{item.betAmount.toString()}</span>
+                            <span>{formatEther(item.betAmount)} ETH</span>
                         </div>
 
                     );
