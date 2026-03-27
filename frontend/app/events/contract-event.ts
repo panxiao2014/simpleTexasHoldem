@@ -19,7 +19,7 @@ interface BaseParsedEvent {
     eventName: SupportedEventName;
 }
 
-interface PlayerJoinedParsedEvent extends BaseParsedEvent {
+export interface PlayerJoinedParsedEvent extends BaseParsedEvent {
     eventName: "PlayerJoined";
     gameId: bigint;
     player: Address;

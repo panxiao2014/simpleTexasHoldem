@@ -14,6 +14,7 @@ import {
 } from "viem";
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
+import { type PlayerJoinedParsedEvent } from "../events/contract-event";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 
@@ -98,11 +99,7 @@ export async function joinGameApi(): Promise<JoinGameApiResult> {
                 });
 
                 if (decoded.eventName === "PlayerJoined") {
-                    const { gameId, player, holeCards } = (decoded.args as unknown) as {
-                        gameId: bigint;
-                        player: string;
-                        holeCards: [number, number];
-                    };
+                    const { gameId, player, holeCards } = (decoded.args as unknown) as PlayerJoinedParsedEvent;
 
                     const message: string = `
                         PlayerJoined Event:
