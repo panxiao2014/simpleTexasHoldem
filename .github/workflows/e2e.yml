@@ -16,8 +16,14 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+
+    - name: Install pnpm
+      run: npm install -g pnpm
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install
+
+    # - name: Install dependencies
+    #   run: npm ci
     - name: Install Playwright Browsers
       run: |
         npx playwright@1.48.0 install chromium
