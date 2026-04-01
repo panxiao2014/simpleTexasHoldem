@@ -32,7 +32,7 @@ jobs:
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
     - name: Run Playwright tests
-      run: npx playwright test tests/unittest/
+      run: pnpm exec playwright test tests/unittest/
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
