@@ -2,12 +2,14 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 
 import { 
-    endGameApi,
     getAccumulatedHouseFees,
     getCurrentGameInfo,
-    startGameApi,
     type ContractCallResult
 } from "../api/contract-api";
+import {
+    endGameApi,
+    startGameApi,
+} from "../api/ownerAction-api";
 import { getNativeBalance } from "../api/ether-api";
 
 import { 
