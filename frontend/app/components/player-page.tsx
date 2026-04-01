@@ -10,6 +10,7 @@ import { formatBalanceInfoText } from "../utils/contractParse";
 
 import { TextDisplayModal } from "./text-display-modal";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
+import { BoardCardBox } from "./board-card-box";
 import type { Address } from "viem";
 
 interface PlayerPageProps {
@@ -237,6 +238,13 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
                         <PlayerInfoList items={playerInfoItems} />
+
+                        <div className="mt-4">
+
+                            {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
+                            <BoardCardBox />
+
+                        </div>
 
                     </div>
 

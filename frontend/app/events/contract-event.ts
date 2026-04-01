@@ -8,7 +8,7 @@ import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 
-type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet";
+type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt";
 
 type DecodedEventLog = {
     eventName: string;
@@ -40,10 +40,17 @@ export interface PlayerBetParsedEvent extends BaseParsedEvent {
     amount: bigint;
 }
 
+export interface BoardCardsDealtParsedEvent extends BaseParsedEvent {
+    eventName: "BoardCardsDealt";
+    gameId: bigint;
+    boardCards: readonly [bigint, bigint, bigint, bigint, bigint];
+}
+
 export type ParsedSimpleTexasHoldemEvent =
     | PlayerJoinedParsedEvent
     | PlayerFoldedParsedEvent
-    | PlayerBetParsedEvent;
+    | PlayerBetParsedEvent
+    | BoardCardsDealtParsedEvent;
 
 export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
 
@@ -53,7 +60,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isSupportedEventName(eventName: string | undefined): eventName is SupportedEventName {
-    return eventName === "PlayerJoined" || eventName === "PlayerFolded" || eventName === "PlayerBet";
+    return eventName === "PlayerJoined"
+        || eventName === "PlayerFolded"
+        || eventName === "PlayerBet"
+        || eventName === "BoardCardsDealt";
 }
 
 function isAddressValue(value: unknown): value is Address {
@@ -91,6 +101,30 @@ function parseCardPair(value: unknown): readonly [bigint, bigint] | undefined {
     return [first, second] as const;
 }
 
+function parseCardFive(value: unknown): readonly [bigint, bigint, bigint, bigint, bigint] | undefined {
+    if (!Array.isArray(value) || value.length !== 5) {
+        return undefined;
+    }
+
+    const first: bigint | undefined = toCardBigInt(value[0]);
+    const second: bigint | undefined = toCardBigInt(value[1]);
+    const third: bigint | undefined = toCardBigInt(value[2]);
+    const fourth: bigint | undefined = toCardBigInt(value[3]);
+    const fifth: bigint | undefined = toCardBigInt(value[4]);
+
+    if (
+        first === undefined
+        || second === undefined
+        || third === undefined
+        || fourth === undefined
+        || fifth === undefined
+    ) {
+        return undefined;
+    }
+
+    return [first, second, third, fourth, fifth] as const;
+}
+
 
 /**
  * Parses logs from watchContractEvent and prints args for selected game events.
@@ -99,6 +133,7 @@ function parseCardPair(value: unknown): readonly [bigint, bigint] | undefined {
  * - PlayerJoined: gameId, player, holeCards
  * - PlayerFolded: gameId, player, returnedCards
  * - PlayerBet: gameId, player, amount
+ * - BoardCardsDealt: gameId, boardCards
  *
  * @param {readonly Log[]} logs Logs received from watchContractEvent callback.
  * @returns {ParsedSimpleTexasHoldemEvent[]} Parsed events with event-specific payload fields.
@@ -194,6 +229,38 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     gameId,
                     player,
                     returnedCards: parsedReturnedCards,
+                };
+
+                parsedEvents.push(parsedEvent);
+                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
+                continue;
+            }
+
+            if (eventName === "BoardCardsDealt") {
+                const gameId: unknown = args.gameId;
+                const boardCards: unknown = args.boardCards;
+
+                if (!isBigIntValue(gameId)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid BoardCardsDealt payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedBoardCards: readonly [bigint, bigint, bigint, bigint, bigint] | undefined = parseCardFive(boardCards);
+                if (parsedBoardCards === undefined) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid boardCards payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: BoardCardsDealtParsedEvent = {
+                    eventName,
+                    gameId,
+                    boardCards: parsedBoardCards,
                 };
 
                 parsedEvents.push(parsedEvent);

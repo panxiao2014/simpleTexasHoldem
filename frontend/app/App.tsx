@@ -138,6 +138,13 @@ function App(): ReactNode {
                     setLatestGameEvent(
                         formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
                     );
+                } else if (event.eventName === "BoardCardsDealt") {
+                    setLatestGameEvent(
+                        formatLogString(
+                            `gameId=${event.gameId.toString()}, boardCards=[${event.boardCards.map((card: bigint): string => card.toString()).join(", ")}]`,
+                            "BoardCardsDealt",
+                        ),
+                    );
                 }
             }
         };

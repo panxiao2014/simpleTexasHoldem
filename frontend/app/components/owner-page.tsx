@@ -24,6 +24,7 @@ import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoBox } from "./game-info-box";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
+import { BoardCardBox } from "./board-card-box";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY, CONTRACT_EVENT_STORAGE_KEY } from "../utils/gameConfig";
 import { formatLogString } from "../utils/utils";
 
@@ -348,6 +349,13 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
                         <PlayerInfoList items={playerInfoItems} />
+
+                        <div className="mt-4">
+
+                            {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
+                            <BoardCardBox />
+
+                        </div>
 
                     </div>
 
