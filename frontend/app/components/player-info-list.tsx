@@ -13,6 +13,15 @@ interface PlayerInfoListProps {
     items: PlayerInfoListItem[];
 }
 
+interface EthereumAccountsProvider {
+    on: (eventName: "accountsChanged", listener: (accounts: string[]) => void) => void;
+    removeListener: (eventName: "accountsChanged", listener: (accounts: string[]) => void) => void;
+}
+
+interface WindowWithEthereumProvider extends Window {
+    ethereum?: EthereumAccountsProvider;
+}
+
 /**
  * PlayerInfoList component for displaying player status columns in owner view.
  *
@@ -33,6 +42,18 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
     useEffect((): (() => void) => {
         let isMounted: boolean = true;
 
+        const { ethereum }: WindowWithEthereumProvider = window as WindowWithEthereumProvider;
+
+        //handle user account changed in Metamask
+        const handleAccountsChanged = (accounts: string[]): void => {
+            if (!isMounted) {
+                return;
+            }
+
+            const nextAccount: Address | null = accounts.length > 0 ? (accounts[0] as Address) : null;
+            setConnectedAccount(nextAccount);
+        };
+
         const loadConnectedAccount = async (): Promise<void> => {
             try {
                 const account: Address = await getConnectedAccount();
@@ -44,9 +65,16 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
             }
         };
 
+        if (ethereum !== undefined) {
+            ethereum.on("accountsChanged", handleAccountsChanged);
+        }
+
         void loadConnectedAccount();
 
         return (): void => {
+            if (ethereum !== undefined) {
+                ethereum.removeListener("accountsChanged", handleAccountsChanged);
+            }
             isMounted = false;
         };
     }, []);
