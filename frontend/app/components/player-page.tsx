@@ -37,6 +37,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
     const [isFolding, setIsFolding] = useState<boolean>(false);
     const [isFolded, setIsFolded] = useState<boolean>(false);
     const [isBetting, setIsBetting] = useState<boolean>(false);
+    const [isBetPlaced, setIsBetPlaced] = useState<boolean>(false);
     const [betAmount, setBetAmount] = useState<string>("");
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
 
@@ -54,6 +55,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
                 const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
                 setLatestGameActionInfo(formatLogString(eventText, stage));
                 setIsJoinedGame(true);
+                setIsBetPlaced(false);
             } else {
                 const errorMsg: string = result.message ?? "Failed to join game.";
                 setLatestGameActionInfo(formatLogString(`Join reverted: ${errorMsg}`, stage));
@@ -107,6 +109,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
             if (result.success) {
                 const eventText: string = result.message ?? "Bet placed successfully, but no event info available.";
                 setLatestGameActionInfo(formatLogString(eventText, stage));
+                setIsBetPlaced(true);
             } else {
                 const errorMsg: string = result.message ?? "Failed to place bet.";
                 setLatestGameActionInfo(formatLogString(`Bet reverted: ${errorMsg}`, stage));
@@ -167,7 +170,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
                     color="secondary"
                     data-testid="player-fold"
                     isLoading={isFolding}
-                    isDisabled={!isJoinedGame || isFolding || isFolded}
+                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced}
                     onClick={handleFold}
                 >
                     Fold
@@ -185,7 +188,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
                         placeholder="Enter bet amount in ETH"
                         inputMode="decimal"
                         value={betAmount}
-                        isDisabled={!isJoinedGame || isBetting}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced}
                         onChange={handleBetAmountChange}
                     />
 
@@ -195,7 +198,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
                         color="secondary"
                         data-testid="player-bet"
                         isLoading={isBetting}
-                        isDisabled={!isJoinedGame || isBetting || betAmount.trim() === ""}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === ""}
                         onClick={handleBet}
                     >
                         Bet
