@@ -40,7 +40,7 @@ const GAME_INFO_BOX_STYLES: Record<string, GameInfoBoxStyle> = {
     "Game Logs": {
         sectionClass: "rounded-lg border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-700 dark:bg-emerald-950/30",
         titleClass: "text-sm font-semibold text-emerald-700 dark:text-emerald-300",
-        textAreaRows: DEFAULT_GAME_INFO_BOX_DISPLAY_ITEMS + 20,
+        textAreaRows: DEFAULT_GAME_INFO_BOX_DISPLAY_ITEMS,
     },
     "Contract Events": {
         sectionClass: "rounded-lg border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-950/30",

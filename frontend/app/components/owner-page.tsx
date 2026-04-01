@@ -346,22 +346,22 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
                 <div className="flex items-start gap-4">
                     <div className="w-[28rem]">
 
-                        {/* GameInfoBox shows contract events: */}
-                        <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />
-
-                        <div className="mt-4">
-
-                            {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                            <PlayerInfoList items={playerInfoItems} />
-
-                        </div>
+                        {/* PlayerInfoList shows live player rows from parsed contract events. */}
+                        <PlayerInfoList items={playerInfoItems} />
 
                     </div>
 
                     <div className="w-[28rem]">
 
-                        {/* GameInfoBox shows logs: */}
-                        <GameInfoBox info={latestGameLog} storageKey={OWNER_STORAGE_KEY} title="Game Logs" />
+                        {/* GameInfoBox shows contract events: */}
+                        <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />
+
+                        <div className="mt-4">
+
+                            {/* GameInfoBox shows logs: */}
+                            <GameInfoBox info={latestGameLog} storageKey={OWNER_STORAGE_KEY} title="Game Logs" />
+
+                        </div>
 
                     </div>
                 </div>
