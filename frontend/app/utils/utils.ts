@@ -40,6 +40,35 @@ export const appendCappedHistoryEntry = (
 
 
 /* *************************  Poker card utilities  ************************* */
+const HAND_RANK_LABELS: Record<number, string> = {
+    0: "HIGH CARD",
+    1: "ONE PAIR",
+    2: "TWO PAIR",
+    3: "THREE OF A KIND",
+    4: "STRAIGHT",
+    5: "FLUSH",
+    6: "FULL HOUSE",
+    7: "FOUR OF A KIND",
+    8: "STRAIGHT FLUSH",
+};
+
+/**
+ * Formats a hand rank number to a display string aligned with on-chain HandRank enum.
+ *
+ * @param {number} handRank Hand rank integer value.
+ * @returns {string} Display string in the format "<rank>: <name>".
+ */
+export const formatHandRankLabel = (handRank: number): string => {
+    const rankLabel: string | undefined = HAND_RANK_LABELS[handRank];
+
+    if (rankLabel === undefined) {
+        return `${handRank}: UNKNOWN`;
+    }
+
+    return `${handRank}: ${rankLabel}`;
+};
+
+
 /**
  * Builds the playing-cards component key from rank and suit.
  *

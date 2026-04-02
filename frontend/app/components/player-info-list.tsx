@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
 import { formatEther, type Address } from "viem";
 import { getConnectedAccount } from "../api/ether-api";
-import { getCardComponentKeyFromIndex } from "../utils/utils";
+import { formatHandRankLabel, getCardComponentKeyFromIndex } from "../utils/utils";
 
 export interface PlayerInfoListItem {
     player: string;
@@ -89,7 +89,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
         >
             <h3 className="mb-2 text-sm font-semibold">Players In Game</h3>
 
-            <div className="grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] gap-2 border-b border-secondary pb-2 text-xs font-medium">
+            <div className="grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] gap-2 border-b border-secondary pb-2 text-xs font-medium">
                 <span>Player</span>
                 <span>Hole Cards</span>
                 <span>Bet Amount</span>
@@ -107,8 +107,8 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                         && item.player.toLowerCase() === connectedAccount.toLowerCase();
                     const playerLabel: string = isCurrentConnectedAccount ? "Myself" : item.player;
                     const rowClassName: string = isCurrentConnectedAccount
-                        ? "grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
-                        : "grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] items-center gap-2 py-1";
+                        ? "grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
+                        : "grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] items-center gap-2 py-1";
 
                     return (
 
@@ -141,7 +141,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
 
                             <span className="whitespace-nowrap">{formatEther(item.betAmount)} ETH</span>
 
-                            <span className="whitespace-nowrap">{item.handRank}</span>
+                            <span className="whitespace-nowrap">{formatHandRankLabel(item.handRank)}</span>
                         </div>
 
                     );
