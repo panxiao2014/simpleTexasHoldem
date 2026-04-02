@@ -9,6 +9,7 @@ import {
 import {
     endGameApi,
     startGameApi,
+    withdrawHouseFeesApi,
 } from "../api/ownerAction-api";
 import { getNativeBalance } from "../api/ether-api";
 
@@ -52,6 +53,7 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
+    const [isCollectFeeLoading, setIsCollectFeeLoading] = useState<boolean>(false);
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
@@ -204,6 +206,42 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
         }
     };
 
+    const handlCollectFeeClick = async (): Promise<void> => {
+        setIsCollectFeeLoading(true);
+
+        try {
+            const withdrawResult: ContractCallResult = await withdrawHouseFeesApi();
+            const isSuccessStatus: boolean = withdrawResult.status === "success";
+
+            if (!isSuccessStatus) {
+                console.error("Collect fee failed.", {
+                    status: withdrawResult.status,
+                    transactionHash: withdrawResult.transactionHash,
+                    events: withdrawResult.events,
+                });
+            } else if (withdrawResult.events.length === 0) {
+                console.warn("Collect fee succeeded, but no decodable events were found in receipt.", {
+                    status: withdrawResult.status,
+                    transactionHash: withdrawResult.transactionHash,
+                });
+                setLatestGameLog(formatLogString("House fee collected"));
+                await syncGameInfoState();
+            } else {
+                console.log("Collect fee succeeded.", {
+                    status: withdrawResult.status,
+                    transactionHash: withdrawResult.transactionHash,
+                    events: withdrawResult.events,
+                });
+                setLatestGameLog(formatLogString("House fee collected"));
+                await syncGameInfoState();
+            }
+        } catch (error: unknown) {
+            console.error("Collect fee failed.", error);
+        } finally {
+            setIsCollectFeeLoading(false);
+        }
+    };
+
     const handleOwnerBalanceClick = async (): Promise<void> => {
         setOwnerBalanceModalText("Loading owner balance...");
 
@@ -231,7 +269,7 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
 
     const isOwnerBlocked: boolean = isCheckingWalletOwnership || !isOwner;
     const isGameActive: boolean = gameInfo?.gameActive === true;
-    const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading;
+    const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading || isCollectFeeLoading;
 
     const isStartDisabled: boolean = isOwnerBlocked || isUiBusy || isGameActive;
     const isEndDisabled: boolean = isOwnerBlocked || isUiBusy || !isGameActive;
@@ -291,7 +329,16 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
                 />
 
                 {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
-                <Button size="md" color="secondary" isDisabled={isOwnerBlocked} data-testid="owner-collect-fee">
+                <Button
+                    size="md"
+                    color="secondary"
+                    isDisabled={isOwnerBlocked || isCollectFeeLoading}
+                    isLoading={isCollectFeeLoading}
+                    data-testid="owner-collect-fee"
+                    onClick={(): void => {
+                        void handlCollectFeeClick();
+                    }}
+                >
                     Collect fee
                 </Button>
 

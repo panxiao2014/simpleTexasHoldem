@@ -8,7 +8,7 @@ import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 
-type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded";
+type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded" | "HouseFeeWithdrawn";
 
 type DecodedEventLog = {
     eventName: string;
@@ -64,12 +64,19 @@ export interface GameEndedParsedEvent extends BaseParsedEvent {
     result: GameEndedResult;
 }
 
+export interface HouseFeeWithdrawnParsedEvent extends BaseParsedEvent {
+    eventName: "HouseFeeWithdrawn";
+    owner: Address;
+    amount: bigint;
+}
+
 export type ParsedSimpleTexasHoldemEvent =
     | PlayerJoinedParsedEvent
     | PlayerFoldedParsedEvent
     | PlayerBetParsedEvent
     | BoardCardsDealtParsedEvent
-    | GameEndedParsedEvent;
+    | GameEndedParsedEvent
+    | HouseFeeWithdrawnParsedEvent;
 
 export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
 
@@ -82,8 +89,9 @@ function isSupportedEventName(eventName: string | undefined): eventName is Suppo
     return eventName === "PlayerJoined"
         || eventName === "PlayerFolded"
         || eventName === "PlayerBet"
-    || eventName === "BoardCardsDealt"
-    || eventName === "GameEnded";
+        || eventName === "BoardCardsDealt"
+        || eventName === "GameEnded"
+        || eventName === "HouseFeeWithdrawn";
 }
 
 function isAddressValue(value: unknown): value is Address {
@@ -179,6 +187,7 @@ function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
  * - PlayerBet: gameId, player, amount
  * - BoardCardsDealt: gameId, boardCards
  * - GameEnded: gameId, result
+ * - HouseFeeWithdrawn: owner, amount
  *
  * @param {readonly Log[]} logs Logs received from watchContractEvent callback.
  * @returns {ParsedSimpleTexasHoldemEvent[]} Parsed events with event-specific payload fields.
@@ -372,6 +381,29 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                         potPerWinner,
                         houseFee,
                     },
+                };
+
+                parsedEvents.push(parsedEvent);
+                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
+                continue;
+            }
+
+            if (eventName === "HouseFeeWithdrawn") {
+                const owner: unknown = args.owner;
+                const amount: unknown = args.amount;
+
+                if (!isAddressValue(owner) || !isBigIntValue(amount)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid HouseFeeWithdrawn payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: HouseFeeWithdrawnParsedEvent = {
+                    eventName,
+                    owner,
+                    amount,
                 };
 
                 parsedEvents.push(parsedEvent);

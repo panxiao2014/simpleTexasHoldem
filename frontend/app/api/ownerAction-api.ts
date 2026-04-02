@@ -71,3 +71,30 @@ export async function endGameApi(): Promise<ContractCallResult> {
 		events,
 	};
 }
+
+export async function withdrawHouseFeesApi(): Promise<ContractCallResult> {
+	const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
+	const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
+	const account: Address = await getConnectedAccount();
+
+	const transactionHash: Hash = await walletClient.writeContract({
+		account,
+		address: CONTRACT_ADDRESS as Address,
+		abi: SIMPLE_TEXAS_HOLDEM_ABI,
+		functionName: "withdrawHouseFees",
+		args: [],
+	});
+
+	const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
+		hash: transactionHash,
+	});
+
+	const events: ContractEventLog[] = extractDecodedEvents(receipt);
+
+	return {
+		transactionHash,
+		status: receipt.status,
+		events,
+	};
+
+}

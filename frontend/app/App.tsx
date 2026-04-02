@@ -171,6 +171,13 @@ function App(): ReactNode {
                             "GameEnded",
                         ),
                     );
+                } else if (event.eventName === "HouseFeeWithdrawn") {
+                    setLatestGameEvent(
+                        formatLogString(
+                            `owner=${event.owner}, amount=${event.amount.toString()}`,
+                            "HouseFeeWithdrawn",
+                        ),
+                    );
                 }
             }
         };
