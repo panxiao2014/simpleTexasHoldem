@@ -141,7 +141,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
 
                             <span className="whitespace-nowrap">{formatEther(item.betAmount)} ETH</span>
 
-                            <span className="whitespace-nowrap">{formatHandRankLabel(item.handRank)}</span>
+                            <span className="whitespace-pre-line break-words">{formatHandRankLabel(item.handRank)}</span>
                         </div>
 
                     );
