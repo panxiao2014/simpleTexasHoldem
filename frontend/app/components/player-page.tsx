@@ -151,7 +151,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
     return (
         <>
-            <section className="w-72 border-r border-secondary px-4 py-6" data-testid="player-page">
+            <section className="w-56 border-r border-secondary px-3 py-6" data-testid="player-page">
                 <div className="flex flex-col gap-3">
 
                 {/* Button allows the player to join the current active game. */}
@@ -231,10 +231,10 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
                 </div>
             </section>
 
-            <section className="px-4 py-6" data-testid="player-info-panel">
+            <section className="min-w-0 flex-1 px-4 py-6" data-testid="player-info-panel">
 
                 <div className="flex items-start gap-4">
-                    <div className="w-[28rem]">
+                    <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
                         <PlayerInfoList items={playerInfoItems} />
@@ -248,7 +248,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
                     </div>
 
-                    <div className="w-[28rem]">
+                    <div className="min-w-0 flex-1">
 
                         {/* GameInfoBox shows contract events shared from app-level event state. */}
                         <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />

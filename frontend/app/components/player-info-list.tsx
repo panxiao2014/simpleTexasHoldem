@@ -89,7 +89,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
         >
             <h3 className="mb-2 text-sm font-semibold">Players In Game</h3>
 
-            <div className="grid grid-cols-4 gap-2 border-b border-secondary pb-2 text-xs font-medium">
+            <div className="grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] gap-2 border-b border-secondary pb-2 text-xs font-medium">
                 <span>Player</span>
                 <span>Hole Cards</span>
                 <span>Bet Amount</span>
@@ -107,21 +107,21 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                         && item.player.toLowerCase() === connectedAccount.toLowerCase();
                     const playerLabel: string = isCurrentConnectedAccount ? "Myself" : item.player;
                     const rowClassName: string = isCurrentConnectedAccount
-                        ? "grid grid-cols-4 gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
-                        : "grid grid-cols-4 gap-2 py-1";
+                        ? "grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
+                        : "grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1.3fr)_minmax(7rem,auto)_minmax(5rem,auto)] items-center gap-2 py-1";
 
                     return (
 
                         <div key={item.player} className={rowClassName}>
                             <span className="break-all whitespace-normal">{playerLabel}</span>
 
-                            <div className="flex gap-2">
+                            <div className="flex flex-nowrap gap-2">
 
                                 {FirstCardComponent === undefined ? (
                                     <span>{item.holeCards[0].toString()}</span>
                                 ) : (
 
-                                    <div className="aspect-[5/7] w-10">
+                                    <div className="aspect-[5/7] w-12 shrink-0 transition duration-150 hover:-translate-y-1 sm:w-14">
                                         <FirstCardComponent className="h-full w-full" />
                                     </div>
 
@@ -131,7 +131,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                                     <span>{item.holeCards[1].toString()}</span>
                                 ) : (
 
-                                    <div className="aspect-[5/7] w-10">
+                                    <div className="aspect-[5/7] w-12 shrink-0 transition duration-150 hover:-translate-y-1 sm:w-14">
                                         <SecondCardComponent className="h-full w-full" />
                                     </div>
 
@@ -139,9 +139,9 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
 
                             </div>
 
-                            <span>{formatEther(item.betAmount)} ETH</span>
+                            <span className="whitespace-nowrap">{formatEther(item.betAmount)} ETH</span>
 
-                            <span>{item.handRank}</span>
+                            <span className="whitespace-nowrap">{item.handRank}</span>
                         </div>
 
                     );

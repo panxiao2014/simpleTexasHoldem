@@ -238,7 +238,7 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
 
     return (
         <>
-            <section className="w-72 border-r border-secondary px-4 py-6" data-testid="owner-page">
+            <section className="w-56 border-r border-secondary px-3 py-6" data-testid="owner-page">
                 <div className="flex flex-col gap-3">
 
                 {/* Button starts a new game and is enabled only for owner when no game is active. */}
@@ -342,10 +342,10 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
                 </div>
             </section>
 
-            <section className="px-4 py-6" data-testid="owner-game-info-panel">
+            <section className="min-w-0 flex-1 px-4 py-6" data-testid="owner-game-info-panel">
 
                 <div className="flex items-start gap-4">
-                    <div className="w-[28rem]">
+                    <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
                         <PlayerInfoList items={playerInfoItems} />
@@ -359,7 +359,7 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
 
                     </div>
 
-                    <div className="w-[28rem]">
+                    <div className="min-w-0 flex-1">
 
                         {/* GameInfoBox shows contract events: */}
                         <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />

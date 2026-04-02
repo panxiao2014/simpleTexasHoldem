@@ -54,7 +54,7 @@ export function BoardCardBox(): ReactNode {
         >
             <h3 className="mb-2 text-sm font-semibold">Board Cards</h3>
 
-            <div className="flex flex-wrap gap-2" aria-live="polite">
+            <div className="flex flex-wrap gap-3" aria-live="polite">
 
                 {boardCardKeys.map((cardKey: string, index: number): ReactNode => {
                     const CardComponent = Cards[cardKey as keyof typeof Cards];
@@ -67,7 +67,10 @@ export function BoardCardBox(): ReactNode {
 
                     return (
 
-                        <div key={`${cardKey}-${index}`} className="aspect-[5/7] w-10">
+                        <div
+                            key={`${cardKey}-${index}`}
+                            className="aspect-[5/7] w-16 shrink-0 transition duration-150 hover:-translate-y-1 sm:w-20"
+                        >
                             <CardComponent className="h-full w-full" />
                         </div>
 
