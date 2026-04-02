@@ -8,7 +8,7 @@ import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 
-type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt";
+type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded";
 
 type DecodedEventLog = {
     eventName: string;
@@ -46,11 +46,30 @@ export interface BoardCardsDealtParsedEvent extends BaseParsedEvent {
     boardCards: readonly [bigint, bigint, bigint, bigint, bigint];
 }
 
+export interface GameEndedResult {
+    gameId: bigint;
+    startTime: bigint;
+    endTime: bigint;
+    players: readonly Address[];
+    betAmounts: readonly bigint[];
+    boardCards: readonly [bigint, bigint, bigint, bigint, bigint];
+    winners: readonly Address[];
+    potPerWinner: bigint;
+    houseFee: bigint;
+}
+
+export interface GameEndedParsedEvent extends BaseParsedEvent {
+    eventName: "GameEnded";
+    gameId: bigint;
+    result: GameEndedResult;
+}
+
 export type ParsedSimpleTexasHoldemEvent =
     | PlayerJoinedParsedEvent
     | PlayerFoldedParsedEvent
     | PlayerBetParsedEvent
-    | BoardCardsDealtParsedEvent;
+    | BoardCardsDealtParsedEvent
+    | GameEndedParsedEvent;
 
 export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
 
@@ -63,7 +82,8 @@ function isSupportedEventName(eventName: string | undefined): eventName is Suppo
     return eventName === "PlayerJoined"
         || eventName === "PlayerFolded"
         || eventName === "PlayerBet"
-        || eventName === "BoardCardsDealt";
+    || eventName === "BoardCardsDealt"
+    || eventName === "GameEnded";
 }
 
 function isAddressValue(value: unknown): value is Address {
@@ -125,6 +145,30 @@ function parseCardFive(value: unknown): readonly [bigint, bigint, bigint, bigint
     return [first, second, third, fourth, fifth] as const;
 }
 
+function parseAddressArray(value: unknown): readonly Address[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+
+    if (!value.every((item: unknown): boolean => isAddressValue(item))) {
+        return undefined;
+    }
+
+    return value;
+}
+
+function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+
+    if (!value.every((item: unknown): boolean => isBigIntValue(item))) {
+        return undefined;
+    }
+
+    return value;
+}
+
 
 /**
  * Parses logs from watchContractEvent and prints args for selected game events.
@@ -134,6 +178,7 @@ function parseCardFive(value: unknown): readonly [bigint, bigint, bigint, bigint
  * - PlayerFolded: gameId, player, returnedCards
  * - PlayerBet: gameId, player, amount
  * - BoardCardsDealt: gameId, boardCards
+ * - GameEnded: gameId, result
  *
  * @param {readonly Log[]} logs Logs received from watchContractEvent callback.
  * @returns {ParsedSimpleTexasHoldemEvent[]} Parsed events with event-specific payload fields.
@@ -261,6 +306,72 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     eventName,
                     gameId,
                     boardCards: parsedBoardCards,
+                };
+
+                parsedEvents.push(parsedEvent);
+                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
+                continue;
+            }
+
+            if (eventName === "GameEnded") {
+                const gameId: unknown = args.gameId;
+                const result: unknown = args.result;
+
+                if (!isBigIntValue(gameId) || !isRecord(result)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid GameEnded payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const resultGameId: unknown = result.gameId;
+                const startTime: unknown = result.startTime;
+                const endTime: unknown = result.endTime;
+                const players: unknown = result.players;
+                const betAmounts: unknown = result.betAmounts;
+                const boardCards: unknown = result.boardCards;
+                const winners: unknown = result.winners;
+                const potPerWinner: unknown = result.potPerWinner;
+                const houseFee: unknown = result.houseFee;
+
+                const parsedPlayers: readonly Address[] | undefined = parseAddressArray(players);
+                const parsedBetAmounts: readonly bigint[] | undefined = parseBigIntArray(betAmounts);
+                const parsedBoardCards: readonly [bigint, bigint, bigint, bigint, bigint] | undefined = parseCardFive(boardCards);
+                const parsedWinners: readonly Address[] | undefined = parseAddressArray(winners);
+
+                if (
+                    !isBigIntValue(resultGameId)
+                    || !isBigIntValue(startTime)
+                    || !isBigIntValue(endTime)
+                    || parsedPlayers === undefined
+                    || parsedBetAmounts === undefined
+                    || parsedBoardCards === undefined
+                    || parsedWinners === undefined
+                    || !isBigIntValue(potPerWinner)
+                    || !isBigIntValue(houseFee)
+                ) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid GameEnded result payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: GameEndedParsedEvent = {
+                    eventName,
+                    gameId,
+                    result: {
+                        gameId: resultGameId,
+                        startTime,
+                        endTime,
+                        players: parsedPlayers,
+                        betAmounts: parsedBetAmounts,
+                        boardCards: parsedBoardCards,
+                        winners: parsedWinners,
+                        potPerWinner,
+                        houseFee,
+                    },
                 };
 
                 parsedEvents.push(parsedEvent);

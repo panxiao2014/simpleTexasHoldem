@@ -145,6 +145,13 @@ function App(): ReactNode {
                             "BoardCardsDealt",
                         ),
                     );
+                } else if (event.eventName === "GameEnded") {
+                    setLatestGameEvent(
+                        formatLogString(
+                            `gameId=${event.gameId.toString()}, result={gameId=${event.result.gameId.toString()}, startTime=${event.result.startTime.toString()}, endTime=${event.result.endTime.toString()}, players=[${event.result.players.join(", ")}], betAmounts=[${event.result.betAmounts.map((amount: bigint): string => amount.toString()).join(", ")}], boardCards=[${event.result.boardCards.map((card: bigint): string => card.toString()).join(", ")}], winners=[${event.result.winners.join(", ")}], potPerWinner=${event.result.potPerWinner.toString()}, houseFee=${event.result.houseFee.toString()}}`,
+                            "GameEnded",
+                        ),
+                    );
                 }
             }
         };
