@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
+import { formatEther } from "viem";
+import { CloseButton } from "../../src/components/base/buttons/close-button";
 
 import { 
     getAccumulatedHouseFees,
@@ -26,11 +28,13 @@ import { TextDisplayModal } from "./text-display-modal";
 import { GameInfoBox } from "./game-info-box";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
+import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY, CONTRACT_EVENT_STORAGE_KEY } from "../utils/gameConfig";
 import { formatLogString } from "../utils/utils";
 
 interface OwnerPageProps {
     latestGameEvent: string;
+    houseFeeWithdrawnAmount: bigint | null;
     playerInfoItems: PlayerInfoListItem[];
 }
 
@@ -40,6 +44,7 @@ interface OwnerPageProps {
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
  * - latestGameEvent (string): latest formatted contract event text for the contract event log box.
+ * - houseFeeWithdrawnAmount (bigint | null): latest withdrawn house-fee amount from HouseFeeWithdrawn events.
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
  *
  * Usage:
@@ -47,7 +52,7 @@ interface OwnerPageProps {
  *
  * @returns {ReactNode} The owner control panel section.
  */
-export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps): ReactNode {
+export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfoItems }: OwnerPageProps): ReactNode {
     const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
@@ -57,6 +62,8 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
     const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
+    const [houseFeeNoticeText, setHouseFeeNoticeText] = useState<string>("");
+    const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
 
     // Game logs:
     const [latestGameLog, setLatestGameLog] = useState<string>("");
@@ -99,6 +106,16 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
             isMounted = false;
         };
     }, []);
+
+    useEffect((): void => {
+        if (houseFeeWithdrawnAmount === null) {
+            return;
+        }
+
+        const withdrawnFeeEth: string = formatEther(houseFeeWithdrawnAmount);
+        setHouseFeeNoticeText(`You have received ${withdrawnFeeEth} ETH house fee!`);
+        setIsHouseFeeNoticeOpen(true);
+    }, [houseFeeWithdrawnAmount]);
 
     const handleStartGameClick = async (): Promise<void> => {
         setIsStartGameLoading(true);
@@ -421,6 +438,40 @@ export function OwnerPage({ latestGameEvent, playerInfoItems }: OwnerPageProps):
                     </div>
                 </div>
             </section>
+
+            {/* Center modal notifies owner when HouseFeeWithdrawn amount changes. */}
+            <ModalOverlay isDismissable isOpen={isHouseFeeNoticeOpen} onOpenChange={setIsHouseFeeNoticeOpen}>
+                <Modal>
+
+                    {/* Dialog provides the fee-received message and close actions. */}
+                    <Dialog>
+                        {({ close }) => (
+                            <div className="w-full max-w-md rounded-xl border border-secondary bg-primary shadow-xl">
+                                <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
+                                    <h2 className="text-lg font-semibold text-primary">House Fee Received</h2>
+
+                                    {/* Close button dismisses the notification modal. */}
+                                    <CloseButton onPress={close} />
+                                </div>
+
+                                <div className="px-5 py-4">
+                                    <p className="text-sm leading-6 text-tertiary">{houseFeeNoticeText}</p>
+                                </div>
+
+                                <div className="flex justify-end border-t border-secondary px-5 py-4">
+
+                                    {/* Footer button closes the house fee notification modal. */}
+                                    <Button color="secondary" onClick={close}>
+                                        OK
+                                    </Button>
+
+                                </div>
+                            </div>
+                        )}
+                    </Dialog>
+
+                </Modal>
+            </ModalOverlay>
         </>
     );
 }

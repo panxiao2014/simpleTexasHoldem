@@ -33,10 +33,15 @@ import type { PlayerInfoListItem } from "./components/player-info-list";
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
     const [latestGameEvent, setLatestGameEvent] = useState<string>("");
+    const [houseFeeWithdrawnAmount, setHouseFeeWithdrawnAmount] = useState<bigint | null>(null);
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
 
     let currentPage: ReactNode = (
-        <OwnerPage latestGameEvent={latestGameEvent} playerInfoItems={playerInfoItems} />
+        <OwnerPage
+            latestGameEvent={latestGameEvent}
+            houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
+            playerInfoItems={playerInfoItems}
+        />
     );
 
     if (gameMode === GAME_MODES.PLAYER) {
@@ -172,6 +177,7 @@ function App(): ReactNode {
                         ),
                     );
                 } else if (event.eventName === "HouseFeeWithdrawn") {
+                    setHouseFeeWithdrawnAmount(event.amount);
                     setLatestGameEvent(
                         formatLogString(
                             `owner=${event.owner}, amount=${event.amount.toString()}`,
