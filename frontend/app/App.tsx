@@ -11,7 +11,11 @@ import {
     type OnParsedSimpleTexasHoldemEvents,
 } from "./events/contract-event";
 import { CONTRACT_ADDRESS } from "./utils/contractInfo";
-import { formatLogString, getCardComponentKeyFromIndex } from "./utils/utils";
+import {
+    evaluateHandRank,
+    formatLogString,
+    getCardComponentKeyFromIndex,
+} from "./utils/utils";
 import type { Address } from "viem";
 import type { PlayerInfoListItem } from "./components/player-info-list";
 
@@ -79,8 +83,9 @@ function App(): ReactNode {
                             ...prevItems,
                             {
                                 player: event.player,
-                                holeCards: [card0, card1],
+                                holeCards: [event.holeCards[0], event.holeCards[1]],
                                 betAmount: BigInt(0),
+                                handRank: 0,
                             },
                         ];
                     });
@@ -139,6 +144,20 @@ function App(): ReactNode {
                         formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
                     );
                 } else if (event.eventName === "BoardCardsDealt") {
+                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
+                        return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
+                            const handRank: number = evaluateHandRank(
+                                item.holeCards,
+                                event.boardCards,
+                            );
+
+                            return {
+                                ...item,
+                                handRank,
+                            };
+                        });
+                    });
+
                     setLatestGameEvent(
                         formatLogString(
                             `gameId=${event.gameId.toString()}, boardCards=[${event.boardCards.map((card: bigint): string => card.toString()).join(", ")}]`,

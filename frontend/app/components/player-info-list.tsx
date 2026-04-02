@@ -2,11 +2,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
 import { formatEther, type Address } from "viem";
 import { getConnectedAccount } from "../api/ether-api";
+import { getCardComponentKeyFromIndex } from "../utils/utils";
 
 export interface PlayerInfoListItem {
     player: string;
-    holeCards: readonly [string, string];
+    holeCards: readonly [bigint, bigint];
     betAmount: bigint;
+    handRank: number;
 }
 
 interface PlayerInfoListProps {
@@ -87,23 +89,26 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
         >
             <h3 className="mb-2 text-sm font-semibold">Players In Game</h3>
 
-            <div className="grid grid-cols-3 gap-2 border-b border-secondary pb-2 text-xs font-medium">
+            <div className="grid grid-cols-4 gap-2 border-b border-secondary pb-2 text-xs font-medium">
                 <span>Player</span>
                 <span>Hole Cards</span>
                 <span>Bet Amount</span>
+                <span>Hand Rank</span>
             </div>
 
             <div className="pt-3 text-xs text-muted-foreground" aria-live="polite">
 
                 {items.map((item: PlayerInfoListItem): ReactNode => {
-                    const FirstCardComponent = Cards[item.holeCards[0] as keyof typeof Cards];
-                    const SecondCardComponent = Cards[item.holeCards[1] as keyof typeof Cards];
+                    const firstCardKey: string = getCardComponentKeyFromIndex(Number(item.holeCards[0]));
+                    const secondCardKey: string = getCardComponentKeyFromIndex(Number(item.holeCards[1]));
+                    const FirstCardComponent = Cards[firstCardKey as keyof typeof Cards];
+                    const SecondCardComponent = Cards[secondCardKey as keyof typeof Cards];
                     const isCurrentConnectedAccount: boolean = connectedAccount !== null
                         && item.player.toLowerCase() === connectedAccount.toLowerCase();
                     const playerLabel: string = isCurrentConnectedAccount ? "Myself" : item.player;
                     const rowClassName: string = isCurrentConnectedAccount
-                        ? "grid grid-cols-3 gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
-                        : "grid grid-cols-3 gap-2 py-1";
+                        ? "grid grid-cols-4 gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
+                        : "grid grid-cols-4 gap-2 py-1";
 
                     return (
 
@@ -113,7 +118,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                             <div className="flex gap-2">
 
                                 {FirstCardComponent === undefined ? (
-                                    <span>{item.holeCards[0]}</span>
+                                    <span>{item.holeCards[0].toString()}</span>
                                 ) : (
 
                                     <div className="aspect-[5/7] w-10">
@@ -123,7 +128,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                                 )}
 
                                 {SecondCardComponent === undefined ? (
-                                    <span>{item.holeCards[1]}</span>
+                                    <span>{item.holeCards[1].toString()}</span>
                                 ) : (
 
                                     <div className="aspect-[5/7] w-10">
@@ -135,6 +140,8 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                             </div>
 
                             <span>{formatEther(item.betAmount)} ETH</span>
+
+                            <span>{item.handRank}</span>
                         </div>
 
                     );
