@@ -20,7 +20,12 @@ import {
 	type ContractEventLog,
 } from "./ether-api";
 
-export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
+type OwnerActionFunctionName = "startGame" | "endGame" | "withdrawHouseFees";
+
+async function executeOwnerAction(
+    functionName: OwnerActionFunctionName,
+    args: readonly unknown[],
+): Promise<ContractCallResult> {
 	const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
 	const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
 	const account: Address = await getConnectedAccount();
@@ -29,8 +34,8 @@ export async function startGameApi(duration: bigint): Promise<ContractCallResult
 		account,
 		address: CONTRACT_ADDRESS as Address,
 		abi: SIMPLE_TEXAS_HOLDEM_ABI,
-		functionName: "startGame",
-		args: [duration],
+		functionName,
+		args,
 	});
 
 	const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
@@ -44,57 +49,16 @@ export async function startGameApi(duration: bigint): Promise<ContractCallResult
 		status: receipt.status,
 		events,
 	};
+}
+
+export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
+	return executeOwnerAction("startGame", [duration]);
 }
 
 export async function endGameApi(): Promise<ContractCallResult> {
-	const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
-	const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
-	const account: Address = await getConnectedAccount();
-
-	const transactionHash: Hash = await walletClient.writeContract({
-		account,
-		address: CONTRACT_ADDRESS as Address,
-		abi: SIMPLE_TEXAS_HOLDEM_ABI,
-		functionName: "endGame",
-		args: [],
-	});
-
-	const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
-		hash: transactionHash,
-	});
-
-	const events: ContractEventLog[] = extractDecodedEvents(receipt);
-
-	return {
-		transactionHash,
-		status: receipt.status,
-		events,
-	};
+	return executeOwnerAction("endGame", []);
 }
 
 export async function withdrawHouseFeesApi(): Promise<ContractCallResult> {
-	const walletClient: WalletClient<Transport, Chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
-	const publicClient: PublicClient<Transport, Chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
-	const account: Address = await getConnectedAccount();
-
-	const transactionHash: Hash = await walletClient.writeContract({
-		account,
-		address: CONTRACT_ADDRESS as Address,
-		abi: SIMPLE_TEXAS_HOLDEM_ABI,
-		functionName: "withdrawHouseFees",
-		args: [],
-	});
-
-	const receipt: TransactionReceipt = await publicClient.waitForTransactionReceipt({
-		hash: transactionHash,
-	});
-
-	const events: ContractEventLog[] = extractDecodedEvents(receipt);
-
-	return {
-		transactionHash,
-		status: receipt.status,
-		events,
-	};
-
+	return executeOwnerAction("withdrawHouseFees", []);
 }
