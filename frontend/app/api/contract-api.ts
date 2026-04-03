@@ -11,7 +11,6 @@ import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { type CurrentGameInfo } from "../utils/contractParse";
 import {
     createContractPublicClient,
-    extractDecodedEvents,
     type ContractEventLog,
 } from "./ether-api";
 
@@ -41,7 +40,7 @@ export async function getCurrentGameInfo(): Promise<CurrentGameInfo> {
         gameActive: result[6],
     };
 
-    console.log("Current Game Info:", gameInfo);
+    console.debug("Current Game Info:", gameInfo);
 
     return gameInfo;
 }

@@ -88,7 +88,7 @@ export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEv
  * @returns {string} Timestamped event log message.
  */
 function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
-    const eventLabel: string = `Event: ${event.eventName}`;
+    const eventLabel: string = `[Contract Event] ${event.eventName}`;
 
     if (event.eventName === "PlayerJoined") {
         const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, holeCards=[${event.holeCards[0].toString()}, ${event.holeCards[1].toString()}]`;

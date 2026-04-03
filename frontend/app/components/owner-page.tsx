@@ -10,6 +10,7 @@ import {
 } from "../api/contract-api";
 import {
     endGameApi,
+    printOwnerActionResult,
     startGameApi,
     withdrawHouseFeesApi,
 } from "../api/ownerAction-api";
@@ -29,7 +30,6 @@ import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
-import { formatLogString } from "../utils/utils";
 
 interface OwnerPageProps {
     houseFeeWithdrawnAmount: bigint | null;
@@ -119,30 +119,17 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
             const isSuccessStatus: boolean = startGameResult.status === "success";
 
             if (!isSuccessStatus) {
-                console.error("Start game failed.", {
-                    status: startGameResult.status,
-                    transactionHash: startGameResult.transactionHash,
-                    events: startGameResult.events,
-                });
+                printOwnerActionResult("Game started failed.", startGameResult);
             } else if (startGameResult.events.length === 0) {
-                console.log("Start game succeeded, but no decodable events were found in receipt.", {
-                    status: startGameResult.status,
-                    transactionHash: startGameResult.transactionHash,
-                });
-                console.log(formatLogString("Game started"));
+                printOwnerActionResult("Game started, but no decodable events were found in receipt.", startGameResult);
                 await syncGameInfoState();
             } else {
-                console.log("Start game succeeded.", {
-                    status: startGameResult.status,
-                    transactionHash: startGameResult.transactionHash,
-                    events: startGameResult.events,
-                });
-                console.log(formatLogString("Game started"));
+                printOwnerActionResult("Game started.", startGameResult);
                 await syncGameInfoState();
             }
 
         } catch (error: unknown) {
-            console.error("Start game failed.", error);
+            printOwnerActionResult(`Game started failed. ${error}`);
         } finally {
             setIsStartGameLoading(false);
         }
@@ -155,16 +142,10 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
             const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
             setGameInfo(latestGameInfo);
             setGameInfoModalText(formatCurrentGameInfoText(latestGameInfo));
-            console.log("Game info loaded.", {
-                status: "success",
-                gameInfo: latestGameInfo,
-            });
+            printOwnerActionResult(`Game info loaded. ${latestGameInfo}`);
         } catch (error: unknown) {
             setGameInfoModalText("Failed to load game info.");
-            console.error("Game info load failed.", {
-                status: "revert",
-                error,
-            });
+            printOwnerActionResult(`Game info loaded failed. ${error}`);
         }
     };
 
@@ -176,29 +157,16 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
             const isSuccessStatus: boolean = endGameResult.status === "success";
 
             if (!isSuccessStatus) {
-                console.error("End game failed.", {
-                    status: endGameResult.status,
-                    transactionHash: endGameResult.transactionHash,
-                    events: endGameResult.events,
-                });
+                printOwnerActionResult("Game ended failed.", endGameResult);
             } else if (endGameResult.events.length === 0) {
-                console.log("End game succeeded, but no events were found in receipt.", {
-                    status: endGameResult.status,
-                    transactionHash: endGameResult.transactionHash,
-                });
-                console.log(formatLogString("Game ended"));
+                printOwnerActionResult("Game ended, but no events were found in receipt.", endGameResult);
                 await syncGameInfoState();
             } else {
-                console.log("End game succeeded.", {
-                    status: endGameResult.status,
-                    transactionHash: endGameResult.transactionHash,
-                    events: endGameResult.events,
-                });
-                console.log(formatLogString("Game ended"));
+                printOwnerActionResult("Game ended.", endGameResult);
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
-            console.error("End game failed.", error);
+            printOwnerActionResult(`Game ended failed. ${error}`);
         } finally {
             setIsEndGameLoading(false);
         }
@@ -210,10 +178,10 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
         try {
             const fees: bigint = await getAccumulatedHouseFees();
             setHouseFeeModalText(formatHouseFeesText(fees));
-            console.log("House fees loaded.", { status: "success", fees });
+            printOwnerActionResult(`House fees loaded. ${fees}`);
         } catch (error: unknown) {
             setHouseFeeModalText("Failed to load house fees.");
-            console.error("House fees load failed.", { status: "revert", error });
+            printOwnerActionResult(`House fees loaded failed. ${error}`);
         }
     };
 
@@ -225,29 +193,16 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
             const isSuccessStatus: boolean = withdrawResult.status === "success";
 
             if (!isSuccessStatus) {
-                console.error("Collect fee failed.", {
-                    status: withdrawResult.status,
-                    transactionHash: withdrawResult.transactionHash,
-                    events: withdrawResult.events,
-                });
+                printOwnerActionResult("House fee collected failed.", withdrawResult);
             } else if (withdrawResult.events.length === 0) {
-                console.warn("Collect fee succeeded, but no decodable events were found in receipt.", {
-                    status: withdrawResult.status,
-                    transactionHash: withdrawResult.transactionHash,
-                });
-                console.log(formatLogString("House fee collected"));
+                printOwnerActionResult("House fee collected succeeded, but no decodable events were found in receipt.", withdrawResult);
                 await syncGameInfoState();
             } else {
-                console.log("Collect fee succeeded.", {
-                    status: withdrawResult.status,
-                    transactionHash: withdrawResult.transactionHash,
-                    events: withdrawResult.events,
-                });
-                console.log(formatLogString("House fee collected"));
+                printOwnerActionResult("House fee collected.", withdrawResult);
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
-            console.error("Collect fee failed.", error);
+            printOwnerActionResult(`House fee collected failed. ${error}`);
         } finally {
             setIsCollectFeeLoading(false);
         }
@@ -262,19 +217,10 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
 
             setOwnerBalanceModalText(formattedOwnerBalance);
 
-            console.log("Owner balance loaded.", {
-                status: "success",
-                ownerAddress: CONTRACT_OWNER_ADDRESS,
-                balance: ownerBalance,
-                formattedBalance: formattedOwnerBalance,
-            });
+            printOwnerActionResult(`Owner balance loaded. ${formattedOwnerBalance}`);
         } catch (error: unknown) {
             setOwnerBalanceModalText("Failed to load owner balance.");
-            console.error("Owner balance load failed.", {
-                status: "revert",
-                ownerAddress: CONTRACT_OWNER_ADDRESS,
-                error,
-            });
+            printOwnerActionResult(`Owner balance load failed. ${error}`);
         }
     };
 

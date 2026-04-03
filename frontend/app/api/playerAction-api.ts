@@ -20,7 +20,7 @@ import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 
 function extractRevertReason(err: unknown): string {
-    console.error('Full error object:', JSON.stringify(err, (_key: string, value: unknown) => {
+    console.debug('Full error object:', JSON.stringify(err, (_key: string, value: unknown) => {
         if (typeof value === 'bigint') return value.toString();
         return value;
     }, 2));
@@ -36,9 +36,9 @@ function extractRevertReason(err: unknown): string {
         const errorSignature = revertError.signature;
         const rawData = revertError.data;
 
-        console.error(`extractRevertReason errorName: ${errorName}`);
-        console.error(`extractRevertReason errorSignature: ${errorSignature}`);
-        console.error(`extractRevertReason rawData:`, rawData);
+        console.debug(`extractRevertReason errorName: ${errorName}`);
+        console.debug(`extractRevertReason errorSignature: ${errorSignature}`);
+        console.debug(`extractRevertReason rawData:`, rawData);
 
         return errorName;
 
