@@ -2,15 +2,10 @@
  * Formats a log string by prepending a timestamp.
  *
  * @param {string} message The raw log message to format.
- * @param {string} [stage] Optional stage label to prepend before the message.
- * @returns {string} The message prefixed with a locale timestamp, e.g. "[3/24/2026, 10:00:00 AM] Join: message".
+ * @returns {string} The message prefixed with a locale timestamp, e.g. "[3/24/2026, 10:00:00 AM] Event: PlayerJoined, message".
  */
-export const formatLogString = (message: string, stage?: string): string => {
+export const formatLogString = (message: string): string => {
     const timestamp: string = new Date().toLocaleString();
-
-    if (typeof stage === "string" && stage.trim().length > 0) {
-        return `[${timestamp}] ${stage}: ${message}`;
-    }
 
     return `[${timestamp}] ${message}`;
 };

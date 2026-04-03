@@ -6,6 +6,7 @@ import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
 import { isOwnerConnected } from "./utils/contractUtils";
 import {
+    formatEventString,
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
@@ -32,26 +33,23 @@ import type { PlayerInfoListItem } from "./components/player-info-list";
  */
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
-    const [latestGameEvent, setLatestGameEvent] = useState<string>("");
     const [houseFeeWithdrawnAmount, setHouseFeeWithdrawnAmount] = useState<bigint | null>(null);
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
 
     let currentPage: ReactNode = (
         <OwnerPage
-            latestGameEvent={latestGameEvent}
             houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
             playerInfoItems={playerInfoItems}
         />
     );
 
     if (gameMode === GAME_MODES.PLAYER) {
-        currentPage = <PlayerPage latestGameEvent={latestGameEvent} playerInfoItems={playerInfoItems} />;
+        currentPage = <PlayerPage playerInfoItems={playerInfoItems} />;
     } else if (gameMode === GAME_MODES.CARDS) {
         currentPage = <CardsPage />;
     }
 
     useEffect((): void => {
-        console.info("App: useEffect triggered - checking wallet connection...");
         async function initWalletConnection(): Promise<void> {
             const ownerConnected: boolean = await isOwnerConnected();
             if (ownerConnected) {
@@ -72,9 +70,6 @@ function App(): ReactNode {
         ): void => {
             for (const event of events) {
                 if (event.eventName === "PlayerJoined") {
-                    const card0: string = getCardComponentKeyFromIndex(Number(event.holeCards[0]));
-                    const card1: string = getCardComponentKeyFromIndex(Number(event.holeCards[1]));
-
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isAlreadyInList: boolean = prevItems.some(
                             (item: PlayerInfoListItem): boolean => item.player === event.player,
@@ -95,9 +90,8 @@ function App(): ReactNode {
                         ];
                     });
 
-                    setLatestGameEvent(
-                        formatLogString(`player=${event.player}, cards=[${card0}, ${card1}]`, "PlayerJoined"),
-                    );
+
+                    console.log(formatEventString(event));
                 } else if (event.eventName === "PlayerFolded") {
                     const card0: string = getCardComponentKeyFromIndex(Number(event.returnedCards[0]));
                     const card1: string = getCardComponentKeyFromIndex(Number(event.returnedCards[1]));
@@ -109,7 +103,7 @@ function App(): ReactNode {
 
                         if (!isInList) {
                             console.warn(
-                                "[App] PlayerFolded event received but player is not in playerInfoItems.",
+                                "PlayerFolded event received but player is not in playerInfoItems.",
                                 { player: event.player },
                             );
                             return prevItems;
@@ -120,9 +114,7 @@ function App(): ReactNode {
                         );
                     });
 
-                    setLatestGameEvent(
-                        formatLogString(`player=${event.player}, returned=[${card0}, ${card1}]`, "PlayerFolded"),
-                    );
+                    console.log(formatEventString(event));
                 } else if (event.eventName === "PlayerBet") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -130,8 +122,8 @@ function App(): ReactNode {
                         );
 
                         if (!isInList) {
-                            console.warn(
-                                "[App] PlayerBet event received but player is not in playerInfoItems.",
+                            console.error(
+                                "PlayerBet event received but player is not in playerInfoItems.",
                                 { player: event.player },
                             );
                             return prevItems;
@@ -145,9 +137,7 @@ function App(): ReactNode {
                         );
                     });
 
-                    setLatestGameEvent(
-                        formatLogString(`player=${event.player}, amount=${event.amount.toString()}`, "PlayerBet"),
-                    );
+                    console.log(formatEventString(event));
                 } else if (event.eventName === "BoardCardsDealt") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
@@ -163,27 +153,12 @@ function App(): ReactNode {
                         });
                     });
 
-                    setLatestGameEvent(
-                        formatLogString(
-                            `gameId=${event.gameId.toString()}, boardCards=[${event.boardCards.map((card: bigint): string => card.toString()).join(", ")}]`,
-                            "BoardCardsDealt",
-                        ),
-                    );
+                    console.log(formatEventString(event));
                 } else if (event.eventName === "GameEnded") {
-                    setLatestGameEvent(
-                        formatLogString(
-                            `gameId=${event.gameId.toString()}, result={gameId=${event.result.gameId.toString()}, startTime=${event.result.startTime.toString()}, endTime=${event.result.endTime.toString()}, players=[${event.result.players.join(", ")}], betAmounts=[${event.result.betAmounts.map((amount: bigint): string => amount.toString()).join(", ")}], boardCards=[${event.result.boardCards.map((card: bigint): string => card.toString()).join(", ")}], winners=[${event.result.winners.join(", ")}], potPerWinner=${event.result.potPerWinner.toString()}, houseFee=${event.result.houseFee.toString()}}`,
-                            "GameEnded",
-                        ),
-                    );
+                    console.log(formatEventString(event));
                 } else if (event.eventName === "HouseFeeWithdrawn") {
                     setHouseFeeWithdrawnAmount(event.amount);
-                    setLatestGameEvent(
-                        formatLogString(
-                            `owner=${event.owner}, amount=${event.amount.toString()}`,
-                            "HouseFeeWithdrawn",
-                        ),
-                    );
+                    console.log(formatEventString(event));
                 }
             }
         };

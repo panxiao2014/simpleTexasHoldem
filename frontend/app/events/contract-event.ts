@@ -7,6 +7,7 @@ import {
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
+import { formatLogString } from "../utils/utils";
 
 type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded" | "HouseFeeWithdrawn";
 
@@ -79,6 +80,44 @@ export type ParsedSimpleTexasHoldemEvent =
     | HouseFeeWithdrawnParsedEvent;
 
 export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
+
+/**
+ * Formats a parsed contract event into a timestamped log string.
+ *
+ * @param {ParsedSimpleTexasHoldemEvent} event Parsed event payload.
+ * @returns {string} Timestamped event log message.
+ */
+export function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
+    const eventLabel: string = `Event: ${event.eventName}`;
+
+    if (event.eventName === "PlayerJoined") {
+        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, holeCards=[${event.holeCards[0].toString()}, ${event.holeCards[1].toString()}]`;
+        return formatLogString(message);
+    }
+
+    if (event.eventName === "PlayerFolded") {
+        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, returnedCards=[${event.returnedCards[0].toString()}, ${event.returnedCards[1].toString()}]`;
+        return formatLogString(message);
+    }
+
+    if (event.eventName === "PlayerBet") {
+        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, amount=${event.amount.toString()}`;
+        return formatLogString(message);
+    }
+
+    if (event.eventName === "BoardCardsDealt") {
+        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, boardCards=[${event.boardCards[0].toString()}, ${event.boardCards[1].toString()}, ${event.boardCards[2].toString()}, ${event.boardCards[3].toString()}, ${event.boardCards[4].toString()}]`;
+        return formatLogString(message);
+    }
+
+    if (event.eventName === "GameEnded") {
+        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, winners=[${event.result.winners.join(", ")}], potPerWinner=${event.result.potPerWinner.toString()}, houseFee=${event.result.houseFee.toString()}`;
+        return formatLogString(message);
+    }
+
+    const message: string = `${eventLabel}, owner=${event.owner}, amount=${event.amount.toString()}`;
+    return formatLogString(message);
+}
 
 
 function isRecord(value: unknown): value is Record<string, unknown> {

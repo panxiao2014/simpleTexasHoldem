@@ -25,15 +25,13 @@ import {
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
-import { GameInfoBox } from "./game-info-box";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
-import { DEFAULT_GAME_DURATION_SECONDS, OWNER_STORAGE_KEY, CONTRACT_EVENT_STORAGE_KEY } from "../utils/gameConfig";
+import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 import { formatLogString } from "../utils/utils";
 
 interface OwnerPageProps {
-    latestGameEvent: string;
     houseFeeWithdrawnAmount: bigint | null;
     playerInfoItems: PlayerInfoListItem[];
 }
@@ -43,7 +41,6 @@ interface OwnerPageProps {
  *
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
- * - latestGameEvent (string): latest formatted contract event text for the contract event log box.
  * - houseFeeWithdrawnAmount (bigint | null): latest withdrawn house-fee amount from HouseFeeWithdrawn events.
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
  *
@@ -52,7 +49,7 @@ interface OwnerPageProps {
  *
  * @returns {ReactNode} The owner control panel section.
  */
-export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfoItems }: OwnerPageProps): ReactNode {
+export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPageProps): ReactNode {
     const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
@@ -64,9 +61,6 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [houseFeeNoticeText, setHouseFeeNoticeText] = useState<string>("");
     const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
-
-    // Game logs:
-    const [latestGameLog, setLatestGameLog] = useState<string>("");
 
     const syncGameInfoState = async (): Promise<void> => {
         try {
@@ -135,7 +129,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     status: startGameResult.status,
                     transactionHash: startGameResult.transactionHash,
                 });
-                setLatestGameLog(formatLogString("Game started"));
+                console.log(formatLogString("Game started"));
                 await syncGameInfoState();
             } else {
                 console.log("Start game succeeded.", {
@@ -143,7 +137,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     transactionHash: startGameResult.transactionHash,
                     events: startGameResult.events,
                 });
-                setLatestGameLog(formatLogString("Game started"));
+                console.log(formatLogString("Game started"));
                 await syncGameInfoState();
             }
 
@@ -192,7 +186,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     status: endGameResult.status,
                     transactionHash: endGameResult.transactionHash,
                 });
-                setLatestGameLog(formatLogString("Game ended"));
+                console.log(formatLogString("Game ended"));
                 await syncGameInfoState();
             } else {
                 console.log("End game succeeded.", {
@@ -200,7 +194,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     transactionHash: endGameResult.transactionHash,
                     events: endGameResult.events,
                 });
-                setLatestGameLog(formatLogString("Game ended"));
+                console.log(formatLogString("Game ended"));
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
@@ -241,7 +235,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     status: withdrawResult.status,
                     transactionHash: withdrawResult.transactionHash,
                 });
-                setLatestGameLog(formatLogString("House fee collected"));
+                console.log(formatLogString("House fee collected"));
                 await syncGameInfoState();
             } else {
                 console.log("Collect fee succeeded.", {
@@ -249,7 +243,7 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
                     transactionHash: withdrawResult.transactionHash,
                     events: withdrawResult.events,
                 });
-                setLatestGameLog(formatLogString("House fee collected"));
+                console.log(formatLogString("House fee collected"));
                 await syncGameInfoState();
             }
         } catch (error: unknown) {
@@ -418,20 +412,6 @@ export function OwnerPage({ latestGameEvent, houseFeeWithdrawnAmount, playerInfo
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
                             <BoardCardBox />
-
-                        </div>
-
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-
-                        {/* GameInfoBox shows contract events: */}
-                        <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />
-
-                        <div className="mt-4">
-
-                            {/* GameInfoBox shows logs: */}
-                            <GameInfoBox info={latestGameLog} storageKey={OWNER_STORAGE_KEY} title="Game Logs" />
 
                         </div>
 

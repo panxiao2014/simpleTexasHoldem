@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
-import { GameInfoBox } from "./game-info-box";
-import { CONTRACT_EVENT_STORAGE_KEY, PLAYER_STORAGE_KEY } from "../utils/gameConfig";
 import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult, playerBetApi, type BetGameApiResult } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
@@ -14,7 +12,6 @@ import { BoardCardBox } from "./board-card-box";
 import type { Address } from "viem";
 
 interface PlayerPageProps {
-    latestGameEvent: string;
     playerInfoItems: PlayerInfoListItem[];
 }
 
@@ -23,7 +20,6 @@ interface PlayerPageProps {
  *
  * Renders the player sidebar controls and player-facing game/event info panel.
  * Props:
- * - latestGameEvent (string): latest formatted contract event text for the contract event log box.
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
  *
  * Usage:
@@ -31,7 +27,7 @@ interface PlayerPageProps {
  *
  * @returns {ReactNode} The player page section.
  */
-export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps): ReactNode {
+export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
     const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
@@ -54,18 +50,18 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
             if (result.success) {
                 const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
-                setLatestGameActionInfo(formatLogString(eventText, stage));
+                console.log((formatLogString(`${stage}: ${eventText}`)));
                 setIsJoinedGame(true);
                 setIsBetPlaced(false);
             } else {
                 const errorMsg: string = result.message ?? "Failed to join game.";
-                setLatestGameActionInfo(formatLogString(`Join reverted: ${errorMsg}`, stage));
+                console.warn(formatLogString(`${stage}: Join reverted: ${errorMsg}`));
                 setIsJoinedGame(false);
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
             console.error("[PlayerPage] handleJoinGame unexpected error:", error);
-            setLatestGameActionInfo(formatLogString(`Join failed: ${message}`));
+            console.error(formatLogString(`Join failed: ${message}`));
             setIsJoinedGame(false);
         } finally {
             setIsJoining(false);
@@ -80,17 +76,17 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
             if (result.success) {
                 const eventText: string = result.message ?? "Folded successfully, but no event info available.";
-                setLatestGameActionInfo(formatLogString(eventText, stage));
+                console.log(formatLogString(`${stage}: ${eventText}`));
                 setIsFolded(true);
                 setIsJoinedGame(false);
             } else {
                 const errorMsg: string = result.message ?? "Failed to fold.";
-                setLatestGameActionInfo(formatLogString(`Fold reverted: ${errorMsg}`, stage));
+                console.warn(formatLogString(`${stage}: Fold reverted: ${errorMsg}`));
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error folding.";
             console.error("[PlayerPage] handleFold unexpected error:", error);
-            setLatestGameActionInfo(formatLogString(`Fold failed: ${message}`));
+            console.error(formatLogString(`Fold failed: ${message}`));
         } finally {
             setIsFolding(false);
         }
@@ -98,7 +94,7 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
     async function handleBet(): Promise<void> {
         if (betAmount.trim() === "") {
-            setLatestGameActionInfo(formatLogString("Bet failed: enter an ETH amount."));
+            console.warn(formatLogString("Bet failed: enter an ETH amount."));
             return;
         }
 
@@ -109,16 +105,16 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
             if (result.success) {
                 const eventText: string = result.message ?? "Bet placed successfully, but no event info available.";
-                setLatestGameActionInfo(formatLogString(eventText, stage));
+                console.warn(formatLogString(`${stage}: ${eventText}`));
                 setIsBetPlaced(true);
             } else {
                 const errorMsg: string = result.message ?? "Failed to place bet.";
-                setLatestGameActionInfo(formatLogString(`Bet reverted: ${errorMsg}`, stage));
+                console.warn(formatLogString(`${stage}: Bet reverted: ${errorMsg}`));
             }
         } catch (error: unknown) {
             const message: string = error instanceof Error ? error.message : "Unexpected error placing bet.";
             console.error("[PlayerPage] handleBet unexpected error:", error);
-            setLatestGameActionInfo(formatLogString(`Bet failed: ${message}`));
+            console.error(formatLogString(`Bet failed: ${message}`));
         } finally {
             setIsBetting(false);
         }
@@ -243,20 +239,6 @@ export function PlayerPage({ latestGameEvent, playerInfoItems }: PlayerPageProps
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
                             <BoardCardBox />
-
-                        </div>
-
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-
-                        {/* GameInfoBox shows contract events shared from app-level event state. */}
-                        <GameInfoBox info={latestGameEvent} storageKey={CONTRACT_EVENT_STORAGE_KEY} title="Contract Events" />
-
-                        <div className="mt-4">
-
-                            {/* GameInfoBox shows game-related information lines for player-side actions. */}
-                            <GameInfoBox info={latestGameActionInfo} storageKey={PLAYER_STORAGE_KEY} title="Game Logs" />
 
                         </div>
 
