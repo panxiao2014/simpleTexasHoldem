@@ -87,7 +87,7 @@ export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEv
  * @param {ParsedSimpleTexasHoldemEvent} event Parsed event payload.
  * @returns {string} Timestamped event log message.
  */
-export function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
+function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
     const eventLabel: string = `Event: ${event.eventName}`;
 
     if (event.eventName === "PlayerJoined") {
@@ -117,6 +117,16 @@ export function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
 
     const message: string = `${eventLabel}, owner=${event.owner}, amount=${event.amount.toString()}`;
     return formatLogString(message);
+}
+
+/**
+ * Prints a parsed contract event as a formatted log string.
+ *
+ * @param {ParsedSimpleTexasHoldemEvent} event Parsed event payload.
+ * @returns {void} No return value.
+ */
+export function printEventString(event: ParsedSimpleTexasHoldemEvent): void {
+    console.log(formatEventString(event));
 }
 
 

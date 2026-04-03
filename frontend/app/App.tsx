@@ -6,7 +6,7 @@ import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
 import { isOwnerConnected } from "./utils/contractUtils";
 import {
-    formatEventString,
+    printEventString,
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
@@ -14,8 +14,6 @@ import {
 import { CONTRACT_ADDRESS } from "./utils/contractInfo";
 import {
     evaluateHandRank,
-    formatLogString,
-    getCardComponentKeyFromIndex,
 } from "./utils/utils";
 import type { Address } from "viem";
 import type { PlayerInfoListItem } from "./components/player-info-list";
@@ -91,11 +89,8 @@ function App(): ReactNode {
                     });
 
 
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 } else if (event.eventName === "PlayerFolded") {
-                    const card0: string = getCardComponentKeyFromIndex(Number(event.returnedCards[0]));
-                    const card1: string = getCardComponentKeyFromIndex(Number(event.returnedCards[1]));
-
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
                             (item: PlayerInfoListItem): boolean => item.player === event.player,
@@ -114,7 +109,7 @@ function App(): ReactNode {
                         );
                     });
 
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 } else if (event.eventName === "PlayerBet") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -137,7 +132,7 @@ function App(): ReactNode {
                         );
                     });
 
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 } else if (event.eventName === "BoardCardsDealt") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
@@ -153,12 +148,12 @@ function App(): ReactNode {
                         });
                     });
 
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 } else if (event.eventName === "GameEnded") {
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 } else if (event.eventName === "HouseFeeWithdrawn") {
                     setHouseFeeWithdrawnAmount(event.amount);
-                    console.log(formatEventString(event));
+                    printEventString(event);
                 }
             }
         };
