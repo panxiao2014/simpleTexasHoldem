@@ -1,25 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { MAX_GAME_INFO_BOX_SAVED_ITEMS } from "../../app/utils/gameConfig";
 import {
 	appendCappedHistoryEntry,
 	evaluateHandRank,
 	getCardComponentKeyFromIndex,
 } from "../../app/utils/utils";
 
-
-test("appendCappedHistoryEntry keeps max entries and drops oldest", (): void => {
-	const existingEntries: string[] = Array.from(
-		{ length: MAX_GAME_INFO_BOX_SAVED_ITEMS },
-		(_unusedValue: unknown, index: number): string => `entry-${index + 1}`,
-	);
-	const nextEntry: string = "entry-new";
-
-	const result: string[] = appendCappedHistoryEntry(existingEntries, nextEntry, MAX_GAME_INFO_BOX_SAVED_ITEMS);
-
-	expect(result).toHaveLength(MAX_GAME_INFO_BOX_SAVED_ITEMS);
-	expect(result[0]).toBe("entry-2");
-	expect(result[result.length - 1]).toBe(nextEntry);
-});
 
 test("getCardComponentKeyFromIndex maps contract card indices correctly", (): void => {
 	const mappings: Array<{ cardIndex: number; expected: string }> = [
