@@ -370,7 +370,7 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
                 <Modal>
 
                     {/* Dialog provides the fee-received message and close actions. */}
-                    <Dialog>
+                    <Dialog aria-label="House Fee Received">
                         {({ close }) => (
                             <div className="w-full max-w-md rounded-xl border border-secondary bg-primary shadow-xl">
                                 <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
