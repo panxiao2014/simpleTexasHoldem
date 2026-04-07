@@ -13,11 +13,13 @@ import {
     type Transport,
     type WalletClient,
 } from "viem";
+
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent, type PlayerBetParsedEvent } from "../events/contract-event";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
+import { formatLogString } from "../utils/utils";
 
 function extractRevertReason(err: unknown): string {
     console.debug('Full error object:', JSON.stringify(err, (_key: string, value: unknown) => {
@@ -47,25 +49,49 @@ function extractRevertReason(err: unknown): string {
     }
 }
 
-export type JoinGameApiResult = {
+export type PlayerActionApiResult = {
     success: boolean;
     message: string;
     stage: "Simulate" | "Execution";
 };
 
-export type FoldGameApiResult = {
-    success: boolean;
-    message: string;
-    stage: "Simulate" | "Execution";
-};
+function formatPlayerActionResultSummary(result: PlayerActionApiResult): string {
+    return `stage=${result.stage}, success=${result.success}, message=${result.message}`;
+}
 
-export type BetGameApiResult = {
-    success: boolean;
-    message: string;
-    stage: "Simulate" | "Execution";
-};
+/**
+ * Formats player action status text with timestamp and optional action result details.
+ *
+ * @param {string} message Base player action message.
+ * @param {PlayerActionApiResult} [result] Optional player action result to include in the formatted output.
+ * @returns {string} Timestamped player action text.
+ */
+function formatPlayerActionResult(message: string, result?: PlayerActionApiResult): string {
+    if (result === undefined) {
+        return formatLogString(`[Player Action] ${message} Result: undefined`);
+    }
 
-export async function playerJoinApi(): Promise<JoinGameApiResult> {
+    if(!result.message) {
+        return formatLogString(`[Player Action] ${message} | stage=${result.stage}, success=${result.success} but message is empty`);
+    }
+
+    const resultSummary: string = formatPlayerActionResultSummary(result);
+    return formatLogString(`[Player Action] ${message} | ${resultSummary}`);
+}
+
+/**
+ * Formats and prints player action status text with timestamp and optional action result details.
+ *
+ * @param {string} message Base player action message.
+ * @param {PlayerActionApiResult} [result] Optional player action result to include in the formatted output.
+ * @returns {void} No return value.
+ */
+export function printPlayerActionResult(message: string, result?: PlayerActionApiResult): void {
+    const formattedText: string = formatPlayerActionResult(message, result);
+    console.log(formattedText);
+}
+
+export async function playerJoinApi(): Promise<PlayerActionApiResult> {
     const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
     const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const connectedAccount: Address = await getConnectedAccount();
@@ -168,7 +194,7 @@ export async function playerJoinApi(): Promise<JoinGameApiResult> {
     }
 }
 
-export async function playerFoldApi(): Promise<FoldGameApiResult> {
+export async function playerFoldApi(): Promise<PlayerActionApiResult> {
     const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
     const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const connectedAccount: Address = await getConnectedAccount();
@@ -271,7 +297,7 @@ export async function playerFoldApi(): Promise<FoldGameApiResult> {
     }
 }
 
-export async function playerBetApi(betAmountEth: string): Promise<BetGameApiResult> {
+export async function playerBetApi(betAmountEth: string): Promise<PlayerActionApiResult> {
     const walletClient: WalletClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractWalletClient(USING_CHAIN_CONFIG.chain);
     const publicClient: PublicClient<Transport, typeof USING_CHAIN_CONFIG.chain> = createContractPublicClient(USING_CHAIN_CONFIG.chain);
     const connectedAccount: Address = await getConnectedAccount();

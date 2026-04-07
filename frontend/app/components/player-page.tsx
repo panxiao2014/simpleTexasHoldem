@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
-import { playerJoinApi, type JoinGameApiResult, playerFoldApi, type FoldGameApiResult, playerBetApi, type BetGameApiResult } from "../api/playerAction-api";
+import { playerJoinApi, printPlayerActionResult, type PlayerActionApiResult, playerFoldApi, playerBetApi } from "../api/playerAction-api";
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
 import { formatBalanceInfoText } from "../utils/contractParse";
@@ -28,7 +28,6 @@ interface PlayerPageProps {
  * @returns {ReactNode} The player page section.
  */
 export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
-    const [latestGameActionInfo, setLatestGameActionInfo] = useState<string>("");
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
@@ -45,23 +44,18 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
         try {
-            const result: JoinGameApiResult = await playerJoinApi();
-            const stage: string = result.stage;
+            const result: PlayerActionApiResult = await playerJoinApi();
 
             if (result.success) {
-                const eventText: string = result.message ?? "Joined game successfully, but no event info available.";
-                console.log((formatLogString(`${stage}: ${eventText}`)));
+                printPlayerActionResult("Game Joined", result);
                 setIsJoinedGame(true);
                 setIsBetPlaced(false);
             } else {
-                const errorMsg: string = result.message ?? "Failed to join game.";
-                console.warn(formatLogString(`${stage}: Join reverted: ${errorMsg}`));
+                printPlayerActionResult("Join Game Failed", result);
                 setIsJoinedGame(false);
             }
         } catch (error: unknown) {
-            const message: string = error instanceof Error ? error.message : "Unexpected error joining game.";
-            console.error("[PlayerPage] handleJoinGame unexpected error:", error);
-            console.error(formatLogString(`Join failed: ${message}`));
+            printPlayerActionResult(`Join Game Error: ${error instanceof Error ? error.message : "Unexpected error"}`);
             setIsJoinedGame(false);
         } finally {
             setIsJoining(false);
@@ -71,22 +65,17 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
     async function handleFold(): Promise<void> {
         setIsFolding(true);
         try {
-            const result: FoldGameApiResult = await playerFoldApi();
-            const stage: string = result.stage;
+            const result: PlayerActionApiResult = await playerFoldApi();
 
             if (result.success) {
-                const eventText: string = result.message ?? "Folded successfully, but no event info available.";
-                console.log(formatLogString(`${stage}: ${eventText}`));
+                printPlayerActionResult("Folded Hand", result);
                 setIsFolded(true);
                 setIsJoinedGame(false);
             } else {
-                const errorMsg: string = result.message ?? "Failed to fold.";
-                console.warn(formatLogString(`${stage}: Fold reverted: ${errorMsg}`));
+                printPlayerActionResult("Fold Hand Failed", result);
             }
         } catch (error: unknown) {
-            const message: string = error instanceof Error ? error.message : "Unexpected error folding.";
-            console.error("[PlayerPage] handleFold unexpected error:", error);
-            console.error(formatLogString(`Fold failed: ${message}`));
+            printPlayerActionResult(`Fold Hand Error: ${error instanceof Error ? error.message : "Unexpected error"}`);
         } finally {
             setIsFolding(false);
         }
@@ -100,21 +89,16 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
 
         setIsBetting(true);
         try {
-            const result: BetGameApiResult = await playerBetApi(betAmount);
-            const stage: string = result.stage;
+            const result: PlayerActionApiResult = await playerBetApi(betAmount);
 
             if (result.success) {
-                const eventText: string = result.message ?? "Bet placed successfully, but no event info available.";
-                console.warn(formatLogString(`${stage}: ${eventText}`));
+                printPlayerActionResult("Bet Placed", result);
                 setIsBetPlaced(true);
             } else {
-                const errorMsg: string = result.message ?? "Failed to place bet.";
-                console.warn(formatLogString(`${stage}: Bet reverted: ${errorMsg}`));
+                printPlayerActionResult("Bet Failed", result);
             }
         } catch (error: unknown) {
-            const message: string = error instanceof Error ? error.message : "Unexpected error placing bet.";
-            console.error("[PlayerPage] handleBet unexpected error:", error);
-            console.error(formatLogString(`Bet failed: ${message}`));
+            printPlayerActionResult(`Bet Error: ${error instanceof Error ? error.message : "Unexpected error placing bet."}`);
         } finally {
             setIsBetting(false);
         }
@@ -130,7 +114,7 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
 
             setPlayerBalanceModalText(formattedBalance);
 
-            console.log("Player balance loaded.", {
+            console.debug("Player balance loaded.", {
                 status: "success",
                 playerAddress: account,
                 balance: balance,
@@ -138,10 +122,8 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
             });
         } catch (error: unknown) {
             setPlayerBalanceModalText("Failed to load player balance.");
-            console.error("Player balance load failed.", {
-                status: "revert",
-                error,
-            });
+            printPlayerActionResult(`Player Balance Load Error: ${error instanceof Error ? error.message : "Unexpected error loading player balance."}`);
+
         }
     };
 
