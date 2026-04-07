@@ -25,7 +25,7 @@ export async function isOwnerConnected(): Promise<boolean> {
     const { ethereum } = window as WindowWithEthereum;
 
     if (ethereum === undefined) {
-        console.info("Wallet not detected");
+        console.warn("Wallet not detected");
         return false;
     }
 
@@ -41,7 +41,7 @@ export async function isOwnerConnected(): Promise<boolean> {
     }
 
     if (accounts.length === 0) {
-        console.info("No accounts found after connection attempt");
+        console.warn("No accounts found after connection attempt");
         return false;
     }
 

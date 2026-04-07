@@ -16,13 +16,11 @@ interface UseIsOwnerResult {
 }
 
 export function useIsOwner(): UseIsOwnerResult {
-    console.info("useIsOwner: Hook initialized");
-
     const [isOwner, setIsOwner] = useState<boolean>(false);
     const [isCheckingWalletOwnership, setIsCheckingWalletOwnership] = useState<boolean>(true);
 
     useEffect((): (() => void) => {
-        console.info("useIsOwner: useEffect triggered - checking wallet connection...");
+        console.debug("useIsOwner: useEffect() called");
         const checkOwnerStatus = async (): Promise<void> => {
             setIsCheckingWalletOwnership(true);
 
