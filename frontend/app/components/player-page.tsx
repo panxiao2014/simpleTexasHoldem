@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import type { Address } from "viem";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
 import { playerJoinApi, printPlayerActionResult, type PlayerActionApiResult, playerFoldApi, playerBetApi } from "../api/playerAction-api";
@@ -9,10 +10,12 @@ import { formatBalanceInfoText } from "../utils/contractParse";
 import { TextDisplayModal } from "./text-display-modal";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
-import type { Address } from "viem";
+import { GameResultBox } from "./game-result-box";
+import type { GameEndedResult } from "../events/contract-event";
 
 interface PlayerPageProps {
     playerInfoItems: PlayerInfoListItem[];
+    gameResult: GameEndedResult | null;
 }
 
 /**
@@ -21,13 +24,16 @@ interface PlayerPageProps {
  * Renders the player sidebar controls and player-facing game/event info panel.
  * Props:
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
- *
+ * - gameResult (GameEndedResult | null): the result of the ended game.
  * Usage:
  * Render this component when the selected game mode is player and provide event-derived props from the parent.
  *
  * @returns {ReactNode} The player page section.
  */
-export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
+export function PlayerPage({ 
+                                playerInfoItems,
+                                gameResult,
+                            }: PlayerPageProps): ReactNode {
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
@@ -221,6 +227,13 @@ export function PlayerPage({ playerInfoItems }: PlayerPageProps): ReactNode {
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
                             <BoardCardBox />
+
+                            {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
+                            <div className="mt-4">
+
+                                <GameResultBox gameResult={gameResult} />
+
+                            </div>
 
                         </div>
 

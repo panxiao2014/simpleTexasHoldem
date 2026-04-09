@@ -28,12 +28,15 @@ import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
+import { GameResultBox } from "./game-result-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
+import type { GameEndedResult } from "../events/contract-event";
 
 interface OwnerPageProps {
     houseFeeWithdrawnAmount: bigint | null;
     playerInfoItems: PlayerInfoListItem[];
+    gameResult: GameEndedResult | null;
 }
 
 /**
@@ -43,13 +46,17 @@ interface OwnerPageProps {
  * Props:
  * - houseFeeWithdrawnAmount (bigint | null): latest withdrawn house-fee amount from HouseFeeWithdrawn events.
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
- *
+ * - gameResult (GameEndedResult | null): the result of the ended game.
  * Usage:
  * Render this component when the selected game mode is owner and provide event-derived props from the parent.
  *
  * @returns {ReactNode} The owner control panel section.
  */
-export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPageProps): ReactNode {
+export function OwnerPage({ 
+                                houseFeeWithdrawnAmount,
+                                playerInfoItems,
+                                gameResult,
+                            }: OwnerPageProps): ReactNode {
     const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
@@ -358,6 +365,13 @@ export function OwnerPage({ houseFeeWithdrawnAmount, playerInfoItems }: OwnerPag
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
                             <BoardCardBox />
+
+                        </div>
+
+                        {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
+                        <div className="mt-4">
+
+                            <GameResultBox gameResult={gameResult} />
 
                         </div>
 

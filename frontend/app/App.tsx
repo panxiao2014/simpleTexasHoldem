@@ -10,6 +10,7 @@ import {
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
+    type GameEndedResult,
 } from "./events/contract-event";
 import { CONTRACT_ADDRESS } from "./utils/contractInfo";
 import {
@@ -33,16 +34,21 @@ function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
     const [houseFeeWithdrawnAmount, setHouseFeeWithdrawnAmount] = useState<bigint | null>(null);
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
+    const [gameResult, setGameResult] = useState<GameEndedResult | null>(null);
 
     let currentPage: ReactNode = (
         <OwnerPage
             houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
             playerInfoItems={playerInfoItems}
+            gameResult={gameResult}
         />
     );
 
     if (gameMode === GAME_MODES.PLAYER) {
-        currentPage = <PlayerPage playerInfoItems={playerInfoItems} />;
+        currentPage = <PlayerPage 
+                            playerInfoItems={playerInfoItems}
+                            gameResult={gameResult} 
+                      />;
     } else if (gameMode === GAME_MODES.CARDS) {
         currentPage = <CardsPage />;
     }
@@ -151,6 +157,7 @@ function App(): ReactNode {
                     printEventString(event);
                 } else if (event.eventName === "GameEnded") {
                     printEventString(event);
+                    setGameResult(event.result);
                 } else if (event.eventName === "HouseFeeWithdrawn") {
                     setHouseFeeWithdrawnAmount(event.amount);
                     printEventString(event);
