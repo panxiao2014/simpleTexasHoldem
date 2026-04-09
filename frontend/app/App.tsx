@@ -12,7 +12,6 @@ import {
     type OnParsedSimpleTexasHoldemEvents,
     type GameEndedResult,
 } from "./events/contract-event";
-import { CONTRACT_ADDRESS } from "./utils/contractInfo";
 import {
     evaluateHandRank,
 } from "./utils/utils";
@@ -166,7 +165,6 @@ function App(): ReactNode {
         };
 
         const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(
-            CONTRACT_ADDRESS as Address,
             handleParsedEvents,
         );
 

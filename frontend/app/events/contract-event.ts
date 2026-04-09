@@ -8,6 +8,7 @@ import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { formatLogString } from "../utils/utils";
+import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 
 type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded" | "HouseFeeWithdrawn";
 
@@ -495,19 +496,17 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
 /**
  * Subscribes to SimpleTexasHoldem contract events and forwards parsed results to a callback.
  *
- * @param {Address} contractAddress Contract address of SimpleTexasHoldem.
  * @param {OnParsedSimpleTexasHoldemEvents} [onParsedEvents] Optional callback invoked with parsed events on each batch.
  * @returns {() => void} Cleanup function that unsubscribes the event watcher.
  */
 export function subscribeToSimpleTexasHoldemEvents(
-    contractAddress: Address,
     onParsedEvents?: OnParsedSimpleTexasHoldemEvents,
 ): () => void {
     try {
         const client: PublicClient = createContractPublicClient(USING_CHAIN_CONFIG.chain);
 
         const unwatch = client.watchContractEvent({
-            address: contractAddress,
+            address: CONTRACT_ADDRESS,
             abi: SIMPLE_TEXAS_HOLDEM_ABI,
             onLogs: (logs: readonly Log[]): void => {
                 const parsedEvents: ParsedSimpleTexasHoldemEvent[] = parseSimpleTexasHoldemEventLogs(logs);
