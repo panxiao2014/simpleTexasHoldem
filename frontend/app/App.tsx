@@ -15,7 +15,6 @@ import {
 import {
     evaluateHandRank,
 } from "./utils/utils";
-import type { Address } from "viem";
 import type { PlayerInfoListItem } from "./components/player-info-list";
 
 /**

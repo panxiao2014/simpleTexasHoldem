@@ -37,7 +37,6 @@ export function BoardCardBox(): ReactNode {
         };
 
         const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(
-            CONTRACT_ADDRESS as Address,
             handleParsedEvents,
         );
 
