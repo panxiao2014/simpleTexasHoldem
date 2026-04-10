@@ -6,7 +6,6 @@ import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
 import { isOwnerConnected } from "./utils/contractUtils";
 import {
-    printEventString,
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
@@ -91,9 +90,6 @@ function App(): ReactNode {
                             },
                         ];
                     });
-
-
-                    printEventString(event);
                 } else if (event.eventName === "PlayerFolded") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -112,8 +108,6 @@ function App(): ReactNode {
                             (item: PlayerInfoListItem): boolean => item.player !== event.player,
                         );
                     });
-
-                    printEventString(event);
                 } else if (event.eventName === "PlayerBet") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -135,8 +129,6 @@ function App(): ReactNode {
                                     : item,
                         );
                     });
-
-                    printEventString(event);
                 } else if (event.eventName === "BoardCardsDealt") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
@@ -151,14 +143,10 @@ function App(): ReactNode {
                             };
                         });
                     });
-
-                    printEventString(event);
                 } else if (event.eventName === "GameEnded") {
-                    printEventString(event);
                     setGameResult(event.result);
                 } else if (event.eventName === "HouseFeeWithdrawn") {
                     setHouseFeeWithdrawnAmount(event.amount);
-                    printEventString(event);
                 }
             }
         };

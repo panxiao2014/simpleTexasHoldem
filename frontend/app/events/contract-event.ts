@@ -7,10 +7,10 @@ import {
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
-import { formatLogString } from "../utils/utils";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 
-type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameEnded" | "HouseFeeWithdrawn";
+
+type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameStarted" | "GameEnded" | "HouseFeeWithdrawn";
 
 type DecodedEventLog = {
     eventName: string;
@@ -48,6 +48,13 @@ export interface BoardCardsDealtParsedEvent extends BaseParsedEvent {
     boardCards: readonly [number, number, number, number, number];
 }
 
+export interface GameStartedParsedEvent extends BaseParsedEvent {
+    eventName: "GameStarted";
+    gameId: bigint;
+    startTime: bigint;
+    endTime: bigint;
+}
+
 export interface GameEndedResult {
     gameId: bigint;
     startTime: bigint;
@@ -77,58 +84,12 @@ export type ParsedSimpleTexasHoldemEvent =
     | PlayerFoldedParsedEvent
     | PlayerBetParsedEvent
     | BoardCardsDealtParsedEvent
+    | GameStartedParsedEvent
     | GameEndedParsedEvent
     | HouseFeeWithdrawnParsedEvent;
 
 export type OnParsedSimpleTexasHoldemEvents = (events: ParsedSimpleTexasHoldemEvent[]) => void;
 
-/**
- * Formats a parsed contract event into a timestamped log string.
- *
- * @param {ParsedSimpleTexasHoldemEvent} event Parsed event payload.
- * @returns {string} Timestamped event log message.
- */
-function formatEventString(event: ParsedSimpleTexasHoldemEvent): string {
-    const eventLabel: string = `[Contract Event] ${event.eventName}`;
-
-    if (event.eventName === "PlayerJoined") {
-        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, holeCards=[${event.holeCards[0].toString()}, ${event.holeCards[1].toString()}]`;
-        return formatLogString(message);
-    }
-
-    if (event.eventName === "PlayerFolded") {
-        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, returnedCards=[${event.returnedCards[0].toString()}, ${event.returnedCards[1].toString()}]`;
-        return formatLogString(message);
-    }
-
-    if (event.eventName === "PlayerBet") {
-        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, player=${event.player}, amount=${event.amount.toString()}`;
-        return formatLogString(message);
-    }
-
-    if (event.eventName === "BoardCardsDealt") {
-        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, boardCards=[${event.boardCards[0].toString()}, ${event.boardCards[1].toString()}, ${event.boardCards[2].toString()}, ${event.boardCards[3].toString()}, ${event.boardCards[4].toString()}]`;
-        return formatLogString(message);
-    }
-
-    if (event.eventName === "GameEnded") {
-        const message: string = `${eventLabel}, gameId=${event.gameId.toString()}, winners=[${event.result.winners.join(", ")}], potPerWinner=${event.result.potPerWinner.toString()}, houseFee=${event.result.houseFee.toString()}`;
-        return formatLogString(message);
-    }
-
-    const message: string = `${eventLabel}, owner=${event.owner}, amount=${event.amount.toString()}`;
-    return formatLogString(message);
-}
-
-/**
- * Prints a parsed contract event as a formatted log string.
- *
- * @param {ParsedSimpleTexasHoldemEvent} event Parsed event payload.
- * @returns {void} No return value.
- */
-export function printEventString(event: ParsedSimpleTexasHoldemEvent): void {
-    console.log(formatEventString(event));
-}
 
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -140,6 +101,7 @@ function isSupportedEventName(eventName: string | undefined): eventName is Suppo
         || eventName === "PlayerFolded"
         || eventName === "PlayerBet"
         || eventName === "BoardCardsDealt"
+        || eventName === "GameStarted"
         || eventName === "GameEnded"
         || eventName === "HouseFeeWithdrawn";
 }
@@ -235,6 +197,7 @@ function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
  * - PlayerFolded: gameId, player, returnedCards
  * - PlayerBet: gameId, player, amount
  * - BoardCardsDealt: gameId, boardCards
+ * - GameStarted: gameId, startTime, endTime
  * - GameEnded: gameId, result
  * - HouseFeeWithdrawn: owner, amount
  *
@@ -254,7 +217,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
             const eventName: string | undefined = parsedLog.eventName;
 
             if (!isSupportedEventName(eventName)) {
-                console.error("[parseSimpleTexasHoldemEventLogs] Received unsupported event:", {
+                console.error("Received unsupported event:", {
                     eventName,
                     args: parsedLog.args,
                 });
@@ -264,12 +227,14 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
             const args: unknown = parsedLog.args;
 
             if (!isRecord(args)) {
-                console.error("[parseSimpleTexasHoldemEventLogs] Event args could not be parsed:", {
+                console.error("Event args could not be parsed:", {
                     eventName,
                     args,
                 });
                 continue;
             }
+
+            console.debug("Contract event recevied: ", {parsedLog});
 
             if (eventName === "PlayerJoined") {
                 const gameId: unknown = args.gameId;
@@ -301,7 +266,6 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                 };
 
                 parsedEvents.push(parsedEvent);
-                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
             }
 
@@ -335,8 +299,30 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                 };
 
                 parsedEvents.push(parsedEvent);
-                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
+            }
+
+            if (eventName === "PlayerBet") {
+                const gameId: unknown = args.gameId;
+                const player: unknown = args.player;
+                const amount: unknown = args.amount;
+
+                if (!isBigIntValue(gameId) || !isAddressValue(player) || !isBigIntValue(amount)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerBet payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: PlayerBetParsedEvent = {
+                    eventName,
+                    gameId,
+                    player,
+                    amount,
+                };
+
+                parsedEvents.push(parsedEvent);
             }
 
             if (eventName === "BoardCardsDealt") {
@@ -367,7 +353,30 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                 };
 
                 parsedEvents.push(parsedEvent);
-                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
+                continue;
+            }
+
+            if (eventName === "GameStarted") {
+                const gameId: unknown = args.gameId;
+                const startTime: unknown = args.startTime;
+                const endTime: unknown = args.endTime;
+
+                if (!isBigIntValue(gameId) || !isBigIntValue(startTime) || !isBigIntValue(endTime)) {
+                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid GameStarted payload:", {
+                        eventName,
+                        args,
+                    });
+                    continue;
+                }
+
+                const parsedEvent: GameStartedParsedEvent = {
+                    eventName,
+                    gameId,
+                    startTime,
+                    endTime,
+                };
+
+                parsedEvents.push(parsedEvent);
                 continue;
             }
 
@@ -433,7 +442,6 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                 };
 
                 parsedEvents.push(parsedEvent);
-                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
             }
 
@@ -456,31 +464,8 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                 };
 
                 parsedEvents.push(parsedEvent);
-                console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
                 continue;
             }
-
-            const gameId: unknown = args.gameId;
-            const player: unknown = args.player;
-            const amount: unknown = args.amount;
-
-            if (!isBigIntValue(gameId) || !isAddressValue(player) || !isBigIntValue(amount)) {
-                console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerBet payload:", {
-                    eventName,
-                    args,
-                });
-                continue;
-            }
-
-            const parsedEvent: PlayerBetParsedEvent = {
-                eventName,
-                gameId,
-                player,
-                amount,
-            };
-
-            parsedEvents.push(parsedEvent);
-            console.log("[parseSimpleTexasHoldemEventLogs] Parsed event:", parsedEvent);
         } catch (error: unknown) {
             console.warn("[parseSimpleTexasHoldemEventLogs] Failed to decode event log:", {
                 error,
