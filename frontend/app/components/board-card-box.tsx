@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
 import { subscribeToSimpleTexasHoldemEvents, type OnParsedSimpleTexasHoldemEvents, type ParsedSimpleTexasHoldemEvent } from "../events/contract-event";
-import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { getCardComponentKeyFromIndex } from "../utils/utils";
-import type { Address } from "viem";
+
 
 /**
  * BoardCardBox component for displaying the latest dealt board cards.

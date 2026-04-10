@@ -26,13 +26,13 @@ test("getCardComponentKeyFromIndex rejects invalid indices", (): void => {
 });
 
 test("evaluateHandRank returns Straight Flush (8)", (): void => {
-	const holeCards: readonly [bigint, bigint] = [BigInt(8), BigInt(9)];
-	const boardCards: readonly [bigint, bigint, bigint, bigint, bigint] = [
-		BigInt(10),
-		BigInt(11),
-		BigInt(12),
-		BigInt(20),
-		BigInt(33),
+	const holeCards: readonly [number, number] = [8, 9];
+	const boardCards: readonly [number, number, number, number, number] = [
+		10,
+		11,
+		12,
+		20,
+		33,
 	];
 
 	const rank: number = evaluateHandRank(holeCards, boardCards);
@@ -41,13 +41,13 @@ test("evaluateHandRank returns Straight Flush (8)", (): void => {
 });
 
 test("evaluateHandRank returns Full House (6)", (): void => {
-	const holeCards: readonly [bigint, bigint] = [BigInt(0), BigInt(13)];
-	const boardCards: readonly [bigint, bigint, bigint, bigint, bigint] = [
-		BigInt(26),
-		BigInt(4),
-		BigInt(17),
-		BigInt(30),
-		BigInt(45),
+	const holeCards: readonly [number, number] = [0, 13];
+	const boardCards: readonly [number, number, number, number, number] = [
+		26,
+		4,
+		17,
+		30,
+		45,
 	];
 
 	const rank: number = evaluateHandRank(holeCards, boardCards);
@@ -56,13 +56,13 @@ test("evaluateHandRank returns Full House (6)", (): void => {
 });
 
 test("evaluateHandRank rejects invalid card indices", (): void => {
-	const invalidHoleCards: readonly [bigint, bigint] = [BigInt(-1), BigInt(10)];
-	const boardCards: readonly [bigint, bigint, bigint, bigint, bigint] = [
-		BigInt(11),
-		BigInt(12),
-		BigInt(20),
-		BigInt(30),
-		BigInt(40),
+	const invalidHoleCards: readonly [number, number] = [-1, 10];
+	const boardCards: readonly [number, number, number, number, number] = [
+		11,
+		12,
+		20,
+		30,
+		40,
 	];
 
 	expect((): number => evaluateHandRank(invalidHoleCards, boardCards)).toThrow("Invalid card index: -1");

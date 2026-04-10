@@ -248,26 +248,30 @@ const evaluateFiveCardRank = (cards: readonly [number, number, number, number, n
  * - 7: FOUR_OF_A_KIND
  * - 8: STRAIGHT_FLUSH
  *
- * @param {readonly [bigint, bigint]} holeCards Player's two hole cards.
- * @param {readonly [bigint, bigint, bigint, bigint, bigint]} boardCards Five community cards.
+ * @param {readonly [number, number]} holeCards Player's two hole cards.
+ * @param {readonly [number, number, number, number, number]} boardCards Five community cards.
  * @returns {number} Best hand rank as an integer aligned to on-chain `HandRank`.
  */
 export const evaluateHandRank = (
-    holeCards: readonly [bigint, bigint],
-    boardCards: readonly [bigint, bigint, bigint, bigint, bigint],
+    holeCards: readonly [number, number],
+    boardCards: readonly [number, number, number, number, number],
 ): number => {
     const allCards: [number, number, number, number, number, number, number] = [
-        Number(holeCards[0]),
-        Number(holeCards[1]),
-        Number(boardCards[0]),
-        Number(boardCards[1]),
-        Number(boardCards[2]),
-        Number(boardCards[3]),
-        Number(boardCards[4]),
+        holeCards[0],
+        holeCards[1],
+        boardCards[0],
+        boardCards[1],
+        boardCards[2],
+        boardCards[3],
+        boardCards[4],
     ];
 
     for (const cardIndex of allCards) {
-        if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex > 51) {
+        if (!Number.isInteger(cardIndex)) {
+            throw new Error(`Invalid card type: ${cardIndex}`);
+        }
+
+        if (cardIndex < 0 || cardIndex > 51) {
             throw new Error(`Invalid card index: ${cardIndex}`);
         }
     }

@@ -6,7 +6,7 @@ import { formatHandRankLabel, getCardComponentKeyFromIndex } from "../utils/util
 
 export interface PlayerInfoListItem {
     player: string;
-    holeCards: readonly [bigint, bigint];
+    holeCards: readonly [number, number];
     betAmount: bigint;
     handRank: number;
 }

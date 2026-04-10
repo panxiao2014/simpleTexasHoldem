@@ -25,14 +25,14 @@ export interface PlayerJoinedParsedEvent extends BaseParsedEvent {
     eventName: "PlayerJoined";
     gameId: bigint;
     player: Address;
-    holeCards: readonly [bigint, bigint];
+    holeCards: readonly [number, number];
 }
 
 export interface PlayerFoldedParsedEvent extends BaseParsedEvent {
     eventName: "PlayerFolded";
     gameId: bigint;
     player: Address;
-    returnedCards: readonly [bigint, bigint];
+    returnedCards: readonly [number, number];
 }
 
 export interface PlayerBetParsedEvent extends BaseParsedEvent {
@@ -45,7 +45,7 @@ export interface PlayerBetParsedEvent extends BaseParsedEvent {
 export interface BoardCardsDealtParsedEvent extends BaseParsedEvent {
     eventName: "BoardCardsDealt";
     gameId: bigint;
-    boardCards: readonly [bigint, bigint, bigint, bigint, bigint];
+    boardCards: readonly [number, number, number, number, number];
 }
 
 export interface GameEndedResult {
@@ -54,7 +54,7 @@ export interface GameEndedResult {
     endTime: bigint;
     players: readonly Address[];
     betAmounts: readonly bigint[];
-    boardCards: readonly [bigint, bigint, bigint, bigint, bigint];
+    boardCards: readonly [number, number, number, number, number];
     winners: readonly Address[];
     potPerWinner: bigint;
     houseFee: bigint;
@@ -152,25 +152,13 @@ function isBigIntValue(value: unknown): value is bigint {
     return typeof value === "bigint";
 }
 
-function toCardBigInt(value: unknown): bigint | undefined {
-    if (typeof value === "bigint") {
-        return value;
-    }
-
-    if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 51) {
-        return BigInt(value);
-    }
-
-    return undefined;
-}
-
-function parseCardPair(value: unknown): readonly [bigint, bigint] | undefined {
+function parseCardPair(value: unknown): readonly [number, number] | undefined {
     if (!Array.isArray(value) || value.length !== 2) {
         return undefined;
     }
 
-    const first: bigint | undefined = toCardBigInt(value[0]);
-    const second: bigint | undefined = toCardBigInt(value[1]);
+    const first: number | undefined = toCardNumber(value[0]);
+    const second: number | undefined = toCardNumber(value[1]);
 
     if (first === undefined || second === undefined) {
         return undefined;
@@ -179,16 +167,27 @@ function parseCardPair(value: unknown): readonly [bigint, bigint] | undefined {
     return [first, second] as const;
 }
 
-function parseCardFive(value: unknown): readonly [bigint, bigint, bigint, bigint, bigint] | undefined {
+function toCardNumber(value: unknown): number | undefined {
+    if (typeof value === "number"
+        && Number.isInteger(value)
+        && value >= 0
+        && value <= 51) {
+        return value;
+    }
+
+    return undefined;
+}
+
+function parseCardFive(value: unknown): readonly [number, number, number, number, number] | undefined {
     if (!Array.isArray(value) || value.length !== 5) {
         return undefined;
     }
 
-    const first: bigint | undefined = toCardBigInt(value[0]);
-    const second: bigint | undefined = toCardBigInt(value[1]);
-    const third: bigint | undefined = toCardBigInt(value[2]);
-    const fourth: bigint | undefined = toCardBigInt(value[3]);
-    const fifth: bigint | undefined = toCardBigInt(value[4]);
+    const first: number | undefined = toCardNumber(value[0]);
+    const second: number | undefined = toCardNumber(value[1]);
+    const third: number | undefined = toCardNumber(value[2]);
+    const fourth: number | undefined = toCardNumber(value[3]);
+    const fifth: number | undefined = toCardNumber(value[4]);
 
     if (
         first === undefined
@@ -285,7 +284,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     continue;
                 }
 
-                const parsedHoleCards: readonly [bigint, bigint] | undefined = parseCardPair(holeCards);
+                const parsedHoleCards: readonly [number, number] | undefined = parseCardPair(holeCards);
                 if (parsedHoleCards === undefined) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid holeCards payload:", {
                         eventName,
@@ -319,7 +318,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     continue;
                 }
 
-                const parsedReturnedCards: readonly [bigint, bigint] | undefined = parseCardPair(returnedCards);
+                const parsedReturnedCards: readonly [number, number] | undefined = parseCardPair(returnedCards);
                 if (parsedReturnedCards === undefined) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid returnedCards payload:", {
                         eventName,
@@ -352,7 +351,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     continue;
                 }
 
-                const parsedBoardCards: readonly [bigint, bigint, bigint, bigint, bigint] | undefined = parseCardFive(boardCards);
+                const parsedBoardCards: readonly [number, number, number, number, number] | undefined = parseCardFive(boardCards);
                 if (parsedBoardCards === undefined) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid boardCards payload:", {
                         eventName,
@@ -396,7 +395,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
 
                 const parsedPlayers: readonly Address[] | undefined = parseAddressArray(players);
                 const parsedBetAmounts: readonly bigint[] | undefined = parseBigIntArray(betAmounts);
-                const parsedBoardCards: readonly [bigint, bigint, bigint, bigint, bigint] | undefined = parseCardFive(boardCards);
+                const parsedBoardCards: readonly [number, number, number, number, number] | undefined = parseCardFive(boardCards);
                 const parsedWinners: readonly Address[] | undefined = parseAddressArray(winners);
 
                 if (
