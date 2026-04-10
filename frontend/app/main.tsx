@@ -1,3 +1,6 @@
+// Add BigInt serialization support for React state
+(BigInt.prototype as any).toJSON = function() { return this.toString(); };
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/styles/globals.css";

@@ -28,7 +28,7 @@ export function BoardCardBox(): ReactNode {
             for (const event of events) {
                 if (event.eventName === "BoardCardsDealt") {
                     const nextBoardCards: string[] = event.boardCards.map(
-                        (card: bigint): string => getCardComponentKeyFromIndex(Number(card)),
+                        (card: number): string => getCardComponentKeyFromIndex(Number(card)),
                     );
                     setBoardCardKeys(nextBoardCards);
                 }

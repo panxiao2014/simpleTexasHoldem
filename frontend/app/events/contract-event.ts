@@ -1,5 +1,6 @@
 import {
     decodeEventLog,
+    isAddress,
     type Address,
     type Log,
     type PublicClient,
@@ -107,7 +108,7 @@ function isSupportedEventName(eventName: string | undefined): eventName is Suppo
 }
 
 function isAddressValue(value: unknown): value is Address {
-    return typeof value === "string";
+    return typeof value === "string" && isAddress(value);
 }
 
 function isBigIntValue(value: unknown): value is bigint {
