@@ -39,7 +39,7 @@ export function Header({ gameMode, onGameModeChange }: HeaderProps): ReactNode {
                 aria-label="Select game mode"
                 data-testid="game-mode-select"
                 value={gameMode}
-                onChange={(key: Key) => onGameModeChange(key as GameMode)}
+                onChange={(key: Key | null) => key !== null && onGameModeChange(key as GameMode)}
                 items={modeItems}
                 size="sm"
                 className="w-36"
