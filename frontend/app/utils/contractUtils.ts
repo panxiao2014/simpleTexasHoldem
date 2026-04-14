@@ -8,25 +8,49 @@ interface WindowWithEthereum extends Window {
     ethereum?: EthereumProvider;
 }
 
+// The currenctly connected wallet account address. 
+let connectedAccount: string = "";
+
+/**
+ * Sets the connected account address.
+ *
+ * @param {string} account The account address to set.
+ * @returns {void} No return value.
+ */
+export function setConnectedAccount(account: string): void {
+    connectedAccount = account;
+}
+
+/**
+ * Gets the connected account address.
+ *
+ * @returns {string} The connected account address, or empty string if not connected.
+ */
+function getConnectedAccount(): string {
+    console.debug(`getConnectedAccount(): ${connectedAccount}`);
+    return connectedAccount;
+}
+
 const parseAccounts = (response: unknown): string[] =>
     Array.isArray(response)
         ? response.filter((v: unknown): v is string => typeof v === "string")
         : [];
-        
+
 /**
- * Checks if the currently connected wallet account is the contract owner.
+ * Initializes wallet connection by requesting user to connect their account.
  *
- * If no account is connected, triggers MetaMask connection prompt first.
- * Returns false if no wallet is detected, user rejects, or address does not match.
+ * Attempts to retrieve connected accounts from the Ethereum provider.
+ * If no accounts are connected, triggers the wallet connection prompt.
+ * Stores the connected account address in connectedAccount state.
  *
- * @returns {Promise<boolean>} true if the connected account is the contract owner.
+ * @returns {Promise<void>} No return value.
  */
-export async function isOwnerConnected(): Promise<boolean> {
+export async function initWalletConnection(): Promise<void> {
     const { ethereum } = window as WindowWithEthereum;
 
     if (ethereum === undefined) {
-        console.warn("Wallet not detected");
-        return false;
+        console.error("Wallet not detected");
+        return;
     }
 
     let accounts: string[] = parseAccounts(
@@ -42,10 +66,17 @@ export async function isOwnerConnected(): Promise<boolean> {
 
     if (accounts.length === 0) {
         console.warn("No accounts found after connection attempt");
-        return false;
+    } else {
+        setConnectedAccount(accounts[0]);
     }
+}
 
-    const isOwner: boolean = accounts[0].toLowerCase() === CONTRACT_OWNER_ADDRESS.toLowerCase();
-    console.info(`Connected account: ${accounts[0]}, Is owner: ${isOwner}`);
-    return isOwner;
+/**
+ * Checks if the connected wallet account is the contract owner.
+ *
+ * @returns {boolean} true if the connected account is the contract owner.
+ */
+export function isOwnerAccount(): boolean {
+    const account: string = getConnectedAccount();
+    return account.toLowerCase() === CONTRACT_OWNER_ADDRESS.toLowerCase();
 }

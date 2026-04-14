@@ -24,7 +24,6 @@ import {
 } from "../utils/contractParse";
 
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
-import { useIsOwner } from "../hooks/use-is-owner";
 import { TextDisplayModal } from "./text-display-modal";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
@@ -34,6 +33,7 @@ import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 import type { GameEndedResult } from "../events/contract-event";
 
 interface OwnerPageProps {
+    isOwnerConnected: boolean;
     houseFeeWithdrawnAmount: bigint | null;
     playerInfoItems: PlayerInfoListItem[];
     gameResult: GameEndedResult | null;
@@ -44,6 +44,7 @@ interface OwnerPageProps {
  *
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
+ * - isOwnerConnected (boolean): indicates if the owner's wallet is connected.
  * - houseFeeWithdrawnAmount (bigint | null): latest withdrawn house-fee amount from HouseFeeWithdrawn events.
  * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
  * - gameResult (GameEndedResult | null): the result of the ended game.
@@ -53,11 +54,11 @@ interface OwnerPageProps {
  * @returns {ReactNode} The owner control panel section.
  */
 export function OwnerPage({ 
+                                isOwnerConnected,
                                 houseFeeWithdrawnAmount,
                                 playerInfoItems,
                                 gameResult,
                             }: OwnerPageProps): ReactNode {
-    const { isOwner, isCheckingWalletOwnership } = useIsOwner();
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
@@ -231,12 +232,13 @@ export function OwnerPage({
         }
     };
 
-    const isOwnerBlocked: boolean = isCheckingWalletOwnership || !isOwner;
+    console.debug("OwnerPage render, isOwnerConnected:", isOwnerConnected);
+
     const isGameActive: boolean = gameInfo?.gameActive === true;
     const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading || isCollectFeeLoading;
 
-    const isStartDisabled: boolean = isOwnerBlocked || isUiBusy || isGameActive;
-    const isEndDisabled: boolean = isOwnerBlocked || isUiBusy || !isGameActive;
+    const isStartDisabled: boolean = !isOwnerConnected || isUiBusy || isGameActive;
+    const isEndDisabled: boolean = !isOwnerConnected || isUiBusy || !isGameActive;
 
     return (
         <>
@@ -280,7 +282,7 @@ export function OwnerPage({
                         <Button
                             size="md"
                             color="secondary"
-                            isDisabled={isOwnerBlocked}
+                            isDisabled={!isOwnerConnected}
                             data-testid="owner-house-fee"
                             onClick={(): void => {
                                 void handleHouseFeeClick();
@@ -296,7 +298,7 @@ export function OwnerPage({
                 <Button
                     size="md"
                     color="secondary"
-                    isDisabled={isOwnerBlocked || isCollectFeeLoading}
+                    isDisabled={!isOwnerConnected || isCollectFeeLoading}
                     isLoading={isCollectFeeLoading}
                     data-testid="owner-collect-fee"
                     onClick={(): void => {
@@ -316,7 +318,7 @@ export function OwnerPage({
                         <Button
                             size="md"
                             color="secondary"
-                            isDisabled={isOwnerBlocked}
+                            isDisabled={!isOwnerConnected}
                             data-testid="owner-game-info"
                             onClick={(): void => {
                                 void handleGameInfoClick();
@@ -338,7 +340,7 @@ export function OwnerPage({
                             <Button
                                 size="md"
                                 color="secondary"
-                                isDisabled={isOwnerBlocked}
+                                isDisabled={!isOwnerConnected}
                                 data-testid="owner-get-balance"
                                 onClick={(): void => {
                                     void handleOwnerBalanceClick();

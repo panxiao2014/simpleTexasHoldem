@@ -4,7 +4,7 @@ import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
-import { isOwnerConnected } from "./utils/contractUtils";
+import { initWalletConnection, isOwnerAccount, setConnectedAccount } from "./utils/contractUtils";
 import {
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
@@ -15,6 +15,17 @@ import {
     evaluateHandRank,
 } from "./utils/utils";
 import type { PlayerInfoListItem } from "./components/player-info-list";
+
+
+interface EthereumProviderWithEvents {
+    on: (event: "accountsChanged", handler: (accounts: string[]) => void) => void;
+    removeListener: (event: "accountsChanged", handler: (accounts: string[]) => void) => void;
+}
+
+
+interface WindowWithEthereumEvents extends Window {
+    ethereum?: EthereumProviderWithEvents;
+}
 
 /**
  * Root application component for the frontend app shell.
@@ -28,40 +39,66 @@ import type { PlayerInfoListItem } from "./components/player-info-list";
  * @returns {ReactNode} The complete app layout.
  */
 function App(): ReactNode {
-    const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.OWNER);
+    const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
+    const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
     const [houseFeeWithdrawnAmount, setHouseFeeWithdrawnAmount] = useState<bigint | null>(null);
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
     const [gameResult, setGameResult] = useState<GameEndedResult | null>(null);
 
-    let currentPage: ReactNode = (
-        <OwnerPage
-            houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
-            playerInfoItems={playerInfoItems}
-            gameResult={gameResult}
-        />
-    );
+    let currentPage: ReactNode;
 
-    if (gameMode === GAME_MODES.PLAYER) {
-        currentPage = <PlayerPage 
-                            playerInfoItems={playerInfoItems}
-                            gameResult={gameResult} 
-                      />;
+    if (gameMode === GAME_MODES.OWNER) {
+        currentPage = (
+            <OwnerPage
+                isOwnerConnected={isOwnerConnected}
+                houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
+                playerInfoItems={playerInfoItems}
+                gameResult={gameResult}
+            />
+        );
+    } else if (gameMode === GAME_MODES.PLAYER) {
+        currentPage = (
+            <PlayerPage 
+                playerInfoItems={playerInfoItems}
+                gameResult={gameResult} 
+            />
+        );
     } else if (gameMode === GAME_MODES.CARDS) {
         currentPage = <CardsPage />;
     }
 
-    useEffect((): void => {
-        async function initWalletConnection(): Promise<void> {
-            const ownerConnected: boolean = await isOwnerConnected();
-            if (ownerConnected) {
-                setGameMode(GAME_MODES.OWNER);
+    useEffect((): (() => void) => {
+        const initializeWallet = async (): Promise<void> => {
+            await initWalletConnection();
+            setIsOwnerConnected(isOwnerAccount());
+        };
+
+        initializeWallet();
+
+        // register event listener for wallet account changes:
+        const { ethereum } = window as WindowWithEthereumEvents;
+
+        const handleAccountsChanged = (accounts: string[]): void => {
+            if (accounts.length === 0) {
+                console.error("handleAccountsChanged(): No accounts connected. User may have disconnected their wallet.");
+                setIsOwnerConnected(false);
+
+            } else {
+                const currentAccount: string = accounts[0];
+                setConnectedAccount(currentAccount);
+                setIsOwnerConnected(isOwnerAccount());
             }
-            else {
-                setGameMode(GAME_MODES.PLAYER);
-            }
+        };
+
+        if (ethereum !== undefined) {
+            ethereum.on("accountsChanged", handleAccountsChanged);
         }
 
-        void initWalletConnection();
+        return (): void => {
+            if (ethereum !== undefined) {
+                ethereum.removeListener("accountsChanged", handleAccountsChanged);
+            }
+        };
     }, []);
 
     // Subscribes app-level owner event state so OwnerPage can render event log and player list via props.
