@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
 import { formatEther } from "viem";
 import { CloseButton } from "../../src/components/base/buttons/close-button";
+import { PlayerInfoList } from "./player-info-list";
 
 import { 
     getAccumulatedHouseFees,
@@ -25,18 +26,15 @@ import {
 
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { TextDisplayModal } from "./text-display-modal";
-import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
-import type { GameEndedResult } from "../events/contract-event-parser";
+import { type GameEventState } from "../events/contract-event-reducer";
 
 interface OwnerPageProps {
     isOwnerConnected: boolean;
-    houseFeeWithdrawnAmount: bigint | null;
-    playerInfoItems: PlayerInfoListItem[];
-    gameResult: GameEndedResult | null;
+    gameEventState: GameEventState;
 }
 
 /**
@@ -45,9 +43,7 @@ interface OwnerPageProps {
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
  * - isOwnerConnected (boolean): indicates if the owner's wallet is connected.
- * - houseFeeWithdrawnAmount (bigint | null): latest withdrawn house-fee amount from HouseFeeWithdrawn events.
- * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
- * - gameResult (GameEndedResult | null): the result of the ended game.
+ * - gameEventState (GameEventState): the current game state updated by game events.
  * Usage:
  * Render this component when the selected game mode is owner and provide event-derived props from the parent.
  *
@@ -55,9 +51,7 @@ interface OwnerPageProps {
  */
 export function OwnerPage({ 
                                 isOwnerConnected,
-                                houseFeeWithdrawnAmount,
-                                playerInfoItems,
-                                gameResult,
+                                gameEventState,
                             }: OwnerPageProps): ReactNode {
     const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
     const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
@@ -110,14 +104,14 @@ export function OwnerPage({
     }, []);
 
     useEffect((): void => {
-        if (houseFeeWithdrawnAmount === null) {
+        if (gameEventState.houseFeeWithdrawnAmount === null) {
             return;
         }
 
-        const withdrawnFeeEth: string = formatEther(houseFeeWithdrawnAmount);
+        const withdrawnFeeEth: string = formatEther(gameEventState.houseFeeWithdrawnAmount);
         setHouseFeeNoticeText(`You have received ${withdrawnFeeEth} ETH house fee!`);
         setIsHouseFeeNoticeOpen(true);
-    }, [houseFeeWithdrawnAmount]);
+    }, [gameEventState.houseFeeWithdrawnAmount]);
 
     const handleStartGameClick = async (): Promise<void> => {
         setIsStartGameLoading(true);
@@ -359,7 +353,7 @@ export function OwnerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList items={playerInfoItems} />
+                        <PlayerInfoList items={gameEventState.playerInfoItems} />
 
                         <div className="mt-4">
 
@@ -371,7 +365,7 @@ export function OwnerPage({
                         {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
                         <div className="mt-4">
 
-                            <GameResultBox gameResult={gameResult} />
+                            <GameResultBox gameResult={gameEventState.gameResult} />
 
                         </div>
 

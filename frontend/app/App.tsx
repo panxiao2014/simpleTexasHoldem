@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, useReducer } from "react";
 import { CardsPage } from "./components/cards-page";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
@@ -15,6 +15,7 @@ import {
     evaluateHandRank,
 } from "./utils/utils";
 import type { PlayerInfoListItem } from "./components/player-info-list";
+import { gameEventReducer } from "./events/contract-event-reducer";
 
 
 interface EthereumProviderWithEvents {
@@ -41,9 +42,14 @@ interface WindowWithEthereumEvents extends Window {
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
     const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
-    const [houseFeeWithdrawnAmount, setHouseFeeWithdrawnAmount] = useState<bigint | null>(null);
     const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
     const [gameResult, setGameResult] = useState<GameEndedResult | null>(null);
+    const [gameEventState, dispatchGameEvent] = useReducer(gameEventReducer, {
+        playerInfoItems: [],
+        boardCards: null,
+        gameResult: null,
+        houseFeeWithdrawnAmount: null,
+    });
 
     let currentPage: ReactNode;
 
@@ -51,9 +57,7 @@ function App(): ReactNode {
         currentPage = (
             <OwnerPage
                 isOwnerConnected={isOwnerConnected}
-                houseFeeWithdrawnAmount={houseFeeWithdrawnAmount}
-                playerInfoItems={playerInfoItems}
-                gameResult={gameResult}
+                gameEventState={gameEventState}
             />
         );
     } else if (gameMode === GAME_MODES.PLAYER) {
@@ -127,6 +131,8 @@ function App(): ReactNode {
                             },
                         ];
                     });
+
+                    dispatchGameEvent(event);
                 } else if (event.eventName === "PlayerFolded") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -145,6 +151,8 @@ function App(): ReactNode {
                             (item: PlayerInfoListItem): boolean => item.player !== event.player,
                         );
                     });
+
+                    dispatchGameEvent(event);
                 } else if (event.eventName === "PlayerBet") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         const isInList: boolean = prevItems.some(
@@ -166,6 +174,8 @@ function App(): ReactNode {
                                     : item,
                         );
                     });
+
+                    dispatchGameEvent(event);
                 } else if (event.eventName === "BoardCardsDealt") {
                     setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
                         return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
@@ -180,10 +190,14 @@ function App(): ReactNode {
                             };
                         });
                     });
+
+                    dispatchGameEvent(event);
                 } else if (event.eventName === "GameEnded") {
                     setGameResult(event.result);
+
+                    dispatchGameEvent(event);
                 } else if (event.eventName === "HouseFeeWithdrawn") {
-                    setHouseFeeWithdrawnAmount(event.amount);
+                    dispatchGameEvent(event);
                 }
             }
         };
