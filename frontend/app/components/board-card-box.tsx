@@ -1,7 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
-import { subscribeToSimpleTexasHoldemEvents, type OnParsedSimpleTexasHoldemEvents, type ParsedSimpleTexasHoldemEvent } from "../events/contract-event-parser";
 import { getCardComponentKeyFromIndex } from "../utils/utils";
+
+interface BoardCardBoxProps {
+    boardCards: readonly [number, number, number, number, number] | null;
+}
 
 
 /**
@@ -11,38 +14,15 @@ import { getCardComponentKeyFromIndex } from "../utils/utils";
  * Subscribes to contract events and renders the five board cards after a BoardCardsDealt event.
  *
  * Props:
- * - None.
+ * - boardCards: The five board cards to display.
  *
  * Usage:
  * Render this component in owner or player panels to show board cards once they are dealt.
  *
  * @returns {ReactNode} A card box with title and optional rendered board cards.
  */
-export function BoardCardBox(): ReactNode {
-    const [boardCardKeys, setBoardCardKeys] = useState<string[]>([]);
-
-    useEffect((): (() => void) => {
-        const handleParsedEvents: OnParsedSimpleTexasHoldemEvents = (
-            events: ParsedSimpleTexasHoldemEvent[],
-        ): void => {
-            for (const event of events) {
-                if (event.eventName === "BoardCardsDealt") {
-                    const nextBoardCards: string[] = event.boardCards.map(
-                        (card: number): string => getCardComponentKeyFromIndex(Number(card)),
-                    );
-                    setBoardCardKeys(nextBoardCards);
-                }
-            }
-        };
-
-        const unsubscribe: () => void = subscribeToSimpleTexasHoldemEvents(
-            handleParsedEvents,
-        );
-
-        return (): void => {
-            unsubscribe();
-        };
-    }, []);
+export function BoardCardBox({ boardCards }: BoardCardBoxProps): ReactNode {
+    const boardCardStrings: string[] = boardCards?.map((card: number): string => getCardComponentKeyFromIndex(Number(card))) ?? [];
 
     return (
 
@@ -54,7 +34,7 @@ export function BoardCardBox(): ReactNode {
 
             <div className="flex flex-wrap gap-3" aria-live="polite">
 
-                {boardCardKeys.map((cardKey: string, index: number): ReactNode => {
+                {boardCardStrings.map((cardKey: string, index: number): ReactNode => {
                     const CardComponent = Cards[cardKey as keyof typeof Cards];
 
                     if (CardComponent === undefined) {

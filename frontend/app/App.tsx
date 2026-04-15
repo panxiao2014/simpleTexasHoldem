@@ -9,12 +9,7 @@ import {
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
-    type GameEndedResult,
 } from "./events/contract-event-parser";
-import {
-    evaluateHandRank,
-} from "./utils/utils";
-import type { PlayerInfoListItem } from "./components/player-info-list";
 import { gameEventReducer } from "./events/contract-event-reducer";
 
 
@@ -42,8 +37,6 @@ interface WindowWithEthereumEvents extends Window {
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
     const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
-    const [playerInfoItems, setPlayerInfoItems] = useState<PlayerInfoListItem[]>([]);
-    const [gameResult, setGameResult] = useState<GameEndedResult | null>(null);
     const [gameEventState, dispatchGameEvent] = useReducer(gameEventReducer, {
         playerInfoItems: [],
         boardCards: null,
@@ -63,8 +56,7 @@ function App(): ReactNode {
     } else if (gameMode === GAME_MODES.PLAYER) {
         currentPage = (
             <PlayerPage 
-                playerInfoItems={playerInfoItems}
-                gameResult={gameResult} 
+                gameEventState={gameEventState} 
             />
         );
     } else if (gameMode === GAME_MODES.CARDS) {
@@ -111,94 +103,7 @@ function App(): ReactNode {
             events: ParsedSimpleTexasHoldemEvent[],
         ): void => {
             for (const event of events) {
-                if (event.eventName === "PlayerJoined") {
-                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
-                        const isAlreadyInList: boolean = prevItems.some(
-                            (item: PlayerInfoListItem): boolean => item.player === event.player,
-                        );
-
-                        if (isAlreadyInList) {
-                            return prevItems;
-                        }
-
-                        return [
-                            ...prevItems,
-                            {
-                                player: event.player,
-                                holeCards: [event.holeCards[0], event.holeCards[1]],
-                                betAmount: BigInt(0),
-                                handRank: 0,
-                            },
-                        ];
-                    });
-
-                    dispatchGameEvent(event);
-                } else if (event.eventName === "PlayerFolded") {
-                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
-                        const isInList: boolean = prevItems.some(
-                            (item: PlayerInfoListItem): boolean => item.player === event.player,
-                        );
-
-                        if (!isInList) {
-                            console.warn(
-                                "PlayerFolded event received but player is not in playerInfoItems.",
-                                { player: event.player },
-                            );
-                            return prevItems;
-                        }
-
-                        return prevItems.filter(
-                            (item: PlayerInfoListItem): boolean => item.player !== event.player,
-                        );
-                    });
-
-                    dispatchGameEvent(event);
-                } else if (event.eventName === "PlayerBet") {
-                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
-                        const isInList: boolean = prevItems.some(
-                            (item: PlayerInfoListItem): boolean => item.player === event.player,
-                        );
-
-                        if (!isInList) {
-                            console.error(
-                                "PlayerBet event received but player is not in playerInfoItems.",
-                                { player: event.player },
-                            );
-                            return prevItems;
-                        }
-
-                        return prevItems.map(
-                            (item: PlayerInfoListItem): PlayerInfoListItem =>
-                                item.player === event.player
-                                    ? { ...item, betAmount: event.amount }
-                                    : item,
-                        );
-                    });
-
-                    dispatchGameEvent(event);
-                } else if (event.eventName === "BoardCardsDealt") {
-                    setPlayerInfoItems((prevItems: PlayerInfoListItem[]): PlayerInfoListItem[] => {
-                        return prevItems.map((item: PlayerInfoListItem): PlayerInfoListItem => {
-                            const handRank: number = evaluateHandRank(
-                                item.holeCards,
-                                event.boardCards,
-                            );
-
-                            return {
-                                ...item,
-                                handRank,
-                            };
-                        });
-                    });
-
-                    dispatchGameEvent(event);
-                } else if (event.eventName === "GameEnded") {
-                    setGameResult(event.result);
-
-                    dispatchGameEvent(event);
-                } else if (event.eventName === "HouseFeeWithdrawn") {
-                    dispatchGameEvent(event);
-                }
+                dispatchGameEvent(event);
             }
         };
 

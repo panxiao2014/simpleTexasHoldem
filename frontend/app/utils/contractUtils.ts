@@ -27,7 +27,6 @@ export function setConnectedAccount(account: string): void {
  * @returns {string} The connected account address, or empty string if not connected.
  */
 function getConnectedAccount(): string {
-    console.debug(`getConnectedAccount(): ${connectedAccount}`);
     return connectedAccount;
 }
 

@@ -117,8 +117,14 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
             };
         }
 
+        case "GameStarted": {
+            // we don't have anything to do with GameStarted, leave handler empty for now:
+            return gameEventState;
+        }
+
         default: {
-            throw Error('gameEventReducer received unknown event type: ' + contractEvent.eventName);
+            console.error('gameEventReducer received unknown event: ' + contractEvent);
+            return gameEventState;
         }
     }
 }

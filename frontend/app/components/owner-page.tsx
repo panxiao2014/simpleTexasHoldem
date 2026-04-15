@@ -358,7 +358,7 @@ export function OwnerPage({
                         <div className="mt-4">
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
-                            <BoardCardBox />
+                            <BoardCardBox boardCards={gameEventState.boardCards} />
 
                         </div>
 

@@ -6,16 +6,14 @@ import { playerJoinApi, printPlayerActionResult, type PlayerActionApiResult, pla
 import { getConnectedAccount, getConnectedAccountBalance } from "../api/ether-api";
 import { formatLogString } from "../utils/utils";
 import { formatBalanceInfoText } from "../utils/contractParse";
-
+import { PlayerInfoList } from "./player-info-list";
 import { TextDisplayModal } from "./text-display-modal";
-import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
-import type { GameEndedResult } from "../events/contract-event-parser";
+import { type GameEventState } from "../events/contract-event-reducer";
 
 interface PlayerPageProps {
-    playerInfoItems: PlayerInfoListItem[];
-    gameResult: GameEndedResult | null;
+    gameEventState: GameEventState;
 }
 
 /**
@@ -23,16 +21,14 @@ interface PlayerPageProps {
  *
  * Renders the player sidebar controls and player-facing game/event info panel.
  * Props:
- * - playerInfoItems (PlayerInfoListItem[]): current player rows derived from contract events.
- * - gameResult (GameEndedResult | null): the result of the ended game.
+ * - gameEventState (GameEventState): the current game state updated by game events
  * Usage:
  * Render this component when the selected game mode is player and provide event-derived props from the parent.
  *
  * @returns {ReactNode} The player page section.
  */
 export function PlayerPage({ 
-                                playerInfoItems,
-                                gameResult,
+                                gameEventState,
                             }: PlayerPageProps): ReactNode {
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
@@ -221,17 +217,17 @@ export function PlayerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList items={playerInfoItems} />
+                        <PlayerInfoList items={gameEventState.playerInfoItems} />
 
                         <div className="mt-4">
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
-                            <BoardCardBox />
+                            <BoardCardBox boardCards={gameEventState.boardCards} />
 
                             {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
                             <div className="mt-4">
 
-                                <GameResultBox gameResult={gameResult} />
+                                <GameResultBox gameResult={gameEventState.gameResult} />
 
                             </div>
 
