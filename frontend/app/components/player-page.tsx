@@ -11,7 +11,7 @@ import { TextDisplayModal } from "./text-display-modal";
 import { PlayerInfoList, type PlayerInfoListItem } from "./player-info-list";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
-import type { GameEndedResult } from "../events/contract-event";
+import type { GameEndedResult } from "../events/contract-event-parser";
 
 interface PlayerPageProps {
     playerInfoItems: PlayerInfoListItem[];

@@ -30,7 +30,7 @@ import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
-import type { GameEndedResult } from "../events/contract-event";
+import type { GameEndedResult } from "../events/contract-event-parser";
 
 interface OwnerPageProps {
     isOwnerConnected: boolean;
@@ -231,8 +231,6 @@ export function OwnerPage({
             printOwnerActionResult(`Owner balance load failed. ${error}`);
         }
     };
-
-    console.debug("OwnerPage render, isOwnerConnected:", isOwnerConnected);
 
     const isGameActive: boolean = gameInfo?.gameActive === true;
     const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading || isCollectFeeLoading;

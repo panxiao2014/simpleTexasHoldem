@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import * as Cards from "@letele/playing-cards";
-import { subscribeToSimpleTexasHoldemEvents, type OnParsedSimpleTexasHoldemEvents, type ParsedSimpleTexasHoldemEvent } from "../events/contract-event";
+import { subscribeToSimpleTexasHoldemEvents, type OnParsedSimpleTexasHoldemEvents, type ParsedSimpleTexasHoldemEvent } from "../events/contract-event-parser";
 import { getCardComponentKeyFromIndex } from "../utils/utils";
 
 

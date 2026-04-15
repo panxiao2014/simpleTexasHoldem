@@ -10,7 +10,7 @@ import {
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
     type GameEndedResult,
-} from "./events/contract-event";
+} from "./events/contract-event-parser";
 import {
     evaluateHandRank,
 } from "./utils/utils";

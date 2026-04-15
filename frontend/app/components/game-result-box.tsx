@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { formatEther } from "viem";
-import type { GameEndedResult } from "../events/contract-event";
+import type { GameEndedResult } from "../events/contract-event-parser";
 
 interface GameResultBoxProps {
     gameResult: GameEndedResult | null;

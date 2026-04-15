@@ -16,7 +16,7 @@ import {
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
 import { CONTRACT_ADDRESS } from "../utils/contractInfo";
-import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent, type PlayerBetParsedEvent } from "../events/contract-event";
+import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent, type PlayerBetParsedEvent } from "../events/contract-event-parser";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 import { formatLogString } from "../utils/utils";
