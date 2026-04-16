@@ -4,6 +4,7 @@ import { evaluateHandRank } from "../utils/utils";
 
 
 export interface GameEventState {
+    contractEventName: string;
     playerInfoItems: PlayerInfoListItem[];
     boardCards: readonly [number, number, number, number, number] | null;
     gameResult: GameEndedResult | null;
@@ -24,6 +25,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
 
             return {
                 ...gameEventState,
+                contractEventName: "PlayerJoined",
                 playerInfoItems: [
                     ...gameEventState.playerInfoItems,
                     {
@@ -51,6 +53,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
 
             return {
                 ...gameEventState,
+                contractEventName: "PlayerFolded",
                 playerInfoItems: gameEventState.playerInfoItems.filter(
                     (item: PlayerInfoListItem): boolean => item.player !== contractEvent.player,
                 ),
@@ -72,6 +75,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
 
             return {
                 ...gameEventState,
+                contractEventName: "PlayerBet",
                 playerInfoItems: gameEventState.playerInfoItems.map(
                     (item: PlayerInfoListItem): PlayerInfoListItem =>
                         item.player === contractEvent.player
@@ -98,6 +102,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
 
             return {
                 ...gameEventState,
+                contractEventName: "BoardCardsDealt",
                 playerInfoItems: updatedPlayerInfoItems,
                 boardCards: contractEvent.boardCards,
             };
@@ -106,6 +111,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
         case "GameEnded": {
             return {
                 ...gameEventState,
+                contractEventName: "GameEnded",
                 gameResult: contractEvent.result,
             };
         }
@@ -113,12 +119,14 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
         case "HouseFeeWithdrawn": {
             return {
                 ...gameEventState,
+                contractEventName: "HouseFeeWithdrawn",
                 houseFeeWithdrawnAmount: contractEvent.amount,
             };
         }
 
         case "GameStarted": {
             return {
+                contractEventName: "GameStarted",
                 playerInfoItems: [],
                 boardCards: null,
                 gameResult: null,

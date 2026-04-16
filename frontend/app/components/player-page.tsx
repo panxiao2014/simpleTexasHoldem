@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import type { Address } from "viem";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
@@ -30,6 +30,7 @@ interface PlayerPageProps {
 export function PlayerPage({ 
                                 gameEventState,
                             }: PlayerPageProps): ReactNode {
+    const [isGameStarted, setIsGameStarted] = useState<boolean>(false);
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
@@ -42,6 +43,20 @@ export function PlayerPage({
     const handleBetAmountChange = (value: string): void => {
         setBetAmount(value);
     };
+
+    // Reset local player status when a new game starts
+    useEffect(() => {
+        if (gameEventState.contractEventName === "GameStarted") {
+            setIsGameStarted(true);
+            setIsJoining(false);
+            setIsJoinedGame(false);
+            setIsFolded(false);
+            setIsBetPlaced(false);
+            setIsBetting(false);
+            setIsBetPlaced(false);
+            setBetAmount("");
+        }
+    }, [gameEventState.contractEventName]);
 
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
@@ -139,7 +154,7 @@ export function PlayerPage({
                     size="md"
                     data-testid="player-join-game"
                     isLoading={isJoining}
-                    isDisabled={isJoining || isJoinedGame}
+                    isDisabled={isJoining || isJoinedGame || !isGameStarted}
                     onClick={handleJoinGame}
                 >
                     Join game
@@ -151,7 +166,7 @@ export function PlayerPage({
                     color="secondary"
                     data-testid="player-fold"
                     isLoading={isFolding}
-                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced}
+                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced || !isGameStarted}
                     onClick={handleFold}
                 >
                     Fold
@@ -169,7 +184,7 @@ export function PlayerPage({
                         placeholder="Enter bet amount in ETH"
                         inputMode="decimal"
                         value={betAmount}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || !isGameStarted}
                         onChange={handleBetAmountChange}
                     />
 
@@ -179,7 +194,7 @@ export function PlayerPage({
                         color="secondary"
                         data-testid="player-bet"
                         isLoading={isBetting}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === ""}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === "" || !isGameStarted}
                         onClick={handleBet}
                     >
                         Bet
