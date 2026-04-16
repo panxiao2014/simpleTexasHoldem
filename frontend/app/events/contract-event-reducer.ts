@@ -44,10 +44,6 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
             );
 
             if (!isInList) {
-                console.error(
-                    "gameEventReducer PlayerFolded event received but player is not in playerInfoItems.",
-                    { player: contractEvent.player },
-                );
                 return gameEventState;
             }
 
