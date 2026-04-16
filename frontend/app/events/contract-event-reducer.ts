@@ -118,8 +118,12 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
         }
 
         case "GameStarted": {
-            // we don't have anything to do with GameStarted, leave handler empty for now:
-            return gameEventState;
+            return {
+                playerInfoItems: [],
+                boardCards: null,
+                gameResult: null,
+                houseFeeWithdrawnAmount: null,
+            };
         }
 
         default: {
