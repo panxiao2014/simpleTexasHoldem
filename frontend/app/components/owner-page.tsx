@@ -18,8 +18,6 @@ import {
 import { getNativeBalance } from "../api/ether-api";
 
 import { 
-    type CurrentGameInfo,
-    formatCurrentGameInfoText,
     formatBalanceInfoText,
     formatHouseFeesText
 } from "../utils/contractParse";
@@ -53,55 +51,13 @@ export function OwnerPage({
                                 isOwnerConnected,
                                 gameEventState,
                             }: OwnerPageProps): ReactNode {
-    const [gameInfo, setGameInfo] = useState<CurrentGameInfo | null>(null);
-    const [isGameInfoLoading, setIsGameInfoLoading] = useState<boolean>(true);
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
     const [isCollectFeeLoading, setIsCollectFeeLoading] = useState<boolean>(false);
-    const [gameInfoModalText, setGameInfoModalText] = useState<string>("Click to load latest game info.");
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [houseFeeNoticeText, setHouseFeeNoticeText] = useState<string>("");
     const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
-
-    const syncGameInfoState = async (): Promise<void> => {
-        try {
-            const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
-            setGameInfo(latestGameInfo);
-        } catch (error: unknown) {
-            console.error("Failed to sync game info state.", error);
-        }
-    };
-
-    // Loads current game info once on component mount and avoids state updates after unmount.
-    useEffect((): (() => void) => {
-        let isMounted: boolean = true;
-
-        const loadCurrentGameInfo = async (): Promise<void> => {
-            setIsGameInfoLoading(true);
-
-            try {
-                const currentGameInfo: CurrentGameInfo = await getCurrentGameInfo();
-                if (isMounted) {
-                    setGameInfo(currentGameInfo);
-                }
-            } catch {
-                if (isMounted) {
-                    setGameInfo(null);
-                }
-            } finally {
-                if (isMounted) {
-                    setIsGameInfoLoading(false);
-                }
-            }
-        };
-
-        void loadCurrentGameInfo();
-
-        return (): void => {
-            isMounted = false;
-        };
-    }, []);
 
     useEffect((): void => {
         if (gameEventState.houseFeeWithdrawnAmount === null) {
@@ -124,30 +80,14 @@ export function OwnerPage({
                 printOwnerActionResult("Game started failed.", startGameResult);
             } else if (startGameResult.events.length === 0) {
                 printOwnerActionResult("Game started, but no decodable events were found in receipt.", startGameResult);
-                await syncGameInfoState();
             } else {
                 printOwnerActionResult("Game started.", startGameResult);
-                await syncGameInfoState();
             }
 
         } catch (error: unknown) {
             printOwnerActionResult(`Game started failed. ${error}`);
         } finally {
             setIsStartGameLoading(false);
-        }
-    };
-
-    const handleGameInfoClick = async (): Promise<void> => {
-        setGameInfoModalText("Loading latest game info...");
-
-        try {
-            const latestGameInfo: CurrentGameInfo = await getCurrentGameInfo();
-            setGameInfo(latestGameInfo);
-            setGameInfoModalText(formatCurrentGameInfoText(latestGameInfo));
-            printOwnerActionResult(`Game info loaded. ${latestGameInfo}`);
-        } catch (error: unknown) {
-            setGameInfoModalText("Failed to load game info.");
-            printOwnerActionResult(`Game info loaded failed. ${error}`);
         }
     };
 
@@ -162,10 +102,8 @@ export function OwnerPage({
                 printOwnerActionResult("Game ended failed.", endGameResult);
             } else if (endGameResult.events.length === 0) {
                 printOwnerActionResult("Game ended, but no events were found in receipt.", endGameResult);
-                await syncGameInfoState();
             } else {
                 printOwnerActionResult("Game ended.", endGameResult);
-                await syncGameInfoState();
             }
         } catch (error: unknown) {
             printOwnerActionResult(`Game ended failed. ${error}`);
@@ -198,10 +136,8 @@ export function OwnerPage({
                 printOwnerActionResult("House fee collected failed.", withdrawResult);
             } else if (withdrawResult.events.length === 0) {
                 printOwnerActionResult("House fee collected succeeded, but no decodable events were found in receipt.", withdrawResult);
-                await syncGameInfoState();
             } else {
                 printOwnerActionResult("House fee collected.", withdrawResult);
-                await syncGameInfoState();
             }
         } catch (error: unknown) {
             printOwnerActionResult(`House fee collected failed. ${error}`);
@@ -226,101 +162,78 @@ export function OwnerPage({
         }
     };
 
-    const isGameActive: boolean = gameInfo?.gameActive === true;
-    const isUiBusy: boolean = isGameInfoLoading || isStartGameLoading || isEndGameLoading || isCollectFeeLoading;
+    const isUiBusy: boolean = isStartGameLoading || isEndGameLoading || isCollectFeeLoading;
 
-    const isStartDisabled: boolean = !isOwnerConnected || isUiBusy || isGameActive;
-    const isEndDisabled: boolean = !isOwnerConnected || isUiBusy || !isGameActive;
+    const isStartDisabled: boolean = !isOwnerConnected || isUiBusy || gameEventState.isGameStarted;
+    const isEndDisabled: boolean = !isOwnerConnected || isUiBusy || !gameEventState.isGameStarted;
 
     return (
         <>
             <section className="w-56 border-r border-secondary px-3 py-6" data-testid="owner-page">
                 <div className="flex flex-col gap-3">
 
-                {/* Button starts a new game and is enabled only for owner when no game is active. */}
-                <Button
-                    size="md"
-                    isDisabled={isStartDisabled}
-                    isLoading={isStartGameLoading}
-                    data-testid="owner-start-game"
-                    onClick={(): void => {
-                        void handleStartGameClick();
-                    }}
-                >
-                    Start game
-                </Button>
+                    {/* Button starts a new game and is enabled only for owner when no game is active. */}
+                    <Button
+                        size="md"
+                        isDisabled={isStartDisabled}
+                        isLoading={isStartGameLoading}
+                        data-testid="owner-start-game"
+                        onClick={(): void => {
+                            void handleStartGameClick();
+                        }}
+                    >
+                        Start game
+                    </Button>
 
-                {/* Button ends the current active game and is enabled only for owner. */}
-                <Button
-                    size="md"
-                    color="secondary"
-                    isDisabled={isEndDisabled}
-                    isLoading={isEndGameLoading}
-                    data-testid="owner-end-game"
-                    onClick={(): void => {
-                        void handleEndGameClick();
-                    }}
-                >
-                    End game
-                </Button>
+                    {/* Button ends the current active game and is enabled only for owner. */}
+                    <Button
+                        size="md"
+                        color="secondary"
+                        isDisabled={isEndDisabled}
+                        isLoading={isEndGameLoading}
+                        data-testid="owner-end-game"
+                        onClick={(): void => {
+                            void handleEndGameClick();
+                        }}
+                    >
+                        End game
+                    </Button>
 
-                {/* Button opens shared text modal and displays accumulated house fees from the contract. */}
-                <TextDisplayModal
-                    title="House Fee"
-                    text={houseFeeModalText}
-                    trigger={(
+                    {/* Button opens shared text modal and displays accumulated house fees from the contract. */}
+                    <TextDisplayModal
+                        title="House Fee"
+                        text={houseFeeModalText}
+                        trigger={(
 
-                        /* Button requests accumulated house fees before opening shared modal content. */
-                        <Button
-                            size="md"
-                            color="secondary"
-                            isDisabled={!isOwnerConnected}
-                            data-testid="owner-house-fee"
-                            onClick={(): void => {
-                                void handleHouseFeeClick();
-                            }}
-                        >
-                            House fee
-                        </Button>
+                            /* Button requests accumulated house fees before opening shared modal content. */
+                            <Button
+                                size="md"
+                                color="secondary"
+                                isDisabled={!isOwnerConnected}
+                                data-testid="owner-house-fee"
+                                onClick={(): void => {
+                                    void handleHouseFeeClick();
+                                }}
+                            >
+                                House fee
+                            </Button>
 
-                    )}
-                />
+                        )}
+                    />
 
-                {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
-                <Button
-                    size="md"
-                    color="secondary"
-                    isDisabled={!isOwnerConnected || isCollectFeeLoading}
-                    isLoading={isCollectFeeLoading}
-                    data-testid="owner-collect-fee"
-                    onClick={(): void => {
-                        void handlCollectFeeClick();
-                    }}
-                >
-                    Collect fee
-                </Button>
-
-                {/* Button opens shared text modal and displays latest game information. */}
-                <TextDisplayModal
-                    title="Current Game Info"
-                    text={gameInfoModalText}
-                    trigger={(
-
-                        /* Button requests latest game info before opening shared modal content. */
-                        <Button
-                            size="md"
-                            color="secondary"
-                            isDisabled={!isOwnerConnected}
-                            data-testid="owner-game-info"
-                            onClick={(): void => {
-                                void handleGameInfoClick();
-                            }}
-                        >
-                            Game info
-                        </Button>
-
-                    )}
-                />
+                    {/* Button lets owner collect fees from the contract when owner actions are enabled. */}
+                    <Button
+                        size="md"
+                        color="secondary"
+                        isDisabled={!isOwnerConnected || isCollectFeeLoading}
+                        isLoading={isCollectFeeLoading}
+                        data-testid="owner-collect-fee"
+                        onClick={(): void => {
+                            void handlCollectFeeClick();
+                        }}
+                    >
+                        Collect fee
+                    </Button>
 
                     {/* Button opens shared text modal and displays owner balance information. */}
                     <TextDisplayModal
