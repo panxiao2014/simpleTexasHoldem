@@ -8,7 +8,7 @@ import App from "./App";
 
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 
-const convex = new ConvexReactClient("https://handsome-cheetah-220.convex.cloud/");
+const convex = new ConvexReactClient("https://handsome-cheetah-220.convex.cloud");
 
 const rootElement: HTMLElement | null = document.getElementById("root");
 

@@ -11,6 +11,7 @@ import {
     type OnParsedSimpleTexasHoldemEvents,
 } from "./events/contract-event-parser";
 import { gameEventReducer } from "./events/contract-event-reducer";
+import { useConvexSync } from "./hooks/useConvexSync";
 
 
 interface EthereumProviderWithEvents {
@@ -44,6 +45,8 @@ function App(): ReactNode {
         gameResult: null,
         houseFeeWithdrawnAmount: null,
     });
+
+    const { handleConvexSync } = useConvexSync();
 
     let currentPage: ReactNode;
 
@@ -98,13 +101,14 @@ function App(): ReactNode {
         };
     }, []);
 
-    // Subscribes app-level owner event state so OwnerPage can render event log and player list via props.
+    // Subscribes to contract event:
     useEffect((): (() => void) => {
         const handleParsedEvents: OnParsedSimpleTexasHoldemEvents = (
             events: ParsedSimpleTexasHoldemEvent[],
         ): void => {
             for (const event of events) {
                 dispatchGameEvent(event);
+                handleConvexSync(event);
             }
         };
 
