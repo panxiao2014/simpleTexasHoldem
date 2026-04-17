@@ -4,6 +4,7 @@ import { evaluateHandRank } from "../utils/utils";
 
 
 export interface GameEventState {
+    gameId: bigint;
     isGameStarted: boolean;
     playerInfoItems: PlayerInfoListItem[];
     boardCards: readonly [number, number, number, number, number] | null;
@@ -117,6 +118,7 @@ export function gameEventReducer(gameEventState: GameEventState, contractEvent: 
 
         case "GameStarted": {
             return {
+                gameId: contractEvent.gameId,
                 isGameStarted: true,
                 playerInfoItems: [],
                 boardCards: null,

@@ -6,6 +6,10 @@ import { createRoot } from "react-dom/client";
 import "../src/styles/globals.css";
 import App from "./App";
 
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+const convex = new ConvexReactClient("https://handsome-cheetah-220.convex.cloud/");
+
 const rootElement: HTMLElement | null = document.getElementById("root");
 
 if (rootElement === null) {
@@ -14,9 +18,9 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
     <StrictMode>
-
-        {/* App is the root UI component mounted into the DOM. */}
-        <App />
-
+        <ConvexProvider client={convex}>
+            {/* App is the root UI component mounted into the DOM. */}
+            <App />
+        </ConvexProvider>
     </StrictMode>,
 );
