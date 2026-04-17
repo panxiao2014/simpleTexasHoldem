@@ -43,19 +43,6 @@ export function PlayerPage({
         setBetAmount(value);
     };
 
-    // Reset local player status when a new game starts
-    useEffect(() => {
-        if (gameEventState.contractEventName === "GameStarted") {
-            setIsJoining(false);
-            setIsJoinedGame(false);
-            setIsFolded(false);
-            setIsBetPlaced(false);
-            setIsBetting(false);
-            setIsBetPlaced(false);
-            setBetAmount("");
-        }
-    }, [gameEventState.contractEventName]);
-
     async function handleJoinGame(): Promise<void> {
         setIsJoining(true);
         try {

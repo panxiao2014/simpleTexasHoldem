@@ -38,7 +38,6 @@ function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
     const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
     const [gameEventState, dispatchGameEvent] = useReducer(gameEventReducer, {
-        contractEventName: "",
         isGameStarted: false,
         playerInfoItems: [],
         boardCards: null,
