@@ -39,11 +39,11 @@ export const endGame = mutation({
             startTime: v.int64(),
             endTime: v.int64(),
             players: v.array(v.string()),
-            betAmounts: v.array(v.int64()),
+            betAmounts: v.array(v.string()),
             boardCards: v.array(v.number()),
             winners: v.array(v.string()),
-            potPerWinner: v.int64(),
-            houseFee: v.int64(),
+            potPerWinner: v.string(),
+            houseFee: v.string(),
       }),
     },
     handler: async (ctx, args) => {
@@ -62,6 +62,48 @@ export const endGame = mutation({
         await ctx.db.patch(game._id, {
             isGameStarted: false,
             gameResult: args.result,
+        });
+    },
+});
+
+export const playerJoined = mutation({
+    args: {
+        gameId: v.int64(),
+        player: v.string(),
+        holeCards: v.array(v.number()),
+    },
+    handler: async (ctx, args) => {
+        // 1. Find the specific game record
+        const game = await ctx.db
+            .query("simpleTexasHoldemTable")
+            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+            .unique();
+
+        if (!game) {
+            console.warn(`Attempted to join game ${args.gameId} but no record was found.`);
+            return;
+        }
+
+        // 2. Check if the player is already in the list
+        const isAlreadyInList = game.playerInfoItems.some(
+            (item: any) => item.player === args.player
+        );
+
+        if (isAlreadyInList) {
+            return;
+        }
+
+        // 3. Update the record by appending the new player info
+        await ctx.db.patch(game._id, {
+            playerInfoItems: [
+                ...game.playerInfoItems,
+                {
+                    player: args.player,
+                    holeCards: [args.holeCards[0], args.holeCards[1]],
+                    betAmount: "",
+                    handRank: 0,
+                },
+            ],
         });
     },
 });
