@@ -1,6 +1,8 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+import { evaluateHandRank } from "../app/utils/utils";
+
 export const createGame = mutation({
     args: { 
         gameId: v.int64(),
@@ -104,6 +106,127 @@ export const playerJoined = mutation({
                     handRank: 0,
                 },
             ],
+        });
+    },
+});
+
+
+export const playerFolded = mutation({
+    args: {
+        gameId: v.int64(), // Use string to handle BigInt IDs safely
+        player: v.string(), // Wallet address
+    },
+    handler: async (ctx, args) => {
+        // 1. Find the specific game record
+        const game = await ctx.db
+            .query("simpleTexasHoldemTable")
+            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+            .unique();
+
+        if (!game) {
+            console.warn(`Attempted to fold in game ${args.gameId} but no record was found.`);
+            return;
+        }
+
+        // 2. Filter out the player who foldedc
+        const updatedPlayerList = game.playerInfoItems.filter(
+            (item) => item.player !== args.player
+        );
+
+        // 3. Only perform the update if a player was actually removed
+        if (updatedPlayerList.length !== game.playerInfoItems.length) {
+            await ctx.db.patch(game._id, {
+                playerInfoItems: updatedPlayerList,
+            });
+            console.log(`Player ${args.player} removed from game ${args.gameId} (Folded)`);
+        }
+    },
+});
+
+export const playerBet = mutation({
+    args: {
+        gameId: v.int64(),
+        player: v.string(),
+        amount: v.string(), // Wei as string for precision
+    },
+    handler: async (ctx, args) => {
+        const game = await ctx.db
+            .query("simpleTexasHoldemTable")
+            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+            .unique();
+
+        if (!game) {
+            console.warn(`Attempted to update bet for game ${args.gameId} but no record was found.`);
+            return;
+        }
+
+        // Map through items to update the specific player's bet
+        const updatedPlayerItems = game.playerInfoItems.map((item) => 
+            item.player === args.player 
+                ? { ...item, betAmount: args.amount } 
+                : item
+        );
+
+        await ctx.db.patch(game._id, {
+            playerInfoItems: updatedPlayerItems,
+        });
+    },
+});
+
+
+
+export const boardCardsDealt = mutation({
+    args: {
+        gameId: v.int64(),
+        boardCards: v.array(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const game = await ctx.db
+            .query("simpleTexasHoldemTable")
+            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+            .unique();
+
+        if (!game) {
+            console.warn(`Attempted to handle boardCardsDealt for game ${args.gameId} but no record was found.`);
+            return;
+        }
+
+        const updatedPlayerItems = game.playerInfoItems.map((item) => ({
+            ...item,
+            // FIX: Cast holeCards to the tuple type [number, number] 
+            // expected by evaluateHandRank
+            handRank: evaluateHandRank(
+                item.holeCards as [number, number], 
+                args.boardCards as [number, number, number, number, number]
+            ),
+        }));
+
+        await ctx.db.patch(game._id, {
+            boardCards: args.boardCards,
+            playerInfoItems: updatedPlayerItems,
+        });
+    },
+});
+
+
+export const houseFeeWithdrawn = mutation({
+    args: {
+        gameId: v.int64(),
+        amount: v.string(), // Wei as string
+    },
+    handler: async (ctx, args) => {
+        const game = await ctx.db
+            .query("simpleTexasHoldemTable")
+            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+            .unique();
+
+        if (!game) {
+            console.warn(`Attempted to record house fee withdrawal for game ${args.gameId} but no record was found.`);
+            return;
+        }
+
+        await ctx.db.patch(game._id, {
+            houseFeeWithdrawnAmount: args.amount,
         });
     },
 });

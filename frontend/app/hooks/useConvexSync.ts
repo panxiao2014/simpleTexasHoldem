@@ -7,7 +7,10 @@ export function useConvexSync() {
     const createGame = useMutation(api.tableOps.createGame);
     const endGame = useMutation(api.tableOps.endGame);
     const playerJoined = useMutation(api.tableOps.playerJoined);
-
+    const playerFolded = useMutation(api.tableOps.playerFolded);
+    const playerBet = useMutation(api.tableOps.playerBet);
+    const boardCardsDealt = useMutation(api.tableOps.boardCardsDealt);
+    const houseFeeWithdrawn = useMutation(api.tableOps.houseFeeWithdrawn);
 
     /**
      * Dispatches parsed contract events to Convex mutations.
@@ -45,6 +48,36 @@ export function useConvexSync() {
                         gameId: event.gameId,
                         player: event.player,
                         holeCards: [...event.holeCards],
+                    });
+
+                case "PlayerFolded":
+                    console.log(`Syncing PlayerFolded to Convex: ${event.player}`);
+                    return await playerFolded({
+                        gameId: event.gameId,
+                        player: event.player,
+                    });
+
+                case "PlayerBet":
+                    console.log(`Syncing PlayerBet: Player ${event.player} bet ${event.amount} in game ${event.gameId}`);
+                    return await playerBet({
+                        gameId: event.gameId, // Keeping as int64 per your preference
+                        player: event.player,
+                        amount: event.amount.toString(), // Convert BigInt Wei to string
+                    });
+
+                case "BoardCardsDealt":
+                    console.log(`Syncing BoardCardsDealt to Convex for game: ${event.gameId}`);
+                    return await boardCardsDealt({
+                        gameId: event.gameId,
+                        // Spread the readonly tuple into a mutable array for Convex
+                        boardCards: [...event.boardCards],
+                    });
+
+                case "HouseFeeWithdrawn":
+                    console.log(`Syncing HouseFeeWithdrawn for game: ${event.gameId}`);
+                    return await houseFeeWithdrawn({
+                        gameId: event.gameId,
+                        amount: event.amount.toString(),
                     });
 
                 default:

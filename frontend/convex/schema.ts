@@ -40,7 +40,7 @@ export default defineSchema({
       })
     ),
 
-    houseFeeWithdrawnAmount: v.union(v.int64(), v.null()),
+    houseFeeWithdrawnAmount: v.union(v.string(), v.null()),
   })
   // Indexing gameId allows you to call .withIndex("by_gameId", ...) 
   // in your mutations for instant record lookups.
