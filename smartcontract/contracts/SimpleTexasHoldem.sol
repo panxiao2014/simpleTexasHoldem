@@ -254,7 +254,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         accumulatedHouseFees = 0;
         _transferTokens(owner(), amount);
         
-        emit HouseFeeWithdrawn(owner(), amount);
+        emit HouseFeeWithdrawn(currentGameId, amount);
     }
 
     /**

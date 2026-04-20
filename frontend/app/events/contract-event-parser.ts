@@ -76,7 +76,7 @@ export interface GameEndedParsedEvent extends BaseParsedEvent {
 
 export interface HouseFeeWithdrawnParsedEvent extends BaseParsedEvent {
     eventName: "HouseFeeWithdrawn";
-    owner: Address;
+    gameId: bigint;
     amount: bigint;
 }
 
@@ -200,7 +200,7 @@ function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
  * - BoardCardsDealt: gameId, boardCards
  * - GameStarted: gameId, startTime, endTime
  * - GameEnded: gameId, result
- * - HouseFeeWithdrawn: owner, amount
+ * - HouseFeeWithdrawn: gameId, amount
  *
  * @param {readonly Log[]} logs Logs received from watchContractEvent callback.
  * @returns {ParsedSimpleTexasHoldemEvent[]} Parsed events with event-specific payload fields.
@@ -447,10 +447,10 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
             }
 
             if (eventName === "HouseFeeWithdrawn") {
-                const owner: unknown = args.owner;
+                const gameId: unknown = args.gameId;
                 const amount: unknown = args.amount;
 
-                if (!isAddressValue(owner) || !isBigIntValue(amount)) {
+                if (!isBigIntValue(gameId) || !isBigIntValue(amount)) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid HouseFeeWithdrawn payload:", {
                         eventName,
                         args,
@@ -460,7 +460,7 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
 
                 const parsedEvent: HouseFeeWithdrawnParsedEvent = {
                     eventName,
-                    owner,
+                    gameId,
                     amount,
                 };
 

@@ -46,6 +46,6 @@ contract TexasHoldemConstants {
     event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);
     event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
     event GameEnded(uint256 indexed gameId, GameResult result);
-    event HouseFeeWithdrawn(address indexed owner, uint256 amount);
+    event HouseFeeWithdrawn(uint256 indexed gameId, uint256 amount);
     event EmergencyPauseToggled(bool gamePaused);
 }

@@ -160,7 +160,7 @@ describe("House Fees", () => {
         game.write.withdrawHouseFees({ account: owner.account }),
         game,
         "HouseFeeWithdrawn",
-        [matchAddr, fees]
+        [1n, fees]
       );
     });
 

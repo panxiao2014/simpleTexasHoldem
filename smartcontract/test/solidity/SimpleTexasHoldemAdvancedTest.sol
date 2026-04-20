@@ -397,8 +397,6 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
             vm.prank(owner);
             game.startGame(TEST_GAME_DURATION);
             
-            uint256 player1BeforeBet = player1.balance;
-            uint256 player2BeforeBet = player2.balance;
             uint256 ownerBefore = owner.balance;
             
             // Two players join and bet
