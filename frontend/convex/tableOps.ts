@@ -1,6 +1,5 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
 import { evaluateHandRank } from "../app/utils/utils";
 
 export const createGame = mutation({
@@ -228,5 +227,16 @@ export const houseFeeWithdrawn = mutation({
         await ctx.db.patch(game._id, {
             houseFeeWithdrawnAmount: args.amount,
         });
+    },
+});
+
+
+export const getLatestGame = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("simpleTexasHoldemTable")
+            .order("desc")
+            .first();
     },
 });

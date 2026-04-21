@@ -10,9 +10,10 @@ import {
     type ParsedSimpleTexasHoldemEvent,
     type OnParsedSimpleTexasHoldemEvents,
 } from "./events/contract-event-parser";
-import { gameEventReducer } from "./events/contract-event-reducer";
 import { useConvexSync } from "./hooks/useConvexSync";
-
+import { useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
+import { gameQueryDataTransform } from "./types/gameRecordFrontend";
 
 interface EthereumProviderWithEvents {
     on: (event: "accountsChanged", handler: (accounts: string[]) => void) => void;
@@ -38,13 +39,13 @@ interface WindowWithEthereumEvents extends Window {
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
     const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
-    const [gameEventState, dispatchGameEvent] = useReducer(gameEventReducer, {
-        isGameStarted: false,
-        playerInfoItems: [],
-        boardCards: null,
-        gameResult: null,
-        houseFeeWithdrawnAmount: null,
-    });
+
+    const convextLatestGameRecord = useQuery(api.tableOps.getLatestGame);
+    const latestGame = gameQueryDataTransform(convextLatestGameRecord);
+
+    if (latestGame === undefined) {
+        return <div className="loading-screen">Syncing with Convex...</div>;
+    }
 
     const { handleConvexSync } = useConvexSync();
 
@@ -54,13 +55,13 @@ function App(): ReactNode {
         currentPage = (
             <OwnerPage
                 isOwnerConnected={isOwnerConnected}
-                gameEventState={gameEventState}
+                latestGame={latestGame}
             />
         );
     } else if (gameMode === GAME_MODES.PLAYER) {
         currentPage = (
             <PlayerPage 
-                gameEventState={gameEventState} 
+                latestGame={latestGame}
             />
         );
     } else if (gameMode === GAME_MODES.CARDS) {
@@ -107,7 +108,6 @@ function App(): ReactNode {
             events: ParsedSimpleTexasHoldemEvent[],
         ): void => {
             for (const event of events) {
-                dispatchGameEvent(event);
                 handleConvexSync(event);
             }
         };

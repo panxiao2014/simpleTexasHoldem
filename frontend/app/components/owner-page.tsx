@@ -6,7 +6,6 @@ import { PlayerInfoList } from "./player-info-list";
 
 import { 
     getAccumulatedHouseFees,
-    getCurrentGameInfo,
     type ContractCallResult
 } from "../api/contract-api";
 import {
@@ -28,11 +27,11 @@ import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
-import { type GameEventState } from "../events/contract-event-reducer";
+import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
 interface OwnerPageProps {
     isOwnerConnected: boolean;
-    gameEventState: GameEventState;
+    latestGame: GameRecordFrontend;
 }
 
 /**
@@ -41,7 +40,7 @@ interface OwnerPageProps {
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
  * - isOwnerConnected (boolean): indicates if the owner's wallet is connected.
- * - gameEventState (GameEventState): the current game state updated by game events.
+ * - latestGame (GameRecordFrontend): the latest game record from Convex.
  * Usage:
  * Render this component when the selected game mode is owner and provide event-derived props from the parent.
  *
@@ -49,7 +48,7 @@ interface OwnerPageProps {
  */
 export function OwnerPage({ 
                                 isOwnerConnected,
-                                gameEventState,
+                                latestGame,
                             }: OwnerPageProps): ReactNode {
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
     const [isEndGameLoading, setIsEndGameLoading] = useState<boolean>(false);
@@ -60,14 +59,14 @@ export function OwnerPage({
     const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
 
     useEffect((): void => {
-        if (gameEventState.houseFeeWithdrawnAmount === null) {
+        if (latestGame.houseFeeWithdrawnAmount === null) {
             return;
         }
 
-        const withdrawnFeeEth: string = formatEther(gameEventState.houseFeeWithdrawnAmount);
+        const withdrawnFeeEth: string = formatEther(latestGame.houseFeeWithdrawnAmount);
         setHouseFeeNoticeText(`You have received ${withdrawnFeeEth} ETH house fee!`);
         setIsHouseFeeNoticeOpen(true);
-    }, [gameEventState.houseFeeWithdrawnAmount]);
+    }, [latestGame.houseFeeWithdrawnAmount]);
 
     const handleStartGameClick = async (): Promise<void> => {
         setIsStartGameLoading(true);
@@ -164,8 +163,8 @@ export function OwnerPage({
 
     const isUiBusy: boolean = isStartGameLoading || isEndGameLoading || isCollectFeeLoading;
 
-    const isStartDisabled: boolean = !isOwnerConnected || isUiBusy || gameEventState.isGameStarted;
-    const isEndDisabled: boolean = !isOwnerConnected || isUiBusy || !gameEventState.isGameStarted;
+    const isStartDisabled: boolean = !isOwnerConnected || isUiBusy || latestGame.isGameStarted;
+    const isEndDisabled: boolean = !isOwnerConnected || isUiBusy || !latestGame.isGameStarted;
 
     return (
         <>
@@ -266,19 +265,19 @@ export function OwnerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList items={gameEventState.playerInfoItems} />
+                        <PlayerInfoList items={latestGame.playerInfoItems} />
 
                         <div className="mt-4">
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
-                            <BoardCardBox boardCards={gameEventState.boardCards} />
+                            <BoardCardBox boardCards={latestGame.boardCards} />
 
                         </div>
 
                         {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
                         <div className="mt-4">
 
-                            <GameResultBox gameResult={gameEventState.gameResult} />
+                            <GameResultBox gameResult={latestGame.gameResult} />
 
                         </div>
 

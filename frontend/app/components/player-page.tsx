@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Address } from "viem";
 import { Button } from "../../src/components/base/buttons/button";
 import { Input } from "../../src/components/base/input/input";
@@ -10,10 +10,10 @@ import { PlayerInfoList } from "./player-info-list";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
-import { type GameEventState } from "../events/contract-event-reducer";
+import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
 interface PlayerPageProps {
-    gameEventState: GameEventState;
+    latestGame: GameRecordFrontend;
 }
 
 /**
@@ -21,14 +21,14 @@ interface PlayerPageProps {
  *
  * Renders the player sidebar controls and player-facing game/event info panel.
  * Props:
- * - gameEventState (GameEventState): the current game state updated by game events
+ * - latestGame (GameRecordFrontend): the latest game record from Convex
  * Usage:
  * Render this component when the selected game mode is player and provide event-derived props from the parent.
  *
  * @returns {ReactNode} The player page section.
  */
 export function PlayerPage({ 
-                                gameEventState,
+                                latestGame,
                             }: PlayerPageProps): ReactNode {
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
@@ -139,7 +139,7 @@ export function PlayerPage({
                     size="md"
                     data-testid="player-join-game"
                     isLoading={isJoining}
-                    isDisabled={isJoining || isJoinedGame || !gameEventState.isGameStarted}
+                    isDisabled={isJoining || isJoinedGame || !latestGame.isGameStarted}
                     onClick={handleJoinGame}
                 >
                     Join game
@@ -151,7 +151,7 @@ export function PlayerPage({
                     color="secondary"
                     data-testid="player-fold"
                     isLoading={isFolding}
-                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced || !gameEventState.isGameStarted}
+                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced || !latestGame.isGameStarted}
                     onClick={handleFold}
                 >
                     Fold
@@ -169,7 +169,7 @@ export function PlayerPage({
                         placeholder="Enter bet amount in ETH"
                         inputMode="decimal"
                         value={betAmount}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || !gameEventState.isGameStarted}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || !latestGame.isGameStarted}
                         onChange={handleBetAmountChange}
                     />
 
@@ -179,7 +179,7 @@ export function PlayerPage({
                         color="secondary"
                         data-testid="player-bet"
                         isLoading={isBetting}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === "" || !gameEventState.isGameStarted}
+                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === "" || !latestGame.isGameStarted}
                         onClick={handleBet}
                     >
                         Bet
@@ -217,17 +217,17 @@ export function PlayerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList items={gameEventState.playerInfoItems} />
+                        <PlayerInfoList items={latestGame.playerInfoItems} />
 
                         <div className="mt-4">
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
-                            <BoardCardBox boardCards={gameEventState.boardCards} />
+                            <BoardCardBox boardCards={latestGame.boardCards} />
 
                             {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
                             <div className="mt-4">
 
-                                <GameResultBox gameResult={gameEventState.gameResult} />
+                                <GameResultBox gameResult={latestGame.gameResult} />
 
                             </div>
 

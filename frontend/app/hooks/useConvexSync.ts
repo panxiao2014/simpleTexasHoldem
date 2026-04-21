@@ -60,7 +60,7 @@ export function useConvexSync() {
                 case "PlayerBet":
                     console.log(`Syncing PlayerBet: Player ${event.player} bet ${event.amount} in game ${event.gameId}`);
                     return await playerBet({
-                        gameId: event.gameId, // Keeping as int64 per your preference
+                        gameId: event.gameId,
                         player: event.player,
                         amount: event.amount.toString(), // Convert BigInt Wei to string
                     });

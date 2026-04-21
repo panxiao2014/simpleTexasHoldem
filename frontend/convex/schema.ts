@@ -13,7 +13,7 @@ export default defineSchema({
       v.object({
         player: v.string(),             // Wallet Address
         holeCards: v.array(v.number()), // [number, number]
-        betAmount: v.string(),           // bigint
+        betAmount: v.string(),
         handRank: v.number(),
       })
     ),
