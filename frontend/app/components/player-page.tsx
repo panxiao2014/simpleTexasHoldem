@@ -11,8 +11,10 @@ import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
+import { isUserInConvexGameRecord } from "../utils/contractUtils";
 
 interface PlayerPageProps {
+    currentWalletUser: string;
     latestGame: GameRecordFrontend;
 }
 
@@ -21,6 +23,7 @@ interface PlayerPageProps {
  *
  * Renders the player sidebar controls and player-facing game/event info panel.
  * Props:
+ * - currentWalletUser (string): the address of the currently connected wallet user.
  * - latestGame (GameRecordFrontend): the latest game record from Convex
  * Usage:
  * Render this component when the selected game mode is player and provide event-derived props from the parent.
@@ -28,16 +31,18 @@ interface PlayerPageProps {
  * @returns {ReactNode} The player page section.
  */
 export function PlayerPage({ 
+                                currentWalletUser,
                                 latestGame,
                             }: PlayerPageProps): ReactNode {
     const [isJoining, setIsJoining] = useState<boolean>(false);
-    const [isJoinedGame, setIsJoinedGame] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
     const [isFolded, setIsFolded] = useState<boolean>(false);
     const [isBetting, setIsBetting] = useState<boolean>(false);
     const [isBetPlaced, setIsBetPlaced] = useState<boolean>(false);
     const [betAmount, setBetAmount] = useState<string>("");
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
+    const isUserInGameRecord: boolean = isUserInConvexGameRecord(currentWalletUser, latestGame);
+
 
     const handleBetAmountChange = (value: string): void => {
         setBetAmount(value);
@@ -50,15 +55,13 @@ export function PlayerPage({
 
             if (result.success) {
                 printPlayerActionResult("Game Joined", result);
-                setIsJoinedGame(true);
                 setIsBetPlaced(false);
             } else {
                 printPlayerActionResult("Join Game Failed", result);
-                setIsJoinedGame(false);
             }
         } catch (error: unknown) {
             printPlayerActionResult(`Join Game Error: ${error instanceof Error ? error.message : "Unexpected error"}`);
-            setIsJoinedGame(false);
+
         } finally {
             setIsJoining(false);
         }
@@ -72,7 +75,6 @@ export function PlayerPage({
             if (result.success) {
                 printPlayerActionResult("Folded Hand", result);
                 setIsFolded(true);
-                setIsJoinedGame(false);
             } else {
                 printPlayerActionResult("Fold Hand Failed", result);
             }
@@ -139,7 +141,7 @@ export function PlayerPage({
                     size="md"
                     data-testid="player-join-game"
                     isLoading={isJoining}
-                    isDisabled={isJoining || isJoinedGame || !latestGame.isGameStarted}
+                    isDisabled={isJoining || isUserInGameRecord || !latestGame.isGameStarted}
                     onClick={handleJoinGame}
                 >
                     Join game
@@ -151,7 +153,7 @@ export function PlayerPage({
                     color="secondary"
                     data-testid="player-fold"
                     isLoading={isFolding}
-                    isDisabled={!isJoinedGame || isFolding || isFolded || isBetPlaced || !latestGame.isGameStarted}
+                    isDisabled={!isUserInGameRecord || isFolding || isFolded || isBetPlaced || !latestGame.isGameStarted}
                     onClick={handleFold}
                 >
                     Fold
@@ -169,7 +171,7 @@ export function PlayerPage({
                         placeholder="Enter bet amount in ETH"
                         inputMode="decimal"
                         value={betAmount}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || !latestGame.isGameStarted}
+                        isDisabled={!isUserInGameRecord || isBetting || isBetPlaced || !latestGame.isGameStarted}
                         onChange={handleBetAmountChange}
                     />
 
@@ -179,7 +181,7 @@ export function PlayerPage({
                         color="secondary"
                         data-testid="player-bet"
                         isLoading={isBetting}
-                        isDisabled={!isJoinedGame || isBetting || isBetPlaced || betAmount.trim() === "" || !latestGame.isGameStarted}
+                        isDisabled={!isUserInGameRecord || isBetting || isBetPlaced || betAmount.trim() === "" || !latestGame.isGameStarted}
                         onClick={handleBet}
                     >
                         Bet

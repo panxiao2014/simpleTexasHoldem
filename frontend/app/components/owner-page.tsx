@@ -27,10 +27,11 @@ import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
+import { isOwnerAccount } from "../utils/contractUtils";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
 interface OwnerPageProps {
-    isOwnerConnected: boolean;
+    currentWalletUser: string;
     latestGame: GameRecordFrontend;
 }
 
@@ -39,7 +40,7 @@ interface OwnerPageProps {
  *
  * Renders the owner-only sidebar actions used to manage the game.
  * Props:
- * - isOwnerConnected (boolean): indicates if the owner's wallet is connected.
+ * - currentWalletUser (string): the address of the currently connected wallet user.
  * - latestGame (GameRecordFrontend): the latest game record from Convex.
  * Usage:
  * Render this component when the selected game mode is owner and provide event-derived props from the parent.
@@ -47,7 +48,7 @@ interface OwnerPageProps {
  * @returns {ReactNode} The owner control panel section.
  */
 export function OwnerPage({ 
-                                isOwnerConnected,
+                                currentWalletUser,
                                 latestGame,
                             }: OwnerPageProps): ReactNode {
     const [isStartGameLoading, setIsStartGameLoading] = useState<boolean>(false);
@@ -57,6 +58,7 @@ export function OwnerPage({
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
     const [houseFeeNoticeText, setHouseFeeNoticeText] = useState<string>("");
     const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
+    const isOwnerConnected: boolean = isOwnerAccount(currentWalletUser);
 
     useEffect((): void => {
         if (latestGame.houseFeeWithdrawnAmount === null) {

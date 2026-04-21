@@ -1,10 +1,10 @@
-import { type ReactNode, useEffect, useState, useReducer } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { CardsPage } from "./components/cards-page";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
 import { GAME_MODES, type GameMode } from "./utils/gameConfig";
-import { initWalletConnection, isOwnerAccount, setConnectedAccount } from "./utils/contractUtils";
+import { initWalletConnection, setConnectedAccount, getConnectedAccount } from "./utils/contractUtils";
 import {
     subscribeToSimpleTexasHoldemEvents,
     type ParsedSimpleTexasHoldemEvent,
@@ -38,7 +38,7 @@ interface WindowWithEthereumEvents extends Window {
  */
 function App(): ReactNode {
     const [gameMode, setGameMode] = useState<GameMode>(GAME_MODES.PLAYER);
-    const [isOwnerConnected, setIsOwnerConnected] = useState<boolean>(false);
+    const [currentWalletUser, setCurrentWalletUser] = useState<string>("");
 
     const convextLatestGameRecord = useQuery(api.tableOps.getLatestGame);
     const latestGame = gameQueryDataTransform(convextLatestGameRecord);
@@ -54,13 +54,14 @@ function App(): ReactNode {
     if (gameMode === GAME_MODES.OWNER) {
         currentPage = (
             <OwnerPage
-                isOwnerConnected={isOwnerConnected}
+                currentWalletUser={currentWalletUser}
                 latestGame={latestGame}
             />
         );
     } else if (gameMode === GAME_MODES.PLAYER) {
         currentPage = (
-            <PlayerPage 
+            <PlayerPage
+                currentWalletUser={currentWalletUser}
                 latestGame={latestGame}
             />
         );
@@ -71,7 +72,7 @@ function App(): ReactNode {
     useEffect((): (() => void) => {
         const initializeWallet = async (): Promise<void> => {
             await initWalletConnection();
-            setIsOwnerConnected(isOwnerAccount());
+            setCurrentWalletUser(getConnectedAccount());
         };
 
         initializeWallet();
@@ -82,12 +83,12 @@ function App(): ReactNode {
         const handleAccountsChanged = (accounts: string[]): void => {
             if (accounts.length === 0) {
                 console.error("handleAccountsChanged(): No accounts connected. User may have disconnected their wallet.");
-                setIsOwnerConnected(false);
+                setCurrentWalletUser("");
 
             } else {
                 const currentAccount: string = accounts[0];
                 setConnectedAccount(currentAccount);
-                setIsOwnerConnected(isOwnerAccount());
+                setCurrentWalletUser(getConnectedAccount());
             }
         };
 

@@ -1,4 +1,5 @@
 import { CONTRACT_OWNER_ADDRESS } from "./contractInfo";
+import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
 interface EthereumProvider {
     request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
@@ -26,7 +27,7 @@ export function setConnectedAccount(account: string): void {
  *
  * @returns {string} The connected account address, or empty string if not connected.
  */
-function getConnectedAccount(): string {
+export function getConnectedAccount(): string {
     return connectedAccount;
 }
 
@@ -71,11 +72,22 @@ export async function initWalletConnection(): Promise<void> {
 }
 
 /**
- * Checks if the connected wallet account is the contract owner.
+ * Checks if a wallet account address is the contract owner.
  *
+ * @param {string} account The account address to check.
  * @returns {boolean} true if the connected account is the contract owner.
  */
-export function isOwnerAccount(): boolean {
-    const account: string = getConnectedAccount();
+export function isOwnerAccount(account: string): boolean {
     return account.toLowerCase() === CONTRACT_OWNER_ADDRESS.toLowerCase();
+}
+
+
+/**
+ * Checks if an account is in the player list of a Convex game record.
+ *
+ * @param {string} account The account address to check.
+ * @returns {boolean} true if the connected account is in the player list.
+ */
+export function isUserInConvexGameRecord(account: string, gameRecord: GameRecordFrontend): boolean {
+    return gameRecord.playerInfoItems.some((playerInfo) => playerInfo.player.toLowerCase() === account.toLowerCase());
 }
