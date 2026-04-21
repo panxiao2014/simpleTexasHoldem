@@ -10,7 +10,6 @@ export function useConvexSync() {
     const playerFolded = useMutation(api.tableOps.playerFolded);
     const playerBet = useMutation(api.tableOps.playerBet);
     const boardCardsDealt = useMutation(api.tableOps.boardCardsDealt);
-    const houseFeeWithdrawn = useMutation(api.tableOps.houseFeeWithdrawn);
 
     /**
      * Dispatches parsed contract events to Convex mutations.
@@ -72,13 +71,6 @@ export function useConvexSync() {
                         // Spread the readonly tuple into a mutable array for Convex
                         boardCards: [...event.boardCards],
                     });
-
-                // case "HouseFeeWithdrawn":
-                //     console.log(`Syncing HouseFeeWithdrawn for game: ${event.gameId}`);
-                //     return await houseFeeWithdrawn({
-                //         gameId: event.gameId,
-                //         amount: event.amount.toString(),
-                //     });
 
                 default:
                     // Ignore events we haven't implemented sync logic for yet

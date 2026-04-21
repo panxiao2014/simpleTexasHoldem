@@ -6,7 +6,7 @@ A simplified Texas Hold'em project with:
 
 ## Tech Stack
 - Frontend: React, TypeScript, Vite, Tailwind CSS
-- Backend: Convex
+- Backend: Convex (https://handsome-cheetah-220.convex.cloud)
 - Blockchain: Solidity, Hardhat, viem
 - Package manager: pnpm
 
