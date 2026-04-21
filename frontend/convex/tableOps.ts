@@ -27,7 +27,6 @@ export const createGame = mutation({
             playerInfoItems: [],
             boardCards: null,
             gameResult: null,
-            houseFeeWithdrawnAmount: null,
         });
     },
 });
@@ -203,29 +202,6 @@ export const boardCardsDealt = mutation({
         await ctx.db.patch(game._id, {
             boardCards: args.boardCards,
             playerInfoItems: updatedPlayerItems,
-        });
-    },
-});
-
-
-export const houseFeeWithdrawn = mutation({
-    args: {
-        gameId: v.int64(),
-        amount: v.string(), // Wei as string
-    },
-    handler: async (ctx, args) => {
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
-
-        if (!game) {
-            console.warn(`Attempted to record house fee withdrawal for game ${args.gameId} but no record was found.`);
-            return;
-        }
-
-        await ctx.db.patch(game._id, {
-            houseFeeWithdrawnAmount: args.amount,
         });
     },
 });

@@ -73,12 +73,12 @@ export function useConvexSync() {
                         boardCards: [...event.boardCards],
                     });
 
-                case "HouseFeeWithdrawn":
-                    console.log(`Syncing HouseFeeWithdrawn for game: ${event.gameId}`);
-                    return await houseFeeWithdrawn({
-                        gameId: event.gameId,
-                        amount: event.amount.toString(),
-                    });
+                // case "HouseFeeWithdrawn":
+                //     console.log(`Syncing HouseFeeWithdrawn for game: ${event.gameId}`);
+                //     return await houseFeeWithdrawn({
+                //         gameId: event.gameId,
+                //         amount: event.amount.toString(),
+                //     });
 
                 default:
                     // Ignore events we haven't implemented sync logic for yet

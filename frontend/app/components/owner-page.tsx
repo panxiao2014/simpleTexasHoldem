@@ -1,7 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "../../src/components/base/buttons/button";
-import { formatEther } from "viem";
-import { CloseButton } from "../../src/components/base/buttons/close-button";
 import { PlayerInfoList } from "./player-info-list";
 
 import { 
@@ -25,7 +23,6 @@ import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
-import { Dialog, Modal, ModalOverlay } from "../../src/components/application/modals/modal";
 import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 import { isOwnerAccount } from "../utils/contractUtils";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
@@ -56,19 +53,7 @@ export function OwnerPage({
     const [isCollectFeeLoading, setIsCollectFeeLoading] = useState<boolean>(false);
     const [houseFeeModalText, setHouseFeeModalText] = useState<string>("Click to load accumulated house fees.");
     const [ownerBalanceModalText, setOwnerBalanceModalText] = useState<string>("Click to load owner balance.");
-    const [houseFeeNoticeText, setHouseFeeNoticeText] = useState<string>("");
-    const [isHouseFeeNoticeOpen, setIsHouseFeeNoticeOpen] = useState<boolean>(false);
     const isOwnerConnected: boolean = isOwnerAccount(currentWalletUser);
-
-    useEffect((): void => {
-        if (latestGame.houseFeeWithdrawnAmount === null) {
-            return;
-        }
-
-        const withdrawnFeeEth: string = formatEther(latestGame.houseFeeWithdrawnAmount);
-        setHouseFeeNoticeText(`You have received ${withdrawnFeeEth} ETH house fee!`);
-        setIsHouseFeeNoticeOpen(true);
-    }, [latestGame.houseFeeWithdrawnAmount]);
 
     const handleStartGameClick = async (): Promise<void> => {
         setIsStartGameLoading(true);
@@ -286,40 +271,6 @@ export function OwnerPage({
                     </div>
                 </div>
             </section>
-
-            {/* Center modal notifies owner when HouseFeeWithdrawn amount changes. */}
-            <ModalOverlay isDismissable isOpen={isHouseFeeNoticeOpen} onOpenChange={setIsHouseFeeNoticeOpen}>
-                <Modal>
-
-                    {/* Dialog provides the fee-received message and close actions. */}
-                    <Dialog aria-label="House Fee Received">
-                        {({ close }) => (
-                            <div className="w-full max-w-md rounded-xl border border-secondary bg-primary shadow-xl">
-                                <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                                    <h2 className="text-lg font-semibold text-primary">House Fee Received</h2>
-
-                                    {/* Close button dismisses the notification modal. */}
-                                    <CloseButton onPress={close} />
-                                </div>
-
-                                <div className="px-5 py-4">
-                                    <p className="text-sm leading-6 text-tertiary">{houseFeeNoticeText}</p>
-                                </div>
-
-                                <div className="flex justify-end border-t border-secondary px-5 py-4">
-
-                                    {/* Footer button closes the house fee notification modal. */}
-                                    <Button color="secondary" onClick={close}>
-                                        OK
-                                    </Button>
-
-                                </div>
-                            </div>
-                        )}
-                    </Dialog>
-
-                </Modal>
-            </ModalOverlay>
         </>
     );
 }
