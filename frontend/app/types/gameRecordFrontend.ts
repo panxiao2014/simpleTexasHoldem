@@ -8,7 +8,7 @@ export type GameRecordFrontend = {
     gameId: bigint;
     isGameStarted: boolean;
     playerInfoItems: Array<{
-        player: string;
+        player: Address;
         holeCards: [number, number]; // Strict Tuple
         betAmount: bigint;           // Transformed to BigInt
         handRank: number;
