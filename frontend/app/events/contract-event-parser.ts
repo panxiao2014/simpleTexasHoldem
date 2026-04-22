@@ -53,7 +53,6 @@ export interface GameStartedParsedEvent extends BaseParsedEvent {
     eventName: "GameStarted";
     gameId: bigint;
     startTime: bigint;
-    endTime: bigint;
 }
 
 export interface GameEndedResult {
@@ -360,9 +359,8 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
             if (eventName === "GameStarted") {
                 const gameId: unknown = args.gameId;
                 const startTime: unknown = args.startTime;
-                const endTime: unknown = args.endTime;
 
-                if (!isBigIntValue(gameId) || !isBigIntValue(startTime) || !isBigIntValue(endTime)) {
+                if (!isBigIntValue(gameId) || !isBigIntValue(startTime)) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid GameStarted payload:", {
                         eventName,
                         args,
@@ -374,7 +372,6 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     eventName,
                     gameId,
                     startTime,
-                    endTime,
                 };
 
                 parsedEvents.push(parsedEvent);

@@ -21,13 +21,11 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     error ContractPaused();
     error NoActiveGame();
     error GameAlreadyActive();
-    error DurationTooShort();
     error NoFees();
     error AlreadyParticipated();
     error GameFull();
     error MaxAttemptsReached();
     error NotEnoughCards();
-    error JoinPeriodClosed();
     error NotInGame();
     error AlreadyBet();
     error MustJoinFirst();
@@ -60,8 +58,8 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
 
     // ============ Structures ============
 
-    // Player in active game (only stores betting players)
-    struct Player {
+    // Player's card and bet information in active game (only stores betting players)
+    struct PlayerInfo {
         uint8[2] holeCards; // Two hole cards
         uint256 betAmount; // Amount player has bet
     }
@@ -70,13 +68,12 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     struct Game {
         uint256 gameId;
         uint256 startTime;
-        uint256 endTime; // Owner sets this when starting game
         
         // Card storage for all participants (even those who fold)
         mapping(address => uint8[2]) playerCards; // Cards for anyone who joined
         
         // Active players (only those who bet)
-        mapping(address => Player) activePlayers;
+        mapping(address => PlayerInfo) activePlayers;
         address[] activePlayerAddresses; // List of betting players
         
         // Participation tracking (anyone who got cards, including folders)
@@ -143,11 +140,8 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     /**
      * @dev Start a new game
      * Only callable by owner
-     * @param duration Game duration in seconds (e.g., 3600 for 1 hour)
      */
-    function startGame(uint256 duration) external onlyOwner whenNotPaused whenGameNotActive {
-        if (duration <= JOIN_CUTOFF) revert DurationTooShort();
-        
+    function startGame() external onlyOwner whenNotPaused whenGameNotActive {        
         // Clean up previous game and initialize new game
         _cleanupGameData();
         
@@ -156,9 +150,8 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         // Initialize new game
         currentGame.gameId = currentGameId;
         currentGame.startTime = block.timestamp;
-        currentGame.endTime = block.timestamp + duration;
         
-        emit GameStarted(currentGameId, currentGame.startTime, currentGame.endTime);
+        emit GameStarted(currentGameId, currentGame.startTime);
         
         // Activate game only after all initialization is complete
         gameActive = true;
@@ -191,7 +184,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
             GameResult memory result = GameResult({
                 gameId: currentGameId,
                 startTime: currentGame.startTime,
-                endTime: currentGame.endTime,
+                endTime: block.timestamp,
                 players: currentGame.activePlayerAddresses,
                 betAmounts: new uint256[](0),
                 boardCards: currentGame.boardCards,
@@ -282,7 +275,6 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         if (currentGame.activePlayerAddresses.length >= MAX_PLAYERS) revert GameFull();
         if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) revert MaxAttemptsReached();
         if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) revert NotEnoughCards();
-        if (block.timestamp >= currentGame.endTime - JOIN_CUTOFF) revert JoinPeriodClosed();
         
         // Mark player as participated (prevents re-joining)
         currentGame.hasParticipated[msg.sender] = true;
@@ -524,7 +516,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         result = GameResult({
             gameId: currentGameId,
             startTime: currentGame.startTime,
-            endTime: currentGame.endTime,
+            endTime: block.timestamp,
             players: currentGame.activePlayerAddresses,
             betAmounts: betAmounts,
             boardCards: currentGame.boardCards,
@@ -625,7 +617,6 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      * @dev Get current game information
      * @return gameId Current game ID
      * @return startTime Game start time
-     * @return endTime Game end time
      * @return playerCount Number of betting players
      * @return totalParticipations Total participation attempts
      * @return cardsRemaining Cards available in pool
@@ -637,17 +628,15 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         returns (
             uint256 gameId,
             uint256 startTime,
-            uint256 endTime,
             uint256 playerCount,
             uint256 totalParticipations,
-            uint256 cardsRemaining,
+            uint8 cardsRemaining,
             bool isActive
         )
     {
         return (
             currentGame.gameId,
             currentGame.startTime,
-            currentGame.endTime,
             currentGame.activePlayerAddresses.length,
             currentGame.totalParticipations,
             currentGame.cardsRemaining,

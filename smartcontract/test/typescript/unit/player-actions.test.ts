@@ -72,7 +72,7 @@ describe("Player Actions", () => {
 
       const gameInfo = await game.read.getCurrentGameInfo();
       assert.equal(
-        gameInfo[4],
+        gameInfo[3],
         3n,
         "Should have 3 total participations"
       );
@@ -114,18 +114,6 @@ describe("Player Actions", () => {
         game.write.joinGame({ account: wallets[maxPlayers + 1].account }),
         game,
         "GameFull"
-      );
-    });
-
-    it("Should revert if joining too close to end time", async () => {
-      // Fast forward to 56 minutes (cutoff is last 5 minutes)
-      await testClient.increaseTime({seconds: 56 * 60});
-      await testClient.mine({ blocks: 1 });
-
-      await viem.assertions.revertWithCustomError(
-        game.write.joinGame({ account: player1.account }),
-        game,
-        "JoinPeriodClosed"
       );
     });
   });
@@ -263,16 +251,16 @@ describe("Player Actions", () => {
     });
 
     it("Should return cards to pool when folding", async () => {
-      const [, , , , , cardsBeforeFold] =
+      const [, , , , cardsBeforeFold] =
         await game.read.getCurrentGameInfo();
 
       await game.write.fold({ account: player1.account });
 
-      const [, , , , , cardsAfterFold] = await game.read.getCurrentGameInfo();
+      const [, , , , cardsAfterFold] = await game.read.getCurrentGameInfo();
 
       assert.equal(
         cardsAfterFold,
-        cardsBeforeFold + 2n,
+        cardsBeforeFold + 2,
         "Should return 2 cards to pool"
       );
     });
@@ -336,7 +324,7 @@ describe("Player Actions", () => {
       });
       await game.write.fold({ account: player2.account });
 
-      const [, , , bettingPlayers, totalParticipations] =
+      const [, , bettingPlayers, totalParticipations] =
         await game.read.getCurrentGameInfo();
 
       assert.equal(bettingPlayers, 1n, "Should have 1 betting player");

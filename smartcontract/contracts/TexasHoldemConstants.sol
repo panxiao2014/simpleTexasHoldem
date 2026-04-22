@@ -14,7 +14,6 @@ contract TexasHoldemConstants {
     uint256 public constant MAX_PLAYERS = 9;
     uint256 public constant MAX_TOTAL_PLAYERS = 50; // Max participation attempts (joiners + folders)
     uint256 public constant HOUSE_FEE_PERCENTAGE = 1; // 1% fee to contract owner
-    uint256 public constant JOIN_CUTOFF = 5 minutes; // No joins in last 5 minutes
     uint256 public constant MIN_CARDS_REQUIRED = 7; // 2 hole + 5 board
     
     // Card deck (52 cards: 0-51)
@@ -40,7 +39,7 @@ contract TexasHoldemConstants {
     
     // ============ Events ============
     
-    event GameStarted(uint256 indexed gameId, uint256 startTime, uint256 endTime);
+    event GameStarted(uint256 indexed gameId, uint256 startTime);
     event PlayerJoined(uint256 indexed gameId, address indexed player, uint8[2] holeCards);
     event PlayerFolded(uint256 indexed gameId, address indexed player, uint8[2] returnedCards);
     event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);

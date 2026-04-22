@@ -18,7 +18,6 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     address private player2;
     address private player3;
     
-    uint256 constant TEST_GAME_DURATION = 1 hours;
     uint256 constant TEST_BET_AMOUNT = 1 ether;
     uint256 constant INITIAL_PLAYER_BALANCE = 100 ether;
     
@@ -56,7 +55,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     
     function test_SpecificCards_RoyalFlushBeatsFullHouse() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Player1: A♠ K♠ → Royal Flush with board
         // Player2: K♥ K♦ → Full House with board  
@@ -103,7 +102,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     
     function test_SpecificCards_EqualHandsSplitPot() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Both players make same straight from board
         // Player1: 9♠ 8♠
@@ -152,7 +151,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     
     function test_SpecificCards_PairOfAcesBeatsPairOfKings() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Player1: A♠ A♥ (pair of aces)
         // Player2: K♠ K♥ (pair of kings)
@@ -196,7 +195,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     
     function test_SpecificCards_ThreeWayTieSplitsPot() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // All three players make same flush from board
         // Player1: 2♠ 3♠
@@ -283,7 +282,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         
         // Start game
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // All players join and bet
         uint256 totalBet = 0;
@@ -395,7 +394,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
             vm.warp(seed + round * 1000);
             
             vm.prank(owner);
-            game.startGame(TEST_GAME_DURATION);
+            game.startGame();
             
             uint256 ownerBefore = owner.balance;
             

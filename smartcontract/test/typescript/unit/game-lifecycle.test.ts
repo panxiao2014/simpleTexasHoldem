@@ -24,9 +24,8 @@ describe("Game Lifecycle", () => {
 
   describe("startGame()", () => {
     it("Should start a new game with correct initial state", async () => {
-      const duration = 3600n;
 
-      await game.write.startGame([duration], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
 
       // Verify state
       const gameActive = await game.read.gameActive();
@@ -38,57 +37,44 @@ describe("Game Lifecycle", () => {
       //assert.equal(currentGameId, 1n, "Game ID should be 1");
       assert.equal(currentGameId, 1n, "Game ID should be 1");
       assert.equal(gameInfo[0], 1n, "Game info ID should be 1");
-      assert.equal(gameInfo[3], 0n, "Should have zero players initially");
-      assert.equal(gameInfo[4], 0n, "Should have zero participants initially");
-      assert.equal(gameInfo[5], deckSize, `Cards remaining should be ${deckSize}`);
-      assert.equal(gameInfo[6], true, "Game info should show active");
+      assert.equal(gameInfo[2], 0n, "Should have zero players initially");
+      assert.equal(gameInfo[3], 0n, "Should have zero participants initially");
+      assert.equal(gameInfo[4], deckSize, `Cards remaining should be ${deckSize}`);
+      assert.equal(gameInfo[5], true, "Game info should show active");
     });
 
     it("Should emit GameStarted event", async () => {
-      const duration = 3600n;
-
       await viem.assertions.emit(
-        game.write.startGame([duration], { account: owner.account }),
+        game.write.startGame([], { account: owner.account }),
         game,
         "GameStarted",
       )
     });
 
     it("Should emit GameStarted event with correct parameters", async () => {
-      const duration = 3600n;
-
       await viem.assertions.emitWithArgs(
-        game.write.startGame([duration], { account: owner.account }),
+        game.write.startGame([], { account: owner.account }),
         game,
         "GameStarted",
-        [1n, () => true, () => true]
+        [1n, () => true]
       )
     });
 
     it("Should revert if game is already active", async () => {
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
 
       await viem.assertions.revertWithCustomError(
-        game.write.startGame([3600n], { account: owner.account }),
+        game.write.startGame([], { account: owner.account }),
         game,
         "GameAlreadyActive"
       )
     });
 
-    it("Should revert if duration is too short", async () => {
-      const shortDuration = await game.read.JOIN_CUTOFF() / 2n; // Half of JOIN_CUTOFF
-
-      await viem.assertions.revertWithCustomError(
-        game.write.startGame([shortDuration], {account: owner.account}),
-        game,
-        "DurationTooShort"
-      )
-    });
 
     it("Should only allow owner to start game", async () => {
       await assert.rejects(
         async () =>
-          await game.write.startGame([3600n], { account: player1.account }),
+          await game.write.startGame([], { account: player1.account }),
         /OwnableUnauthorizedAccount/,
         "Should revert when non-owner tries to start"
       );
@@ -96,7 +82,7 @@ describe("Game Lifecycle", () => {
 
     it("Should increment game ID for subsequent games", async () => {
       // Start first game
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
       let gameId = await game.read.currentGameId();
       assert.equal(gameId, 1n);
 
@@ -104,7 +90,7 @@ describe("Game Lifecycle", () => {
       await game.write.endGame({ account: owner.account });
 
       // Start second game
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
       gameId = await game.read.currentGameId();
       assert.equal(gameId, 2n, "Game ID should increment");
     });
@@ -112,7 +98,7 @@ describe("Game Lifecycle", () => {
 
   describe("endGame()", () => {
     beforeEach(async () => {
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
     });
 
     it("Should end game with no active game state", async () => {
@@ -185,7 +171,7 @@ describe("Game Lifecycle", () => {
     });
 
     it("Should prevent actions when paused", async () => {
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
       await game.write.togglePause({ account: owner.account });
 
       await viem.assertions.revertWithCustomError(

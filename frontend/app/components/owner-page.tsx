@@ -23,7 +23,6 @@ import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
-import { DEFAULT_GAME_DURATION_SECONDS } from "../utils/gameConfig";
 import { isOwnerAccount } from "../utils/contractUtils";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
@@ -59,7 +58,7 @@ export function OwnerPage({
         setIsStartGameLoading(true);
 
         try {
-            const startGameResult: ContractCallResult = await startGameApi(DEFAULT_GAME_DURATION_SECONDS);
+            const startGameResult: ContractCallResult = await startGameApi();
             const isSuccessStatus: boolean = startGameResult.status === "success";
 
             if (!isSuccessStatus) {

@@ -91,7 +91,7 @@ describe("House Fees", () => {
       assert.equal(houseFees, parseEther("0.02")); // 2 * 1% = 0.02
 
       // Game 2
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
       await playersJoinGame(game, [player1, player2]);
       await playersPlaceBets(game, [player1, player2], [betAmount, betAmount]);
       await game.write.endGame({ account: owner.account });
@@ -200,7 +200,7 @@ describe("House Fees", () => {
       assert.equal(fees, 0n);
 
       // Game 2 - accumulate more fees
-      await game.write.startGame([3600n], { account: owner.account });
+      await game.write.startGame([], { account: owner.account });
       await playersJoinGame(game, [player1, player2]);
       await playersPlaceBets(game, [player1, player2], [betAmount, betAmount]);
       await game.write.endGame({ account: owner.account });

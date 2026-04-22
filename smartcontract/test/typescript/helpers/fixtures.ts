@@ -24,7 +24,7 @@ export async function setupGameWithPlayers(
   const players = wallets.slice(1, playerCount + 1);
 
   // Start game (1 hour duration)
-  await game.write.startGame([3600n], { account: owner.account });
+  await game.write.startGame([], { account: owner.account });
 
   return { owner, players };
 }
@@ -69,7 +69,7 @@ export async function setupStandardGame(viem: any) {
   const [owner, player1, player2] = wallets;
 
   const game = await deployGameContract(viem);
-  await game.write.startGame([3600n], { account: owner.account });
+  await game.write.startGame([], { account: owner.account });
 
   return {
     game,

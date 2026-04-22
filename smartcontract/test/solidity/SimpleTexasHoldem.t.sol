@@ -25,12 +25,10 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     // - MAX_PLAYERS = 9
     // - MAX_TOTAL_PLAYERS = 50
     // - HOUSE_FEE_PERCENTAGE = 1
-    // - JOIN_CUTOFF = 5 minutes
     // - MIN_CARDS_REQUIRED = 7
     // - DECK_SIZE = 52
     
     // Test-specific constants (not in TexasHoldemConstants)
-    uint256 constant TEST_GAME_DURATION = 1 hours;
     uint256 constant TEST_BET_AMOUNT = 1 ether;
     uint256 constant INITIAL_PLAYER_BALANCE = 100 ether;
     
@@ -80,13 +78,11 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     // ============ Game Lifecycle Tests ============
     
     function test_StartGame_Success() public {
-        uint256 duration = TEST_GAME_DURATION;
-        
         vm.expectEmit(true, false, false, false);
-        emit GameStarted(1, block.timestamp, block.timestamp + duration);
+        emit GameStarted(1, block.timestamp);
         
         vm.prank(owner);
-        game.startGame(duration);
+        game.startGame();
         
         assertTrue(game.gameActive());
         assertEq(game.currentGameId(), 1);
@@ -94,30 +90,24 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_StartGame_RevertsIfGameActive() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.expectRevert(SimpleTexasHoldem.GameAlreadyActive.selector);
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
-    }
-    
-    function test_StartGame_RevertsIfDurationTooShort() public {
-        vm.expectRevert(SimpleTexasHoldem.DurationTooShort.selector);
-        vm.prank(owner);
-        game.startGame(JOIN_CUTOFF - 1 minutes); // Less than JOIN_CUTOFF
+        game.startGame();
     }
     
     function test_StartGame_OnlyOwner() public {
         vm.prank(player1);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", player1));
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
     }
     
     // ============ Join Game Tests ============
     
     function test_JoinGame_Success() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         // Note: Can't predict exact cards, so we skip checking the cards parameter in expectEmit
@@ -138,7 +128,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_JoinGame_RevertsIfAlreadyParticipated() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -150,7 +140,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_JoinGame_RevertsIfGameFull() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Fill game with MAX_PLAYERS who bet
         for (uint i = 0; i < MAX_PLAYERS; i++) {
@@ -171,21 +161,10 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
         game.joinGame();
     }
     
-    function test_JoinGame_RevertsIfJoinPeriodClosed() public {
-        vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
-        
-        // Warp to within JOIN_CUTOFF period before end
-        vm.warp(block.timestamp + TEST_GAME_DURATION - JOIN_CUTOFF + 1);
-        
-        vm.prank(player1);
-        vm.expectRevert(SimpleTexasHoldem.JoinPeriodClosed.selector);
-        game.joinGame();
-    }
     
     function test_JoinGame_ReceivesTwoCards() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -202,7 +181,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Fold_Success() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -217,7 +196,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Fold_RevertsIfNotInGame() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         vm.expectRevert(SimpleTexasHoldem.NotInGame.selector);
@@ -226,7 +205,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Fold_RevertsIfAlreadyBet() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -241,24 +220,24 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Fold_ReturnsCardsToPool() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Get initial card count
-        (, , , , , uint256 cardsRemaining1, ) = game.getCurrentGameInfo();
+        (, , , , uint256 cardsRemaining1, ) = game.getCurrentGameInfo();
         assertEq(cardsRemaining1, 52);
         
         vm.prank(player1);
         game.joinGame();
         
         // Cards used (2)
-        (, , , , , uint256 cardsRemaining2, ) = game.getCurrentGameInfo();
+        (, , , , uint256 cardsRemaining2, ) = game.getCurrentGameInfo();
         assertEq(cardsRemaining2, 50);
         
         vm.prank(player1);
         game.fold();
         
         // Cards returned
-        (, , , , , uint256 cardsRemaining3, ) = game.getCurrentGameInfo();
+        (, , , , uint256 cardsRemaining3, ) = game.getCurrentGameInfo();
         assertEq(cardsRemaining3, 52);
     }
     
@@ -266,7 +245,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PlaceBet_Success() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -284,7 +263,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PlaceBet_RevertsIfMustJoinFirst() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         vm.expectRevert(SimpleTexasHoldem.MustJoinFirst.selector);
@@ -293,7 +272,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PlaceBet_RevertsIfAlreadyBet() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -308,7 +287,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PlaceBet_RevertsIfZeroAmount() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -322,7 +301,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_EndGame_WithTwoPlayers() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Two players join and bet
         vm.prank(player1);
@@ -344,7 +323,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_EndGame_CancelsIfLessThanTwoPlayers() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Only one player bets
         vm.prank(player1);
@@ -364,7 +343,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_EndGame_OnlyOwner() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", player1));
@@ -381,7 +360,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PotDistribution_SingleWinner() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         uint256 betAmount = 2 ether;
         
@@ -432,7 +411,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PotDistribution_SplitPot() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         uint256 betAmount = 3 ether;
         
@@ -495,7 +474,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PotDistribution_HouseFeeCollected() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         uint256 betAmount = 10 ether;
         
@@ -522,7 +501,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_PotDistribution_ExcessBetsReturned() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         // Players bet different amounts
         vm.prank(player1);
@@ -551,7 +530,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     function test_WithdrawHouseFees_Success() public {
         // Setup and play a game to accumulate fees
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -610,7 +589,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Paused_BlocksJoinGame() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         vm.prank(owner);
         game.togglePause();
         
@@ -621,7 +600,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_Paused_BlocksPlaceBet() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -638,12 +617,11 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_GetCurrentGameInfo() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         (
             uint256 gameId,
             uint256 startTime,
-            uint256 endTime,
             uint256 playerCount,
             uint256 totalParticipations,
             uint256 cardsRemaining,
@@ -652,7 +630,6 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
         
         assertEq(gameId, 1);
         assertEq(startTime, block.timestamp);
-        assertEq(endTime, block.timestamp + TEST_GAME_DURATION);
         assertEq(playerCount, 0);
         assertEq(totalParticipations, 0);
         assertEq(cardsRemaining, 52);
@@ -661,7 +638,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_GetPlayerInfo() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -678,7 +655,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     
     function test_GetGamePlayers() public {
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         vm.prank(player1);
         game.joinGame();
@@ -702,7 +679,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     function test_FullGameFlow() public {
         // Start game
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         
         uint256 bet1 = 5 ether;
         uint256 bet2 = 3 ether;
@@ -742,7 +719,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
     function test_MultipleGamesSequentially() public {
         // Game 1
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         vm.prank(player1);
         game.joinGame();
         vm.prank(player1);
@@ -758,7 +735,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
         
         // Game 2
         vm.prank(owner);
-        game.startGame(TEST_GAME_DURATION);
+        game.startGame();
         vm.prank(player1);
         game.joinGame();
         vm.prank(player1);

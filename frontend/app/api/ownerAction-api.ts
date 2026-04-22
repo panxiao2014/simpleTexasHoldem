@@ -93,8 +93,8 @@ async function executeOwnerAction(
 	};
 }
 
-export async function startGameApi(duration: bigint): Promise<ContractCallResult> {
-	return executeOwnerAction("startGame", [duration]);
+export async function startGameApi(): Promise<ContractCallResult> {
+	return executeOwnerAction("startGame", []);
 }
 
 export async function endGameApi(): Promise<ContractCallResult> {
