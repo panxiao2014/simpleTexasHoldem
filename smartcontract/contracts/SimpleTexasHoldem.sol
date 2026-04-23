@@ -12,6 +12,10 @@ import "./TexasHoldemConstants.sol";
  * @title SimpleTexasHoldem
  * @dev A simplified Texas Hold'em poker game implemented as a smart contract
  * Owner controls game lifecycle, players join and bet within time windows
+ * 
+ * Randomness scheme: Uses block.prevrandao (EIP-4399) as the random source,
+ * completes Fisher-Yates shuffling once at startGame(),
+ * subsequent card dealing is O(1) array access with stable gas consumption.
  */
 contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -54,7 +58,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     uint256 public accumulatedHouseFees; // 32 bytes - House fee tracking
     
     // Slot 5: uint256
-    uint256 private nonce;           // 32 bytes - Random number generation (NOTE: Use Chainlink VRF in production!)
+    uint256 private nonce;           // 32 bytes - Random number generation seed
 
     // ============ Structures ============
 
@@ -81,9 +85,9 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         address[] allParticipants; // Everyone who joined (for cleanup)
         uint256 totalParticipations; // Counter for MAX_TOTAL_PLAYERS limit
         
-        // Card pool for reuse
-        bool[52] cardsInUse; // Track which cards are dealt
-        uint8 cardsRemaining; // Quick counter
+        // Fisher-Yates shuffled deck
+        uint8[DECK_SIZE] shuffledDeck;  // Shuffled deck (fixed size 52)
+        uint8 currentCardIndex;         // Current card dealing position (0-51)
         
         // Board cards
         uint8[5] boardCards; // Five community cards
@@ -131,7 +135,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
             gameToken = IERC20(_gameToken);
             useEth = false;
         }
-        currentGameId = 0; // Will increment to 1 on first game
+        currentGameId = 0;
         gameActive = false;
     }
 
@@ -140,6 +144,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     /**
      * @dev Start a new game
      * Only callable by owner
+     * Uses Fisher-Yates shuffle algorithm based on block.prevrandao to ensure consistent results across all nodes
      */
     function startGame() external onlyOwner whenNotPaused whenGameNotActive {        
         // Clean up previous game and initialize new game
@@ -150,6 +155,9 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         // Initialize new game
         currentGame.gameId = currentGameId;
         currentGame.startTime = block.timestamp;
+        
+        // Shuffle deck (using block.prevrandao as random source)
+        _shuffleDeck();
         
         emit GameStarted(currentGameId, currentGame.startTime);
         
@@ -225,12 +233,12 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
         
         // Reset state variables
         currentGame.totalParticipations = 0;
-        currentGame.cardsRemaining = DECK_SIZE;
         currentGame.totalPot = 0;
+        currentGame.currentCardIndex = 0;
         
-        // Reset card pool - all cards available
+        // Clear shuffled deck
         for (uint8 i = 0; i < DECK_SIZE; i++) {
-            currentGame.cardsInUse[i] = false;
+            currentGame.shuffledDeck[i] = 0;
         }
     }
 
@@ -267,18 +275,24 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      * - Game must be active
      * - Player has not already participated in this game
      * - Total participations < MAX_TOTAL_PLAYERS
-     * - At least 7 cards remaining in deck
-     * - Join period not closed (before endTime - JOIN_CUTOFF)
+     * - At least MIN_CARDS_REQUIRED cards remaining in deck (2 hole cards + 5 board cards)
      */
     function joinGame() external whenNotPaused whenGameActive {
         if (currentGame.hasParticipated[msg.sender]) revert AlreadyParticipated();
         if (currentGame.activePlayerAddresses.length >= MAX_PLAYERS) revert GameFull();
         if (currentGame.totalParticipations >= MAX_TOTAL_PLAYERS) revert MaxAttemptsReached();
-        if (currentGame.cardsRemaining < MIN_CARDS_REQUIRED) revert NotEnoughCards();
+        
+        // Calculate remaining cards
+        uint256 remainingCards = DECK_SIZE - currentGame.currentCardIndex;
+        
+        // Need at least: 2 cards for current player + 5 board cards
+        // This ensures that after dealing hole cards to all players,
+        // there are still enough cards to deal the 5 community cards
+        if (remainingCards < MIN_CARDS_REQUIRED) revert NotEnoughCards();
         
         // Mark player as participated (prevents re-joining)
         currentGame.hasParticipated[msg.sender] = true;
-        currentGame.allParticipants.push(msg.sender); // Track for cleanup
+        currentGame.allParticipants.push(msg.sender);
         currentGame.totalParticipations++;
         
         // Deal hole cards
@@ -289,21 +303,17 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
 
     /**
      * @dev Fold and quit the game
-     * Returns cards to the pool for reuse
      * Player cannot rejoin this game after folding
+     * Note: With the shuffle scheme, fold does not need to return cards (deck is pre-shuffled)
      */
     function fold() external whenNotPaused whenGameActive {
         if (!currentGame.hasParticipated[msg.sender]) revert NotInGame();
         if (currentGame.activePlayers[msg.sender].betAmount != 0) revert AlreadyBet();
         
-        // Return cards to pool
-        uint8[2] memory returnedCards = currentGame.playerCards[msg.sender];
-        _returnCards(msg.sender);
-        
         // Delete player cards
         delete currentGame.playerCards[msg.sender];
         
-        emit PlayerFolded(currentGameId, msg.sender, returnedCards);
+        emit PlayerFolded(currentGameId, msg.sender);
     }
 
     /**
@@ -339,43 +349,93 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     // ============ Internal Game Logic Functions ============
 
     /**
+     * @dev Fisher-Yates shuffle algorithm
+     * Called by owner at game start, ensures all nodes get the same deck order
+     * Uses block.prevrandao (EIP-4399) as random source, consistent across all nodes
+     * 
+     * Random seed composition:
+     * - block.prevrandao: Current block's random number (Post-Merge), consistent across all nodes
+     * - block.timestamp: Block timestamp, consistent across all nodes
+     * - currentGameId: Game ID, consistent across all nodes
+     * - nonce: Contract nonce, consistent across all nodes
+     * - block.number: Block number, as additional entropy source
+     */
+    function _shuffleDeck() internal {
+        // Initialize deck: 0, 1, 2, ..., 51
+        uint8[DECK_SIZE] memory deck;
+        for (uint8 i = 0; i < DECK_SIZE; i++) {
+            deck[i] = i;
+        }
+        
+        // Build deterministic random seed
+        // All values are consistent across all nodes
+        uint256 seed = uint256(keccak256(abi.encodePacked(
+            block.prevrandao,      // Current block's random number (EIP-4399)
+            block.timestamp,       // Block timestamp
+            currentGameId,         // Game ID
+            nonce,                 // Contract nonce
+            block.number           // Block number (additional entropy source)
+        )));
+        
+        // Fisher-Yates shuffle
+        for (uint8 i = DECK_SIZE - 1; i > 0; i--) {
+            // Update random seed
+            seed = uint256(keccak256(abi.encodePacked(seed, i)));
+            uint8 j = uint8(seed % (i + 1));
+            
+            // Swap deck[i] and deck[j]
+            uint8 temp = deck[i];
+            deck[i] = deck[j];
+            deck[j] = temp;
+        }
+        
+        // Store shuffled deck
+        for (uint8 i = 0; i < DECK_SIZE; i++) {
+            currentGame.shuffledDeck[i] = deck[i];
+        }
+        
+        // Reset dealing index
+        currentGame.currentCardIndex = 0;
+        
+        // Increment nonce to ensure different random numbers for next shuffle
+        nonce++;
+    }
+
+    /**
+     * @dev Get the next card from the shuffled deck
+     * @return cardIndex Card index (0-51)
+     */
+    function _getNextCard() internal returns (uint8 cardIndex) {
+        if (currentGame.currentCardIndex >= DECK_SIZE) revert NoCardsRemaining();
+        
+        cardIndex = currentGame.shuffledDeck[currentGame.currentCardIndex];
+        currentGame.currentCardIndex++;
+        
+        return cardIndex;
+    }
+
+    /**
      * @dev Deal two hole cards to a player
-     * Uses card pool and marks cards as in use
+     * Deals cards sequentially from the pre-shuffled deck
      * @param player Address of the player
      */
     function _dealHoleCards(address player) internal {
         uint8[2] memory cards;
-        cards[0] = _getRandomCard();
-        cards[1] = _getRandomCard();
+        cards[0] = _getNextCard();
+        cards[1] = _getNextCard();
         
         currentGame.playerCards[player] = cards;
     }
 
     /**
-     * @dev Return player's cards to the available pool
-     * Cards are returned to pool for reuse by other players
-     * @param player Address of the player
-     */
-    function _returnCards(address player) internal {
-        uint8[2] memory cards = currentGame.playerCards[player];
-        
-        // Validate player has cards
-        if (cards[0] == 0 && cards[1] == 0) revert NoCardsToReturn();
-        
-        // Return cards to pool
-        currentGame.cardsInUse[cards[0]] = false;
-        currentGame.cardsInUse[cards[1]] = false;
-        currentGame.cardsRemaining += 2;
-    }
-
-    /**
      * @dev Deal five board cards after all players have bet
+     * Continues dealing from the pre-shuffled deck (skipping already dealt hole cards)
      * Called once when game ends
      */
     function _dealBoardCards() internal {
         uint8[5] memory cards;
         for (uint8 i = 0; i < 5; i++) {
-            cards[i] = _getRandomCard();
+            cards[i] = _getNextCard();
         }
         
         currentGame.boardCards = cards;
@@ -560,40 +620,6 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     // ============ Card Utility Functions ============
 
     /**
-     * @dev Generate a random card that hasn't been dealt yet
-     * NOTE: This uses pseudo-random generation. Use Chainlink VRF in production!
-     * @return cardIndex Random card index (0-51)
-     */
-    function _getRandomCard() internal virtual returns (uint8 cardIndex) {
-        if (currentGame.cardsRemaining == 0) revert NoCardsRemaining();
-        
-        // Simple pseudo-random (NOT SECURE - use Chainlink VRF in production)
-        uint256 randomNum = uint256(keccak256(abi.encodePacked(
-            block.timestamp,
-            block.prevrandao,
-            msg.sender,
-            nonce++
-        )));
-        
-        // Find an available card
-        uint256 attempts = 0;
-        while (attempts < DECK_SIZE) {
-            uint8 candidate = uint8(randomNum % DECK_SIZE);
-            
-            if (!currentGame.cardsInUse[candidate]) {
-                currentGame.cardsInUse[candidate] = true;
-                currentGame.cardsRemaining--;
-                return candidate;
-            }
-            
-            randomNum = uint256(keccak256(abi.encodePacked(randomNum, attempts)));
-            attempts++;
-        }
-        
-        revert("Failed to find available card");
-    }
-
-    /**
      * @dev Get card rank (2-14, where 14 is Ace)
      * @param cardIndex Card index (0-51)
      * @return rank Card rank (2-14)
@@ -619,7 +645,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
      * @return startTime Game start time
      * @return playerCount Number of betting players
      * @return totalParticipations Total participation attempts
-     * @return cardsRemaining Cards available in pool
+     * @return cardsRemaining Cards remaining in deck (undealt cards count)
      * @return isActive Whether game is active
      */
     function getCurrentGameInfo() 
@@ -639,7 +665,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
             currentGame.startTime,
             currentGame.activePlayerAddresses.length,
             currentGame.totalParticipations,
-            currentGame.cardsRemaining,
+            DECK_SIZE - currentGame.currentCardIndex,
             gameActive
         );
     }
@@ -664,7 +690,7 @@ contract SimpleTexasHoldem is TexasHoldemConstants, Ownable, ReentrancyGuard {
     {
         hasParticipated = currentGame.hasParticipated[player];
         betAmount = currentGame.activePlayers[player].betAmount;
-        hasBet = (betAmount > 0); // Player has bet if betAmount > 0
+        hasBet = (betAmount > 0);
         
         // Return cards from activePlayers if they bet, otherwise from playerCards
         if (hasBet) {

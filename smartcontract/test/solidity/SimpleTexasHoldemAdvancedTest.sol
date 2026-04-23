@@ -9,6 +9,11 @@ import "../../contracts/TexasHoldemConstants.sol";
 /**
  * @title SimpleTexasHoldemAdvancedTest
  * @dev Tests with specific cards and fuzzing for comprehensive coverage
+ * 
+ * Usage pattern:
+ *   1. Call startGame() - this shuffles the deck
+ *   2. Call setTestCards() - this overrides the shuffled deck with specific cards
+ *   3. Players join and play
  */
 contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     SimpleTexasHoldemTestable public game;
@@ -51,12 +56,21 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         return (rank - 2) + suit * 13;
     }
     
-    // ============ Specific Card Tests ============
-    
-    function test_SpecificCards_RoyalFlushBeatsFullHouse() public {
+    /**
+     * @dev Helper to setup a test game with specific cards
+     * @param cards Array of card indices to use
+     */
+    function setupTestGame(uint8[] memory cards) internal {
         vm.prank(owner);
         game.startGame();
         
+        vm.prank(owner);
+        game.setTestCards(cards);
+    }
+    
+    // ============ Specific Card Tests ============
+    
+    function test_SpecificCards_RoyalFlushBeatsFullHouse() public {
         // Player1: A♠ K♠ → Royal Flush with board
         // Player2: K♥ K♦ → Full House with board  
         // Board: Q♠ J♠ 10♠ K♣ Q♣
@@ -72,8 +86,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         cards[7] = makeCard(13, 3); // K♣
         cards[8] = makeCard(12, 3); // Q♣
         
-        vm.prank(owner);
-        game.setTestCards(cards);
+        setupTestGame(cards);
         
         vm.prank(player1);
         game.joinGame();
@@ -101,9 +114,6 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     }
     
     function test_SpecificCards_EqualHandsSplitPot() public {
-        vm.prank(owner);
-        game.startGame();
-        
         // Both players make same straight from board
         // Player1: 9♠ 8♠
         // Player2: 9♥ 8♥  
@@ -120,8 +130,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         cards[7] = makeCard(2, 2);  // 2♦
         cards[8] = makeCard(3, 2);  // 3♦
         
-        vm.prank(owner);
-        game.setTestCards(cards);
+        setupTestGame(cards);
         
         vm.prank(player1);
         game.joinGame();
@@ -150,9 +159,6 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     }
     
     function test_SpecificCards_PairOfAcesBeatsPairOfKings() public {
-        vm.prank(owner);
-        game.startGame();
-        
         // Player1: A♠ A♥ (pair of aces)
         // Player2: K♠ K♥ (pair of kings)
         // Board: 7♣ 4♦ 2♠ 9♥ 3♣ (rainbow, no help)
@@ -168,8 +174,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         cards[7] = makeCard(9, 1);  // 9♥
         cards[8] = makeCard(3, 3);  // 3♣
         
-        vm.prank(owner);
-        game.setTestCards(cards);
+        setupTestGame(cards);
         
         vm.prank(player1);
         game.joinGame();
@@ -194,9 +199,6 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
     }
     
     function test_SpecificCards_ThreeWayTieSplitsPot() public {
-        vm.prank(owner);
-        game.startGame();
-        
         // All three players make same flush from board
         // Player1: 2♠ 3♠
         // Player2: 2♥ 3♥
@@ -217,8 +219,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         cards[9] = makeCard(11, 0); // J♠
         cards[10] = makeCard(10, 0); // 10♠
         
-        vm.prank(owner);
-        game.setTestCards(cards);
+        setupTestGame(cards);
         
         vm.prank(player1);
         game.joinGame();
@@ -253,6 +254,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         assertEq(player3.balance, player3Before + share, "Player3 should get 1/3");
     }
     
+    
     // ============ Fuzzing Tests ============
     
     /**
@@ -280,7 +282,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
             vm.deal(players[i], 100 ether);
         }
         
-        // Start game
+        // Start game (normal random mode, no test cards)
         vm.prank(owner);
         game.startGame();
         
@@ -329,12 +331,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         );
         
         // INVARIANT 2: Total distributed to players should equal net pot
-        // Note: Players can get money from two sources:
-        // 1. Winnings from the pot
-        // 2. Returned excess bets (if they bet more than minimum)
-        
         uint256 totalPayout = 0;
-        uint256 totalExcessReturned = 0;
         
         for (uint8 i = 0; i < numPlayers; i++) {
             // Calculate what player got back
@@ -347,16 +344,13 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
             // Excess bet returned
             if (betAmounts[i] > minBet) {
                 uint256 excess = betAmounts[i] - minBet;
-                totalExcessReturned += excess;
-                received -= excess; // Subtract excess from received to get actual payout
+                received -= excess;
             }
             
             totalPayout += received;
         }
         
-        // INVARIANT 2: Total payout should approximately equal net pot
-        // Due to Solidity integer division rounding when splitting pot,
-        // there can be a difference of up to numPlayers wei
+        // Due to Solidity integer division rounding, there can be a difference
         uint256 diff = totalPayout > netPot ? totalPayout - netPot : netPot - totalPayout;
         assertTrue(
             diff <= numPlayers,
@@ -366,16 +360,13 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
         // INVARIANT 3: No money created or destroyed
         uint256 totalReturned = 0;
         for (uint8 i = 0; i < numPlayers; i++) {
-            // Balance change = current - (initial - bet)
             uint256 balanceAfterBet = balancesBefore[i] - betAmounts[i];
             if (players[i].balance >= balanceAfterBet) {
                 totalReturned += players[i].balance - balanceAfterBet;
             }
         }
-        totalReturned += houseFee; // Owner got house fee
+        totalReturned += houseFee;
         
-        // INVARIANT 3 check with rounding tolerance
-        // Same rounding issues apply here
         uint256 diff3 = totalReturned > totalBet ? totalReturned - totalBet : totalBet - totalReturned;
         assertTrue(
             diff3 <= numPlayers,
@@ -421,7 +412,7 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
             uint256 houseFee = (pot * HOUSE_FEE_PERCENTAGE) / 100;
             uint256 netPot = pot - houseFee;
             
-            // Calculate payouts (current balance - balance after bet)
+            // Calculate payouts
             uint256 player1Payout = 0;
             uint256 player2Payout = 0;
             
@@ -448,5 +439,86 @@ contract SimpleTexasHoldemAdvancedTest is TexasHoldemConstants, Test {
                 "Owner should receive house fee each round"
             );
         }
+    }
+    
+    /**
+     * @dev Test that setTestCards must be called after startGame
+     */
+    function test_SetTestCardsRequiresActiveGame() public {
+        uint8[] memory cards = new uint8[](2);
+        cards[0] = makeCard(14, 0);
+        cards[1] = makeCard(13, 0);
+        
+        // This should fail because game is not active
+        vm.prank(owner);
+        vm.expectRevert("Game must be active first. Call startGame() before setTestCards()");
+        game.setTestCards(cards);
+        
+        // This should work
+        vm.prank(owner);
+        game.startGame();
+        
+        vm.prank(owner);
+        game.setTestCards(cards);
+    }
+    
+    /**
+     * @dev Test that duplicate cards are rejected
+     */
+    function test_SetTestCardsRejectsDuplicates() public {
+        uint8[] memory cards = new uint8[](2);
+        cards[0] = makeCard(14, 0);
+        cards[1] = makeCard(14, 0); // Duplicate
+        
+        vm.prank(owner);
+        game.startGame();
+        
+        vm.prank(owner);
+        vm.expectRevert("Duplicate card found");
+        game.setTestCards(cards);
+    }
+    
+    /**
+     * @dev Test that invalid card indices are rejected
+     */
+    function test_SetTestCardsRejectsInvalidCards() public {
+        uint8[] memory cards = new uint8[](1);
+        cards[0] = 52; // Invalid, max is 51
+        
+        vm.prank(owner);
+        game.startGame();
+        
+        vm.prank(owner);
+        vm.expectRevert("Invalid card index");
+        game.setTestCards(cards);
+    }
+    
+    /**
+     * @dev Test debug view functions
+     */
+    function test_DebugViewFunctions() public {
+        vm.prank(owner);
+        game.startGame();
+        
+        uint8 cardIndex = game.getCurrentCardIndex();
+        
+        // After startGame, deck should be shuffled and index should be 0
+        assertEq(cardIndex, 0, "Current card index should be 0 after start");
+        
+        // Set test cards
+        uint8[] memory cards = new uint8[](2);
+        cards[0] = makeCard(14, 0);
+        cards[1] = makeCard(13, 0);
+        
+        vm.prank(owner);
+        game.setTestCards(cards);
+        
+        // After setTestCards, deck should have test cards at beginning
+        uint8[DECK_SIZE] memory newDeck = game.getShuffledDeck();
+        assertEq(newDeck[0], makeCard(14, 0), "First card should be Spade A");
+        assertEq(newDeck[1], makeCard(13, 0), "Second card should be Spade K");
+        
+        uint8 newIndex = game.getCurrentCardIndex();
+        assertEq(newIndex, 0, "Card index should be reset to 0 after setTestCards");
     }
 }

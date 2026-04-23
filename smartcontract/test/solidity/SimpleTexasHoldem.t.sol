@@ -189,7 +189,7 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
         vm.prank(player1);
         // Note: Can't predict exact cards, so we skip checking the cards parameter in expectEmit
         vm.expectEmit(true, true, false, false);
-        emit PlayerFolded(1, player1, [uint8(0), uint8(0)]);
+        emit PlayerFolded(1, player1);
         
         game.fold();
     }
@@ -236,9 +236,9 @@ contract SimpleTexasHoldemTest is TexasHoldemConstants, Test {
         vm.prank(player1);
         game.fold();
         
-        // Cards returned
+        // Player fold, but the card would not return to the pool until the next game starts. So cards remaining should still be 50 until endGame is called.
         (, , , , uint256 cardsRemaining3, ) = game.getCurrentGameInfo();
-        assertEq(cardsRemaining3, 52);
+        assertEq(cardsRemaining3, 50);
     }
     
     // ============ Place Bet Tests ============

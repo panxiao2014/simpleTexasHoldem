@@ -33,7 +33,6 @@ export interface PlayerFoldedParsedEvent extends BaseParsedEvent {
     eventName: "PlayerFolded";
     gameId: bigint;
     player: Address;
-    returnedCards: readonly [number, number];
 }
 
 export interface PlayerBetParsedEvent extends BaseParsedEvent {
@@ -194,7 +193,7 @@ function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
  *
  * Supported events:
  * - PlayerJoined: gameId, player, holeCards
- * - PlayerFolded: gameId, player, returnedCards
+ * - PlayerFolded: gameId, player
  * - PlayerBet: gameId, player, amount
  * - BoardCardsDealt: gameId, boardCards
  * - GameStarted: gameId, startTime, endTime
@@ -272,7 +271,6 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
             if (eventName === "PlayerFolded") {
                 const gameId: unknown = args.gameId;
                 const player: unknown = args.player;
-                const returnedCards: unknown = args.returnedCards;
 
                 if (!isBigIntValue(gameId) || !isAddressValue(player)) {
                     console.error("[parseSimpleTexasHoldemEventLogs] Invalid PlayerFolded payload:", {
@@ -282,20 +280,11 @@ function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexa
                     continue;
                 }
 
-                const parsedReturnedCards: readonly [number, number] | undefined = parseCardPair(returnedCards);
-                if (parsedReturnedCards === undefined) {
-                    console.error("[parseSimpleTexasHoldemEventLogs] Invalid returnedCards payload:", {
-                        eventName,
-                        args,
-                    });
-                    continue;
-                }
 
                 const parsedEvent: PlayerFoldedParsedEvent = {
                     eventName,
                     gameId,
                     player,
-                    returnedCards: parsedReturnedCards,
                 };
 
                 parsedEvents.push(parsedEvent);

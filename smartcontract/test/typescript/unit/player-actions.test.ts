@@ -250,7 +250,7 @@ describe("Player Actions", () => {
       );
     });
 
-    it("Should return cards to pool when folding", async () => {
+    it("Should not return cards to pool when folding", async () => {
       const [, , , , cardsBeforeFold] =
         await game.read.getCurrentGameInfo();
 
@@ -260,8 +260,8 @@ describe("Player Actions", () => {
 
       assert.equal(
         cardsAfterFold,
-        cardsBeforeFold + 2,
-        "Should return 2 cards to pool"
+        cardsBeforeFold,
+        "Should not return cards to pool"
       );
     });
 
@@ -270,16 +270,6 @@ describe("Player Actions", () => {
         game.write.fold({ account: player3.account }),
         game,
         "NotInGame"
-      );
-    });
-
-    it("Should have no valid card to return if player folds twice", async () => {
-      await game.write.fold({ account: player1.account });
-
-      await viem.assertions.revertWithCustomError(
-        game.write.fold({ account: player1.account }),
-        game,
-        "NoCardsToReturn"
       );
     });
 

@@ -41,7 +41,7 @@ contract TexasHoldemConstants {
     
     event GameStarted(uint256 indexed gameId, uint256 startTime);
     event PlayerJoined(uint256 indexed gameId, address indexed player, uint8[2] holeCards);
-    event PlayerFolded(uint256 indexed gameId, address indexed player, uint8[2] returnedCards);
+    event PlayerFolded(uint256 indexed gameId, address indexed player);
     event PlayerBet(uint256 indexed gameId, address indexed player, uint256 amount);
     event BoardCardsDealt(uint256 indexed gameId, uint8[5] boardCards);
     event GameEnded(uint256 indexed gameId, GameResult result);

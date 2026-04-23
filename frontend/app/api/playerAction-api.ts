@@ -241,13 +241,12 @@ export async function playerFoldApi(): Promise<PlayerActionApiResult> {
                 });
 
                 if (decoded.eventName === "PlayerFolded") {
-                    const { gameId, player, returnedCards } = (decoded.args as unknown) as PlayerFoldedParsedEvent;
+                    const { gameId, player } = (decoded.args as unknown) as PlayerFoldedParsedEvent;
 
                     const message: string = `
                         PlayerFolded Event:
                         - gameId: ${gameId.toString()}
                         - player: ${player}
-                        - returnedCards: [${returnedCards[0]}, ${returnedCards[1]}]
                         `.trim();
 
                     return {

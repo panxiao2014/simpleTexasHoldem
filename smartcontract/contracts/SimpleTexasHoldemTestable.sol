@@ -14,6 +14,11 @@ import "./SimpleTexasHoldem.sol";
  * the original contract's encapsulation for production use.
  * 
  * WARNING: This contract should ONLY be used for testing, never deploy to production!
+ * 
+ * Usage:
+ *   1. Call startGame() to start a new game (this will shuffle the deck)
+ *   2. Call setTestCards() to override the shuffled deck with specific cards
+ *   3. Players join and play
  */
 contract SimpleTexasHoldemTestable is SimpleTexasHoldem {
     
@@ -32,7 +37,9 @@ contract SimpleTexasHoldemTestable is SimpleTexasHoldem {
     // ============ Test Mode Functions ============
     
     /**
-     * @dev Enable test mode with predetermined card sequence
+     * @dev Override the shuffled deck with specific card sequence
+     * Call this AFTER startGame() to replace the shuffled deck
+     * 
      * @param cards Array of card indices (0-51) to deal in order
      * 
      * Card Format:
@@ -50,23 +57,59 @@ contract SimpleTexasHoldemTestable is SimpleTexasHoldem {
      * ...
      * Last 5: Board cards
      * 
+     * Requirements:
+     * - Game must be active (startGame must be called first)
+     * - Cards array must have at least enough cards for the test scenario
+     * 
      * WARNING: Only use in test environment!
      */
     function setTestCards(uint8[] calldata cards) external onlyOwner {
+        require(gameActive, "Game must be active first. Call startGame() before setTestCards()");
         require(cards.length > 0, "Need at least one card");
+        require(cards.length <= DECK_SIZE, "Too many cards");
         
-        // Validate all cards are in range 0-51
+        // Validate all cards are in range 0-51 and unique
+        bool[52] memory seen;
         for (uint i = 0; i < cards.length; i++) {
-            require(cards[i] < 52, "Invalid card index");
+            require(cards[i] < DECK_SIZE, "Invalid card index");
+            require(!seen[cards[i]], "Duplicate card found");
+            seen[cards[i]] = true;
         }
+        
+        // Build a complete deck with test cards at the beginning
+        uint8[DECK_SIZE] memory newDeck;
+        bool[52] memory used;
+        
+        // Place test cards at the beginning of the deck
+        for (uint i = 0; i < cards.length; i++) {
+            uint8 card = cards[i];
+            used[card] = true;
+            newDeck[i] = card;
+        }
+        
+        // Fill remaining slots with unused cards in order
+        uint256 deckIndex = cards.length;
+        for (uint8 i = 0; i < DECK_SIZE && deckIndex < DECK_SIZE; i++) {
+            if (!used[i]) {
+                newDeck[deckIndex++] = i;
+            }
+        }
+        
+        // Override the shuffled deck
+        for (uint8 i = 0; i < DECK_SIZE; i++) {
+            currentGame.shuffledDeck[i] = newDeck[i];
+        }
+        
+        // Reset the dealing index to start from the beginning
+        currentGame.currentCardIndex = 0;
+        
+        // Update cards remaining for the joinGame check
+        // Note: currentCardIndex is used to calculate remaining cards
         
         testMode = true;
-        delete testCardSequence;
-        for (uint i = 0; i < cards.length; i++) {
-            testCardSequence.push(cards[i]);
-        }
         testCardIndex = 0;
     }
+    
     
     /**
      * @dev Disable test mode and return to normal random dealing
@@ -91,32 +134,17 @@ contract SimpleTexasHoldemTestable is SimpleTexasHoldem {
         return (testMode, testCardSequence.length, testCardIndex);
     }
     
-    // ============ Override Random Card Generation ============
+    /**
+     * @dev Get the current shuffled deck (for debugging)
+     */
+    function getShuffledDeck() external view returns (uint8[DECK_SIZE] memory) {
+        return currentGame.shuffledDeck;
+    }
     
     /**
-     * @dev Override _getRandomCard to use test cards when in test mode
-     * Falls back to random generation when test mode is off or test cards exhausted
-     * 
-     * Requires: currentGame to be 'internal' in base contract
+     * @dev Get the current card index (for debugging)
      */
-    function _getRandomCard() internal override returns (uint8 cardIndex) {
-        // If in test mode and have cards left, use test sequence
-        if (testMode && testCardIndex < testCardSequence.length) {
-            uint8 card = testCardSequence[testCardIndex];
-            testCardIndex++;
-            
-            // Validate card is available
-            require(currentGame.cardsRemaining > 0, "No cards remaining");
-            require(!currentGame.cardsInUse[card], "Test card already in use");
-            
-            // Mark card as used
-            currentGame.cardsInUse[card] = true;
-            currentGame.cardsRemaining--;
-            
-            return card;
-        }
-        
-        // Otherwise use normal random dealing
-        return super._getRandomCard();
+    function getCurrentCardIndex() external view returns (uint8) {
+        return currentGame.currentCardIndex;
     }
 }
