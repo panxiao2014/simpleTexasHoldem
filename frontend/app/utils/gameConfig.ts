@@ -5,3 +5,4 @@ export const GAME_MODES = {
 } as const;
 
 export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
+export const MAX_PLAYERS_PER_GAME = 9;

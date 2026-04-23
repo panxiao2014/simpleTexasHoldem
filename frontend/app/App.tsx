@@ -126,7 +126,7 @@ function App(): ReactNode {
         <div className="min-h-screen" data-testid="app-root">
 
             {/* Header provides mode switching and quick access actions. */}
-            <Header gameMode={gameMode} onGameModeChange={setGameMode} />
+            <Header gameMode={gameMode} onGameModeChange={setGameMode} latestGame={latestGame} />
 
             <main className="flex min-h-screen pt-16" data-testid="app-main">
 
