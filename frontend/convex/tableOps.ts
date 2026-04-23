@@ -2,6 +2,19 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { evaluateHandRank } from "../app/utils/utils";
 
+/**
+ * Helper function to get a game by its ID
+ * @param ctx - Convex context
+ * @param gameId - The game ID to look up
+ * @returns The game document or null if not found
+ */
+async function getGameById(ctx: any, gameId: BigInt) {
+    return await ctx.db
+        .query("simpleTexasHoldemTable")
+        .withIndex("by_gameId", (q: any) => q.eq("gameId", gameId))
+        .unique();
+}
+
 export const createGame = mutation({
     args: { 
         gameId: v.int64(),
@@ -48,10 +61,7 @@ export const endGame = mutation({
     },
     handler: async (ctx, args) => {
         // 1. Find the specific game record
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
+        const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
             console.warn(`Attempted to end game ${args.gameId} but no record was found.`);
@@ -74,15 +84,7 @@ export const playerJoined = mutation({
     },
     handler: async (ctx, args) => {
         // 1. Find the specific game record
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
-
-        if (!game) {
-            console.warn(`Attempted to join game ${args.gameId} but no record was found.`);
-            return;
-        }
+        const game = await getGameById(ctx, args.gameId);
 
         // 2. Check if the player is already in the list
         const isAlreadyInList = game.playerInfoItems.some(
@@ -116,19 +118,11 @@ export const playerFolded = mutation({
     },
     handler: async (ctx, args) => {
         // 1. Find the specific game record
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
+        const game = await getGameById(ctx, args.gameId);
 
-        if (!game) {
-            console.warn(`Attempted to fold in game ${args.gameId} but no record was found.`);
-            return;
-        }
-
-        // 2. Filter out the player who foldedc
+        // 2. Filter out the player who folded
         const updatedPlayerList = game.playerInfoItems.filter(
-            (item) => item.player !== args.player
+            (item: any) => item.player !== args.player
         );
 
         // 3. Only perform the update if a player was actually removed
@@ -148,18 +142,10 @@ export const playerBet = mutation({
         amount: v.string(), // Wei as string for precision
     },
     handler: async (ctx, args) => {
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
-
-        if (!game) {
-            console.warn(`Attempted to update bet for game ${args.gameId} but no record was found.`);
-            return;
-        }
+        const game = await getGameById(ctx, args.gameId);
 
         // Map through items to update the specific player's bet
-        const updatedPlayerItems = game.playerInfoItems.map((item) => 
+        const updatedPlayerItems = game.playerInfoItems.map((item: any) => 
             item.player === args.player 
                 ? { ...item, betAmount: args.amount } 
                 : item
@@ -179,17 +165,9 @@ export const boardCardsDealt = mutation({
         boardCards: v.array(v.number()),
     },
     handler: async (ctx, args) => {
-        const game = await ctx.db
-            .query("simpleTexasHoldemTable")
-            .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-            .unique();
+        const game = await getGameById(ctx, args.gameId);
 
-        if (!game) {
-            console.warn(`Attempted to handle boardCardsDealt for game ${args.gameId} but no record was found.`);
-            return;
-        }
-
-        const updatedPlayerItems = game.playerInfoItems.map((item) => ({
+        const updatedPlayerItems = game.playerInfoItems.map((item: any) => ({
             ...item,
             // FIX: Cast holeCards to the tuple type [number, number] 
             // expected by evaluateHandRank
