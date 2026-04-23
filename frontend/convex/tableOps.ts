@@ -86,6 +86,11 @@ export const playerJoined = mutation({
         // 1. Find the specific game record
         const game = await getGameById(ctx, args.gameId);
 
+        if (!game) {
+            console.warn(`Attempted to join game ${args.gameId} but no record was found.`);
+            return;
+        }
+
         // 2. Check if the player is already in the list
         const isAlreadyInList = game.playerInfoItems.some(
             (item: any) => item.player === args.player
@@ -120,6 +125,11 @@ export const playerFolded = mutation({
         // 1. Find the specific game record
         const game = await getGameById(ctx, args.gameId);
 
+        if (!game) {
+            console.warn(`Attempted to fold player ${args.player} in game ${args.gameId} but no record was found.`);
+            return;
+        }
+
         // 2. Filter out the player who folded
         const updatedPlayerList = game.playerInfoItems.filter(
             (item: any) => item.player !== args.player
@@ -144,6 +154,11 @@ export const playerBet = mutation({
     handler: async (ctx, args) => {
         const game = await getGameById(ctx, args.gameId);
 
+        if (!game) {
+            console.warn(`Attempted to bet in game ${args.gameId} but no record was found.`);
+            return;
+        }
+
         // Map through items to update the specific player's bet
         const updatedPlayerItems = game.playerInfoItems.map((item: any) => 
             item.player === args.player 
@@ -166,6 +181,11 @@ export const boardCardsDealt = mutation({
     },
     handler: async (ctx, args) => {
         const game = await getGameById(ctx, args.gameId);
+
+        if (!game) {
+            console.warn(`Attempted to deal board cards in game ${args.gameId} but no record was found.`);
+            return;
+        }
 
         const updatedPlayerItems = game.playerInfoItems.map((item: any) => ({
             ...item,
