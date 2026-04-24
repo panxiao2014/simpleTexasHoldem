@@ -27,10 +27,10 @@ export function BoardCardBox({ boardCards }: BoardCardBoxProps): ReactNode {
     return (
 
         <section
-            className="rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30"
+            className="rounded-lg border border-amber-700/50 bg-gradient-to-br from-green-900 to-green-950 p-4 shadow-lg"
             data-testid="board-card-box"
         >
-            <h3 className="mb-2 text-sm font-semibold">Board Cards</h3>
+            <h3 className="mb-2 text-sm font-semibold text-amber-400">Board Cards</h3>
 
             <div className="flex flex-wrap gap-3" aria-live="polite">
 
@@ -39,7 +39,7 @@ export function BoardCardBox({ boardCards }: BoardCardBoxProps): ReactNode {
 
                     if (CardComponent === undefined) {
                         return (
-                            <span key={`${cardKey}-${index}`}>{cardKey}</span>
+                            <span key={`${cardKey}-${index}`} className="text-amber-300">{cardKey}</span>
                         );
                     }
 

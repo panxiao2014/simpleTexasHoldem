@@ -72,11 +72,11 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
         "grid-cols-[35%_20%_10%_15%_20%]";
 
     return (
-        <section className="rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
-            <h3 className="mb-2 text-sm font-semibold">Players In Game</h3>
+        <section className="rounded-lg border border-amber-700/50 bg-gradient-to-br from-green-900 to-green-950 p-4 shadow-lg">
+            <h3 className="mb-2 text-sm font-semibold text-amber-400">Players In Game</h3>
 
             {/* Header */}
-            <div className={`grid ${gridCols} gap-2 border-b border-secondary pb-2 text-xs font-medium`}>
+            <div className={`grid ${gridCols} gap-2 border-b border-amber-700/50 pb-2 text-xs font-medium text-amber-400`}>
                 <span>Player</span>
                 <span className="text-center">Hole Cards</span>
                 <span>Folded</span>
@@ -84,7 +84,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                 <span>Hand Rank</span>
             </div>
 
-            <div className="pt-3 text-xs text-muted-foreground">
+            <div className="pt-3 text-xs text-amber-300">
                 {items.map((item) => {
                     const firstCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[0]));
                     const secondCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[1]));
@@ -100,9 +100,13 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                         ? "Myself"
                         : item.player;
 
-                    const rowClassName = isCurrentConnectedAccount
-                        ? `grid ${gridCols} items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100`
+                    let rowClassName = isCurrentConnectedAccount
+                        ? `grid ${gridCols} items-center gap-2 rounded-md bg-amber-500/20 px-2 py-1 font-medium text-amber-200`
                         : `grid ${gridCols} items-center gap-2 py-1`;
+
+                    if (item.isFolded) {
+                        rowClassName += " opacity-40 grayscale-[0.3]";
+                    }
 
                     return (
                         <div key={item.player} className={rowClassName}>
@@ -118,7 +122,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                                         <FirstCardComponent className="h-full w-full" />
                                     </div>
                                 ) : (
-                                    <span>{item.holeCards[0]}</span>
+                                    <span className="text-amber-300">{item.holeCards[0]}</span>
                                 )}
 
                                 {SecondCardComponent ? (
@@ -126,7 +130,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                                         <SecondCardComponent className="h-full w-full" />
                                     </div>
                                 ) : (
-                                    <span>{item.holeCards[1]}</span>
+                                    <span className="text-amber-300">{item.holeCards[1]}</span>
                                 )}
                             </div>
 
