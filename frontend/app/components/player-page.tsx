@@ -11,7 +11,7 @@ import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { GameResultBox } from "./game-result-box";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
-import { isUserInConvexGameRecord } from "../utils/contractUtils";
+import { isUserInConvexGameRecord, isUserFolded, isUserBet } from "../utils/contractUtils";
 
 interface PlayerPageProps {
     currentWalletUser: string;
@@ -36,13 +36,12 @@ export function PlayerPage({
                             }: PlayerPageProps): ReactNode {
     const [isJoining, setIsJoining] = useState<boolean>(false);
     const [isFolding, setIsFolding] = useState<boolean>(false);
-    const [isFolded, setIsFolded] = useState<boolean>(false);
     const [isBetting, setIsBetting] = useState<boolean>(false);
-    const [isBetPlaced, setIsBetPlaced] = useState<boolean>(false);
     const [betAmount, setBetAmount] = useState<string>("");
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
     const isUserInGameRecord: boolean = isUserInConvexGameRecord(currentWalletUser, latestGame);
-
+    const isFolded: boolean = isUserFolded(currentWalletUser, latestGame);
+    const isBetPlaced: boolean = isUserBet(currentWalletUser, latestGame);
 
     const handleBetAmountChange = (value: string): void => {
         setBetAmount(value);
@@ -55,8 +54,6 @@ export function PlayerPage({
 
             if (result.success) {
                 printPlayerActionResult("Game Joined", result);
-                setIsBetPlaced(false);
-                setIsFolded(false)
             } else {
                 printPlayerActionResult("Join Game Failed", result);
             }
@@ -75,7 +72,6 @@ export function PlayerPage({
 
             if (result.success) {
                 printPlayerActionResult("Folded Hand", result);
-                setIsFolded(true);
             } else {
                 printPlayerActionResult("Fold Hand Failed", result);
             }
@@ -98,7 +94,6 @@ export function PlayerPage({
 
             if (result.success) {
                 printPlayerActionResult("Bet Placed", result);
-                setIsBetPlaced(true);
             } else {
                 printPlayerActionResult("Bet Failed", result);
             }
@@ -154,7 +149,7 @@ export function PlayerPage({
                     color="secondary"
                     data-testid="player-fold"
                     isLoading={isFolding}
-                    isDisabled={!isUserInGameRecord || isFolding || isFolded || isBetPlaced || !latestGame.isGameStarted}
+                    isDisabled={!isUserInGameRecord || isFolding || isFolded || isBetting ||isBetPlaced || !latestGame.isGameStarted}
                     onClick={handleFold}
                 >
                     Fold
@@ -182,7 +177,7 @@ export function PlayerPage({
                         color="secondary"
                         data-testid="player-bet"
                         isLoading={isBetting}
-                        isDisabled={!isUserInGameRecord || isBetting || isBetPlaced || betAmount.trim() === "" || !latestGame.isGameStarted}
+                        isDisabled={!isUserInGameRecord || isBetting || isFolded || isBetPlaced || betAmount.trim() === "" || !latestGame.isGameStarted}
                         onClick={handleBet}
                     >
                         Bet

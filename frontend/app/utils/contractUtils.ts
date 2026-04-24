@@ -91,3 +91,36 @@ export function isOwnerAccount(account: string): boolean {
 export function isUserInConvexGameRecord(account: string, gameRecord: GameRecordFrontend): boolean {
     return gameRecord.playerInfoItems.some((playerInfo) => playerInfo.player.toLowerCase() === account.toLowerCase());
 }
+
+/**
+ * Check if an user is folded in a Convex game record.
+ * @param account 
+ * @param gameRecord 
+ * @returns {boolean} true if the user is in the game record and folded, false otherwise.
+ */
+export function isUserFolded(account: string, gameRecord: GameRecordFrontend): boolean {
+    const playerInfo = gameRecord.playerInfoItems.find(
+        (playerInfo) => playerInfo.player.toLowerCase() === account.toLowerCase()
+    );
+    return playerInfo?.isFolded ?? false;
+}
+
+
+/**
+ * Check if an user is bet in a Convex game record.
+ * @param account 
+ * @param gameRecord 
+ * @returns {boolean} true if the user is in the game record and bet, false otherwise.
+ */
+export function isUserBet(account: string, gameRecord: GameRecordFrontend): boolean {
+    //find the player info for the given account. If found, also find the index of the player info in the playerInfoItems array. Use that index in the game record's betAmounts array to check if the bet amount is greater than 0.
+    const playerIndex = gameRecord.playerInfoItems.findIndex(
+        (playerInfo) => playerInfo.player.toLowerCase() === account.toLowerCase()
+    );
+
+    if (playerIndex === -1) {
+        return false;
+    }
+
+    return gameRecord.playerInfoItems[playerIndex].betAmount > 0;
+}
