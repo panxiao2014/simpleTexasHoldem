@@ -56,6 +56,7 @@ export function PlayerPage({
             if (result.success) {
                 printPlayerActionResult("Game Joined", result);
                 setIsBetPlaced(false);
+                setIsFolded(false)
             } else {
                 printPlayerActionResult("Join Game Failed", result);
             }
