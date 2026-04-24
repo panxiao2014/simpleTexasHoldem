@@ -30,7 +30,8 @@ export const createGame = mutation({
         // 2. If it exists, don't create a new one. 
         // You could also use .patch() here if you want to update it.
         if (existingGame !== null) {
-          return existingGame._id;
+            console.error(`Game with ID ${args.gameId} already exists.`);
+            return existingGame._id;
         }
 
         // 3. Otherwise, create the new record
@@ -64,7 +65,7 @@ export const endGame = mutation({
         const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
-            console.warn(`Attempted to end game ${args.gameId} but no record was found.`);
+            console.error(`Attempted to end game ${args.gameId} but no record was found.`);
             return;
         }
 
@@ -87,7 +88,7 @@ export const playerJoined = mutation({
         const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
-            console.warn(`Attempted to join game ${args.gameId} but no record was found.`);
+            console.error(`Attempted to join game ${args.gameId} but no record was found.`);
             return;
         }
 
@@ -97,6 +98,7 @@ export const playerJoined = mutation({
         );
 
         if (isAlreadyInList) {
+            console.error(`Player ${args.player} is already in game ${args.gameId}.`);
             return;
         }
 
@@ -109,6 +111,7 @@ export const playerJoined = mutation({
                     holeCards: [args.holeCards[0], args.holeCards[1]],
                     betAmount: "",
                     handRank: 0,
+                    isFolded: false,
                 },
             ],
         });
@@ -126,21 +129,31 @@ export const playerFolded = mutation({
         const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
-            console.warn(`Attempted to fold player ${args.player} in game ${args.gameId} but no record was found.`);
+            console.error(`Attempted to fold player ${args.player} in game ${args.gameId} but no record was found.`);
             return;
         }
 
-        // 2. Filter out the player who folded
-        const updatedPlayerList = game.playerInfoItems.filter(
-            (item: any) => item.player !== args.player
-        );
+        let playerFound = false;
 
-        // 3. Only perform the update if a player was actually removed
-        if (updatedPlayerList.length !== game.playerInfoItems.length) {
+        const updatedPlayerList = game.playerInfoItems.map((item: any) => {
+            if (item.player === args.player) {
+                playerFound = true;
+                // Return a new object with isFolded set to true
+                return {
+                    ...item,
+                    isFolded: true,
+                };
+            }
+            return item;
+        });
+
+        // 3. Only perform the update if the player was found
+        if (playerFound) {
             await ctx.db.patch(game._id, {
                 playerInfoItems: updatedPlayerList,
             });
-            console.log(`Player ${args.player} removed from game ${args.gameId} (Folded)`);
+        } else {
+            console.error(`Player ${args.player} not found in game ${args.gameId}`);
         }
     },
 });
@@ -155,7 +168,7 @@ export const playerBet = mutation({
         const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
-            console.warn(`Attempted to bet in game ${args.gameId} but no record was found.`);
+            console.error(`Attempted to bet in game ${args.gameId} but no record was found.`);
             return;
         }
 
@@ -183,7 +196,7 @@ export const boardCardsDealt = mutation({
         const game = await getGameById(ctx, args.gameId);
 
         if (!game) {
-            console.warn(`Attempted to deal board cards in game ${args.gameId} but no record was found.`);
+            console.error(`Attempted to deal board cards in game ${args.gameId} but no record was found.`);
             return;
         }
 

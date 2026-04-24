@@ -9,6 +9,7 @@ export interface PlayerInfoListItem {
     holeCards: readonly [number, number];
     betAmount: bigint;
     handRank: number;
+    isFolded: boolean;
 }
 
 interface PlayerInfoListProps {
@@ -24,131 +25,127 @@ interface WindowWithEthereumProvider extends Window {
     ethereum?: EthereumAccountsProvider;
 }
 
-/**
- * PlayerInfoList component for displaying player status columns in owner view.
- *
- * Purpose:
- * Renders the "Players In Game" section with column headers for Player, Hole Cards, and Bet Amount.
- *
- * Props:
- * - items (PlayerInfoListItem[]): player rows to display.
- *
- * Usage:
- * Render this component where owner-facing player information should appear and pass player rows from contract events.
- *
- * @returns {ReactNode} The player info section with table headers and rows.
- */
 export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
     const [connectedAccount, setConnectedAccount] = useState<Address | null>(null);
 
-    useEffect((): (() => void) => {
-        let isMounted: boolean = true;
+    useEffect(() => {
+        let isMounted = true;
 
         const { ethereum }: WindowWithEthereumProvider = window as WindowWithEthereumProvider;
 
-        //handle user account changed in Metamask
-        const handleAccountsChanged = (accounts: string[]): void => {
-            if (!isMounted) {
-                return;
-            }
+        const handleAccountsChanged = (accounts: string[]) => {
+            if (!isMounted) return;
 
-            const nextAccount: Address | null = accounts.length > 0 ? (accounts[0] as Address) : null;
+            const nextAccount =
+                accounts.length > 0 ? (accounts[0] as Address) : null;
+
             setConnectedAccount(nextAccount);
         };
 
-        const loadConnectedAccount = async (): Promise<void> => {
+        const loadConnectedAccount = async () => {
             try {
-                const account: Address = await getConnectedAccount();
-                if (isMounted) {
-                    setConnectedAccount(account);
-                }
-            } catch (error: unknown) {
-                console.error("Failed to load connected account for player list.", error);
+                const account = await getConnectedAccount();
+                if (isMounted) setConnectedAccount(account);
+            } catch (error) {
+                console.error("Failed to load connected account.", error);
             }
         };
 
-        if (ethereum !== undefined) {
+        if (ethereum) {
             ethereum.on("accountsChanged", handleAccountsChanged);
         }
 
         void loadConnectedAccount();
 
-        return (): void => {
-            if (ethereum !== undefined) {
+        return () => {
+            if (ethereum) {
                 ethereum.removeListener("accountsChanged", handleAccountsChanged);
             }
             isMounted = false;
         };
     }, []);
 
-    return (
+    /**
+     * ✅ Percentage-based layout (stable & aligned)
+     */
+    const gridCols =
+        "grid-cols-[35%_20%_10%_15%_20%]";
 
-        <section
-            className="rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30"
-            data-testid="player-info-list"
-        >
+    return (
+        <section className="rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
             <h3 className="mb-2 text-sm font-semibold">Players In Game</h3>
 
-            <div className="grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] gap-2 border-b border-secondary pb-2 text-xs font-medium">
+            {/* Header */}
+            <div className={`grid ${gridCols} gap-2 border-b border-secondary pb-2 text-xs font-medium`}>
                 <span>Player</span>
-                <span>Hole Cards</span>
+                <span className="text-center">Hole Cards</span>
+                <span>Folded</span>
                 <span>Bet Amount</span>
                 <span>Hand Rank</span>
             </div>
 
-            <div className="pt-3 text-xs text-muted-foreground" aria-live="polite">
+            <div className="pt-3 text-xs text-muted-foreground">
+                {items.map((item) => {
+                    const firstCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[0]));
+                    const secondCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[1]));
 
-                {items.map((item: PlayerInfoListItem): ReactNode => {
-                    const firstCardKey: string = getCardComponentKeyFromIndex(Number(item.holeCards[0]));
-                    const secondCardKey: string = getCardComponentKeyFromIndex(Number(item.holeCards[1]));
                     const FirstCardComponent = Cards[firstCardKey as keyof typeof Cards];
                     const SecondCardComponent = Cards[secondCardKey as keyof typeof Cards];
-                    const isCurrentConnectedAccount: boolean = connectedAccount !== null
-                        && item.player.toLowerCase() === connectedAccount.toLowerCase();
-                    const playerLabel: string = isCurrentConnectedAccount ? "Myself" : item.player;
-                    const rowClassName: string = isCurrentConnectedAccount
-                        ? "grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100"
-                        : "grid grid-cols-[minmax(6rem,0.8fr)_minmax(9rem,1.3fr)_minmax(5.5rem,auto)_minmax(5rem,auto)] items-center gap-2 py-1";
+
+                    const isCurrentConnectedAccount =
+                        connectedAccount &&
+                        item.player.toLowerCase() === connectedAccount.toLowerCase();
+
+                    const playerLabel = isCurrentConnectedAccount
+                        ? "Myself"
+                        : item.player;
+
+                    const rowClassName = isCurrentConnectedAccount
+                        ? `grid ${gridCols} items-center gap-2 rounded-md bg-orange-200/70 px-2 py-1 font-medium text-orange-950 dark:bg-orange-900/40 dark:text-orange-100`
+                        : `grid ${gridCols} items-center gap-2 py-1`;
 
                     return (
-
                         <div key={item.player} className={rowClassName}>
-                            <span className="break-all whitespace-normal">{playerLabel}</span>
+                            {/* Player */}
+                            <span className="break-all pr-2">
+                                {playerLabel}
+                            </span>
 
-                            <div className="flex flex-nowrap gap-2">
-
-                                {FirstCardComponent === undefined ? (
-                                    <span>{item.holeCards[0].toString()}</span>
-                                ) : (
-
-                                    <div className="aspect-[5/7] w-12 shrink-0 transition duration-150 hover:-translate-y-1 sm:w-14">
+                            {/* Hole Cards */}
+                            <div className="flex justify-center gap-2">
+                                {FirstCardComponent ? (
+                                    <div className="aspect-[5/7] w-12 shrink-0 sm:w-14">
                                         <FirstCardComponent className="h-full w-full" />
                                     </div>
-
+                                ) : (
+                                    <span>{item.holeCards[0]}</span>
                                 )}
 
-                                {SecondCardComponent === undefined ? (
-                                    <span>{item.holeCards[1].toString()}</span>
-                                ) : (
-
-                                    <div className="aspect-[5/7] w-12 shrink-0 transition duration-150 hover:-translate-y-1 sm:w-14">
+                                {SecondCardComponent ? (
+                                    <div className="aspect-[5/7] w-12 shrink-0 sm:w-14">
                                         <SecondCardComponent className="h-full w-full" />
                                     </div>
-
+                                ) : (
+                                    <span>{item.holeCards[1]}</span>
                                 )}
-
                             </div>
 
-                            <span className="whitespace-nowrap">{formatEther(item.betAmount)} ETH</span>
+                            {/* Folded */}
+                            <span>{item.isFolded ? "Yes" : "No"}</span>
 
-                            <span className="whitespace-pre-line break-words">{formatHandRankLabel(item.handRank)}</span>
+                            {/* Bet */}
+                            <span className="whitespace-nowrap">
+                                {formatEther(item.betAmount)} ETH
+                            </span>
+
+                            {/* Hand Rank */}
+                            <span className="whitespace-pre-line break-words">
+                                {formatHandRankLabel(item.handRank)}
+                            </span>
                         </div>
-
                     );
                 })}
-
             </div>
         </section>
-
     );
 }

@@ -12,6 +12,7 @@ export type GameRecordFrontend = {
         holeCards: [number, number]; // Strict Tuple
         betAmount: bigint;           // Transformed to BigInt
         handRank: number;
+        isFolded: boolean;
     }>;
     boardCards: [number, number, number, number, number] | null;
     gameResult: null | {
@@ -59,6 +60,7 @@ export const gameQueryDataTransform = (game: Doc<"simpleTexasHoldemTable"> | nul
             player: item.player as Address, // Address from viem
             betAmount: BigInt(item.betAmount || "0"),
             holeCards: item.holeCards as [number, number],
+            isFolded: item.isFolded as boolean,
         })),
 
         gameResult: game.gameResult ? {
@@ -77,9 +79,5 @@ export const gameQueryDataTransform = (game: Doc<"simpleTexasHoldemTable"> | nul
             startTime: BigInt(game.gameResult.startTime),
             endTime: BigInt(game.gameResult.endTime),
         } : null,
-
-        houseFeeWithdrawnAmount: game.houseFeeWithdrawnAmount 
-            ? BigInt(game.houseFeeWithdrawnAmount) 
-            : null,
     };
 };

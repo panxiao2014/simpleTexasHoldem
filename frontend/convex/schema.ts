@@ -15,6 +15,7 @@ export default defineSchema({
         holeCards: v.array(v.number()), // [number, number]
         betAmount: v.string(),
         handRank: v.number(),
+        isFolded: v.boolean(),
       })
     ),
 
