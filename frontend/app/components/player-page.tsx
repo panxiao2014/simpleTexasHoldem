@@ -17,6 +17,8 @@ interface PlayerPageProps {
     latestGame: GameRecordFrontend;
 }
 
+const MIN_BET_AMOUNT_ETH = 0.001;
+
 /**
  * PlayerPage component for the player mode area.
  *
@@ -156,9 +158,12 @@ export function PlayerPage({
 
                 {/* Group bet input and bet button together. */}
                 <div
-                    className="flex flex-col gap-2 rounded-lg border border-secondary/60 p-3"
-                    style={{ backgroundColor: "var(--color-brand-100)" }}
+                    className="flex flex-col gap-2 rounded-lg border border-amber-700/50 bg-gradient-to-br from-green-900 to-green-950 p-3 shadow-lg"
                 >
+                    {/* 提示信息 */}
+                    <div className="text-sm font-medium text-amber-400">
+                        💰 Min bet: {MIN_BET_AMOUNT_ETH} ETH
+                    </div>
 
                     {/* Input captures the player's bet amount and follows the same enabled state as the Bet button. */}
                     <Input
