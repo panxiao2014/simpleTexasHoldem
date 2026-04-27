@@ -22,7 +22,6 @@ import {
 import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
-import { GameResultBox } from "./game-result-box";
 import { isOwnerAccount } from "../utils/contractUtils";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 
@@ -251,7 +250,7 @@ export function OwnerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList latestGame={latestGame} items={latestGame.playerInfoItems} />
+                        <PlayerInfoList latestGame={latestGame} />
 
                         <div className="mt-4">
 
@@ -259,14 +258,6 @@ export function OwnerPage({
                             <BoardCardBox boardCards={latestGame.boardCards} />
 
                         </div>
-
-                        {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
-                        <div className="mt-4">
-
-                            <GameResultBox gameResult={latestGame.gameResult} />
-
-                        </div>
-
                     </div>
                 </div>
             </section>

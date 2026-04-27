@@ -9,7 +9,6 @@ import { formatBalanceInfoText } from "../utils/contractParse";
 import { PlayerInfoList } from "./player-info-list";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
-import { GameResultBox } from "./game-result-box";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
 import { isUserInConvexGameRecord, isUserFolded, isUserBet } from "../utils/contractUtils";
 
@@ -221,14 +220,6 @@ export function PlayerPage({
 
                             {/* BoardCardBox shows the latest 5 board cards once BoardCardsDealt is emitted. */}
                             <BoardCardBox boardCards={latestGame.boardCards} />
-
-                            {/* GameResultBox shows summary fields from the latest GameEnded event payload. */}
-                            <div className="mt-4">
-
-                                <GameResultBox gameResult={latestGame.gameResult} />
-
-                            </div>
-
                         </div>
 
                     </div>
