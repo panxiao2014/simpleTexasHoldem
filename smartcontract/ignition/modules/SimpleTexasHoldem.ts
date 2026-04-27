@@ -18,6 +18,12 @@ To get the private key, open MetaMask in web browser. Select network "Sepolia". 
 // Use following command to deploy this contract to local hardhat network:
 // pnpm hardhat ignition deploy ./ignition/modules/SimpleTexasHoldem.ts --network localhost
 
+// Use following command to deploy this contract to Sepolia testnet:
+// pnpm hardhat ignition deploy ./ignition/modules/SimpleTexasHoldem.ts --network sepolia
+
+// If you have updated contract code and want to redeploy:
+// pnpm hardhat ignition deploy ./ignition/modules/SimpleTexasHoldem.ts --network sepolia --reset
+
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const SimpleTexasHoldem = buildModule("SimpleTexasHoldem", (m) => {
