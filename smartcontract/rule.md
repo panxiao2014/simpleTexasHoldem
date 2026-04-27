@@ -11,8 +11,6 @@ When game begins, a player receives two hole cards. Then he has two choices:
 1. Fold. That is, quit the game.
 2. Bet. Sepcify the amount of tokens he wants to bet, and then wait for the final result.
 
-If there are less than 2 players in the game, game ends immdiately, player's betting tokens will return to them.
-
 After each player finishes betting, five board cards will be dealt. Every player's strongest five-card hand is automatically determined by using each one's two hole cards and five board cards.
 
 ## Poker hand rankings
