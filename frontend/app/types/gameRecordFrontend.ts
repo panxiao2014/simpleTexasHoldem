@@ -26,7 +26,6 @@ export type GameRecordFrontend = {
         potPerWinner: bigint;
         houseFee: bigint;
     };
-    houseFeeWithdrawnAmount: bigint | null;
 };
 
 
@@ -36,7 +35,6 @@ export const EMPTY_GAME_RECORD: GameRecordFrontend = {
     playerInfoItems: [],
     boardCards: null,
     gameResult: null,
-    houseFeeWithdrawnAmount: null,
     _id: "empty_id" as any, 
     _creationTime: 0,
 };
