@@ -215,7 +215,7 @@ export function PlayerPage({
                     <div className="min-w-0 flex-[1.25]">
 
                         {/* PlayerInfoList shows live player rows from parsed contract events. */}
-                        <PlayerInfoList items={latestGame.playerInfoItems} />
+                        <PlayerInfoList latestGame={latestGame} />
 
                         <div className="mt-4">
 

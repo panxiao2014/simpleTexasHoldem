@@ -3,6 +3,7 @@ import * as Cards from "@letele/playing-cards";
 import { formatEther, type Address } from "viem";
 import { getConnectedAccount } from "../api/ether-api";
 import { formatHandRankLabel, getCardComponentKeyFromIndex } from "../utils/utils";
+import { GameRecordFrontend } from "app/types/gameRecordFrontend";
 
 export interface PlayerInfoListItem {
     player: string;
@@ -13,7 +14,7 @@ export interface PlayerInfoListItem {
 }
 
 interface PlayerInfoListProps {
-    items: PlayerInfoListItem[];
+    latestGame: GameRecordFrontend;
 }
 
 interface EthereumAccountsProvider {
@@ -25,8 +26,10 @@ interface WindowWithEthereumProvider extends Window {
     ethereum?: EthereumAccountsProvider;
 }
 
-export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
+export function PlayerInfoList({ latestGame }: PlayerInfoListProps): ReactNode {
     const [connectedAccount, setConnectedAccount] = useState<Address | null>(null);
+    const playerInfoItems = latestGame.playerInfoItems;
+    const gameResult = latestGame.gameResult;
 
     useEffect(() => {
         let isMounted = true;
@@ -69,7 +72,7 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
      * ✅ Percentage-based layout (stable & aligned)
      */
     const gridCols =
-        "grid-cols-[35%_20%_10%_15%_20%]";
+        "grid-cols-[25%_15%_8%_12%_12%_12%_16%]";
 
     return (
         <section className="rounded-lg border border-amber-700/50 bg-gradient-to-br from-green-900 to-green-950 p-4 shadow-lg">
@@ -82,10 +85,12 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                 <span>Folded</span>
                 <span>Bet Amount</span>
                 <span>Hand Rank</span>
+                <span>Result</span>
+                <span>Prize</span>
             </div>
 
             <div className="pt-3 text-xs text-amber-300">
-                {items.map((item) => {
+                {playerInfoItems.map((item) => {
                     const firstCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[0]));
                     const secondCardKey = getCardComponentKeyFromIndex(Number(item.holeCards[1]));
 
@@ -106,6 +111,19 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
 
                     if (item.isFolded) {
                         rowClassName += " opacity-40 grayscale-[0.3]";
+                    }
+
+                    //check if game is ended and if player wins:
+                    let resultDisplay = "";
+                    let prizeDisplay = "0";
+                    if(latestGame.isGameStarted === false && gameResult) {
+                        const winnersSet = new Set(gameResult.winners.map(w => w.toLowerCase()));
+                        if(winnersSet.has(item.player.toLowerCase())) {
+                            resultDisplay = "Win!";
+                            prizeDisplay = formatEther(gameResult.potPerWinner);
+                        } else {
+                            resultDisplay = "Lose";
+                        }
                     }
 
                     return (
@@ -145,6 +163,16 @@ export function PlayerInfoList({ items }: PlayerInfoListProps): ReactNode {
                             {/* Hand Rank */}
                             <span className="whitespace-pre-line break-words">
                                 {formatHandRankLabel(item.handRank)}
+                            </span>
+
+                            {/* Result */}
+                            <span className="whitespace-nowrap">
+                                {resultDisplay}
+                            </span>
+
+                            {/* Prize */}
+                            <span className="whitespace-nowrap">
+                                {prizeDisplay} ETH
                             </span>
                         </div>
                     );

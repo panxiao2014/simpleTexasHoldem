@@ -57,10 +57,10 @@ export const formatHandRankLabel = (handRank: number): string => {
     const rankLabel: string | undefined = HAND_RANK_LABELS[handRank];
 
     if (rankLabel === undefined) {
-        return `${handRank}\nUNKNOWN`;
+        return 'UNKNOWN';
     }
 
-    return `${handRank}\n${rankLabel}`;
+    return `${rankLabel}`;
 };
 
 
