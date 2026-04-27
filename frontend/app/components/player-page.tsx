@@ -39,6 +39,7 @@ export function PlayerPage({
     const [isFolding, setIsFolding] = useState<boolean>(false);
     const [isBetting, setIsBetting] = useState<boolean>(false);
     const [betAmount, setBetAmount] = useState<string>("");
+    const [betError, setBetError] = useState<string>("");
     const [playerBalanceModalText, setPlayerBalanceModalText] = useState<string>("Click to load player balance.");
     const isUserInGameRecord: boolean = isUserInConvexGameRecord(currentWalletUser, latestGame);
     const isFolded: boolean = isUserFolded(currentWalletUser, latestGame);
@@ -46,6 +47,10 @@ export function PlayerPage({
 
     const handleBetAmountChange = (value: string): void => {
         setBetAmount(value);
+
+        if(betError) {
+            setBetError("");
+        }
     };
 
     async function handleJoinGame(): Promise<void> {
@@ -86,6 +91,18 @@ export function PlayerPage({
     async function handleBet(): Promise<void> {
         if (betAmount.trim() === "") {
             console.warn(formatLogString("Bet failed: enter an ETH amount."));
+            setBetError("Please enter a valid ETH amount.");
+            return;
+        }
+
+        const betAmountNumber = parseFloat(betAmount);
+        if (isNaN(betAmountNumber) || betAmountNumber <= 0) {
+            setBetError("Please enter a valid positive number.");
+            return;
+        }
+
+        if (betAmountNumber < MIN_BET_AMOUNT_ETH) {
+            setBetError(`Minimum bet is ${MIN_BET_AMOUNT_ETH} ETH. Please enter a larger amount.`);
             return;
         }
 
@@ -95,6 +112,8 @@ export function PlayerPage({
 
             if (result.success) {
                 printPlayerActionResult("Bet Placed", result);
+                setBetAmount(""); 
+                setBetError("");
             } else {
                 printPlayerActionResult("Bet Failed", result);
             }
@@ -168,12 +187,18 @@ export function PlayerPage({
                     {/* Input captures the player's bet amount and follows the same enabled state as the Bet button. */}
                     <Input
                         size="md"
-                        placeholder="Enter bet amount in ETH"
+                        placeholder="Bet amount in ETH"
                         inputMode="decimal"
                         value={betAmount}
                         isDisabled={!isUserInGameRecord || isBetting || isBetPlaced || !latestGame.isGameStarted}
                         onChange={handleBetAmountChange}
                     />
+
+                    {betError && (
+                        <div className="text-xs text-red-400 bg-red-400/10 rounded px-2 py-1 border border-red-400/30">
+                            ⚠️ {betError}
+                        </div>
+                    )}
 
                     {/* Button allows the player to place a bet in the current game. */}
                     <Button
