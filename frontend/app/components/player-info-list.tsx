@@ -116,7 +116,7 @@ export function PlayerInfoList({ latestGame }: PlayerInfoListProps): ReactNode {
                     //check if game is ended and if player wins:
                     let resultDisplay = "";
                     let prizeDisplay = "0";
-                    if(latestGame.isGameStarted === false && gameResult) {
+                    if(latestGame.isGameStarted === false && gameResult && gameResult.winners && gameResult.winners.length > 0) {
                         const winnersSet = new Set(gameResult.winners.map(w => w.toLowerCase()));
                         if(winnersSet.has(item.player.toLowerCase())) {
                             resultDisplay = "Win!";
