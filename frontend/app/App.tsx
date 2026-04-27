@@ -1,5 +1,4 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { CardsPage } from "./components/cards-page";
 import { Header } from "./components/header";
 import { OwnerPage } from "./components/owner-page";
 import { PlayerPage } from "./components/player-page";
@@ -65,8 +64,6 @@ function App(): ReactNode {
                 latestGame={latestGame}
             />
         );
-    } else if (gameMode === GAME_MODES.CARDS) {
-        currentPage = <CardsPage />;
     }
 
     useEffect((): (() => void) => {

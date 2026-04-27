@@ -16,7 +16,6 @@ interface HeaderProps {
 const modeItems: Array<{ id: GameMode; label: string }> = [
     { id: GAME_MODES.OWNER, label: "Owner" },
     { id: GAME_MODES.PLAYER, label: "Player" },
-    { id: GAME_MODES.CARDS, label: "Cards" },
 ];
 
 
@@ -45,7 +44,7 @@ function getGameStatusText(latestGame: GameRecordFrontend | null): string {
  * Header component for the Texas Hold'em application.
  *
  * Displays a navigation bar with:
- * - Game mode selector (Owner/Player/Cards) on the left
+ * - Game mode selector (Owner/Player) on the left
  * - Help modal and GitHub link on the right
  *
  * @component
