@@ -205,9 +205,17 @@ function parseBigIntArray(value: unknown): readonly bigint[] | undefined {
  */
 function parseSimpleTexasHoldemEventLogs(logs: readonly Log[]): ParsedSimpleTexasHoldemEvent[] {
     const parsedEvents: ParsedSimpleTexasHoldemEvent[] = [];
+    const seenEvents: Set<string> = new Set();
 
     for (const log of logs) {
         try {
+            //use transactionHash + logIndex as a unique identifier to prevent processing duplicate events in the same batch
+            const uniqueEventKey = `${log.transactionHash}_${log.logIndex}`;
+            if (seenEvents.has(uniqueEventKey)) {
+                continue;
+            }
+
+            seenEvents.add(uniqueEventKey);
             const parsedLog: DecodedEventLog = decodeEventLog({
                 abi: SIMPLE_TEXAS_HOLDEM_ABI,
                 data: log.data,
