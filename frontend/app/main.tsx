@@ -8,7 +8,12 @@ import App from "./App";
 
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 
-const convex = new ConvexReactClient("https://handsome-cheetah-220.convex.cloud");
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
+if (!convexUrl) {
+    throw new Error("VITE_CONVEX_URL environment variable is not set");
+}
+
+const convex = new ConvexReactClient(convexUrl);
 
 const rootElement: HTMLElement | null = document.getElementById("root");
 
