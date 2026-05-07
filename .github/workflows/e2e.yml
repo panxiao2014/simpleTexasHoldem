@@ -28,6 +28,12 @@ jobs:
         cat > keys/api-keys.ts <<'EOF'
         export const METAMASK_INFURA_API_KEY: string = "ci-fake-key";
         EOF
+
+    - name: Create .env.local for CI
+      run: |
+        cat > .env.local <<'EOF'
+        VITE_CONVEX_URL=https://handsome-cheetah-220.convex.cloud
+        EOF
         
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
