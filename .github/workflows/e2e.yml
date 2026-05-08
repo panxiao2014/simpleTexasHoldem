@@ -29,7 +29,8 @@ jobs:
         VITE_CONVEX_URL=https://handsome-cheetah-220.convex.cloud
         VITE_CONVEX_SITE_URL=https://handsome-cheetah-220.convex.site
         VITE_INFURA_API_URL=https://sepolia.infura.io/v3/fake-api-key-for-ci
-
+        VITE_CONTRACT_ADDRESS=0x9DF11C09eF92e6B9F30942f080490D1e413B72c4
+        VITE_CONTRACT_OWNER_ADDRESS=0xDAc57DA61035BF3811ff1FC239eCdA0Ff9931E70
         EOF
         
     - name: Install Playwright Browsers
