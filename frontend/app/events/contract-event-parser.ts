@@ -8,8 +8,8 @@ import {
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "../api/contract-abi";
 import { createContractPublicClient } from "../api/ether-api";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
-import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as Address;
 
 type SupportedEventName = "PlayerJoined" | "PlayerFolded" | "PlayerBet" | "BoardCardsDealt" | "GameStarted" | "GameEnded" | "HouseFeeWithdrawn";
 

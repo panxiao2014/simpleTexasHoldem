@@ -5,8 +5,9 @@ import {
     type TransactionReceipt,
 } from "viem";
 
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as Address;
+
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
-import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import {
     createContractPublicClient,

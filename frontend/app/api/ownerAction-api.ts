@@ -9,7 +9,6 @@ import {
 } from "viem";
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
-import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { formatLogString } from "../utils/utils";
 import { type ContractCallResult } from "./contract-api";
@@ -20,6 +19,8 @@ import {
 	getConnectedAccount,
 	type ContractEventLog,
 } from "./ether-api";
+
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as Address;
 
 type OwnerActionFunctionName = "startGame" | "endGame" | "withdrawHouseFees";
 

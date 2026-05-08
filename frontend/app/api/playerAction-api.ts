@@ -15,11 +15,12 @@ import {
 } from "viem";
 
 import { SIMPLE_TEXAS_HOLDEM_ABI } from "./contract-abi";
-import { CONTRACT_ADDRESS } from "../utils/contractInfo";
 import { type PlayerJoinedParsedEvent, type PlayerFoldedParsedEvent, type PlayerBetParsedEvent } from "../events/contract-event-parser";
 import { USING_CHAIN_CONFIG } from "../utils/netConfig";
 import { createContractWalletClient, createContractPublicClient, getConnectedAccount } from "./ether-api";
 import { formatLogString } from "../utils/utils";
+
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as Address;
 
 function extractRevertReason(err: unknown): string {
     console.debug('Full error object:', JSON.stringify(err, (_key: string, value: unknown) => {

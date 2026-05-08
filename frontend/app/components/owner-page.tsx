@@ -19,7 +19,6 @@ import {
     formatHouseFeesText
 } from "../utils/contractParse";
 
-import { CONTRACT_OWNER_ADDRESS } from "../utils/contractInfo";
 import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { isOwnerAccount } from "../utils/contractUtils";
@@ -29,6 +28,8 @@ interface OwnerPageProps {
     currentWalletUser: string;
     latestGame: GameRecordFrontend;
 }
+
+const CONTRACT_OWNER_ADDRESS = import.meta.env.VITE_CONTRACT_OWNER_ADDRESS as string;
 
 /**
  * OwnerPage component for contract owner controls.

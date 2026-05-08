@@ -1,6 +1,7 @@
 import { defineChain, type Chain } from 'viem'
 import { sepolia } from 'viem/chains'
-import { METAMASK_INFURA_API_KEY } from '../../keys/api-keys'
+
+const METAMASK_INFURA_API_URL = import.meta.env.VITE_METAMASK_INFURA_API_URL
 
 type ChainConfig = {
   chain: Chain;
@@ -11,7 +12,7 @@ const SEPOLIA_CHAIN = defineChain({
     ...sepolia,
     rpcUrls: {
         default: {
-            http: [`https://sepolia.infura.io/v3/${METAMASK_INFURA_API_KEY}`],
+            http: [METAMASK_INFURA_API_URL],
         },
     },
 });

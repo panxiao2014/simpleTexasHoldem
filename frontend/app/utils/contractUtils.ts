@@ -1,5 +1,6 @@
-import { CONTRACT_OWNER_ADDRESS } from "./contractInfo";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
+
+const CONTRACT_OWNER_ADDRESS = import.meta.env.VITE_CONTRACT_OWNER_ADDRESS as string;
 
 interface EthereumProvider {
     request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
