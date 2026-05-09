@@ -43,4 +43,6 @@ const HARDHAT_CHAIN_CONFIG: ChainConfig = {
   chainId: HARDHAT_CHAIN.id,
 };
 
-export const USING_CHAIN_CONFIG = HARDHAT_CHAIN_CONFIG;
+export const USING_CHAIN_CONFIG = import.meta.env.VITE_CHAIN_CONFIG === 'sepolia' 
+    ? SEPOLIA_CHAIN_CONFIG 
+    : HARDHAT_CHAIN_CONFIG;
