@@ -23,6 +23,7 @@ import { TextDisplayModal } from "./text-display-modal";
 import { BoardCardBox } from "./board-card-box";
 import { isOwnerAccount } from "../utils/contractUtils";
 import { type GameRecordFrontend } from "../types/gameRecordFrontend";
+import { Address } from "viem";
 
 interface OwnerPageProps {
     currentWalletUser: string;
@@ -135,7 +136,7 @@ export function OwnerPage({
         setOwnerBalanceModalText("Loading owner balance...");
 
         try {
-            const ownerBalance: bigint = await getNativeBalance(CONTRACT_OWNER_ADDRESS);
+            const ownerBalance: bigint = await getNativeBalance(CONTRACT_OWNER_ADDRESS as Address);
             const formattedOwnerBalance: string = formatBalanceInfoText(CONTRACT_OWNER_ADDRESS, ownerBalance);
 
             setOwnerBalanceModalText(formattedOwnerBalance);

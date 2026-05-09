@@ -30,7 +30,14 @@
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-react-aria-components": "^2.0.1",
-    "viem": "^2.47.5"
+    "viem": "^2.47.5",
+    "@react-aria/utils": "^3.x",
+    "@react-aria/overlays": "^3.x",
+    "@react-stately/utils": "^3.x",
+    "@react-types/overlays": "^3.x",
+    "@react-types/shared": "^3.x",
+    "react-stately": "^3.x",
+    "@internationalized/date": "^3.x"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.0",

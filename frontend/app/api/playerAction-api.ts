@@ -167,9 +167,9 @@ export async function playerJoinApi(): Promise<PlayerActionApiResult> {
     } catch (err: unknown) {
         // 4. parse error
         if (err instanceof BaseError) {
-            const revertError: ContractFunctionRevertedError | null = err.walk(
-                (e: Error): e is ContractFunctionRevertedError => e instanceof ContractFunctionRevertedError
-            );
+            const revertError = err.walk(
+                (e: unknown): e is ContractFunctionRevertedError => e instanceof ContractFunctionRevertedError
+            ) as ContractFunctionRevertedError | null;;
 
             if (revertError?.data?.errorName) {
                 return {
@@ -269,9 +269,9 @@ export async function playerFoldApi(): Promise<PlayerActionApiResult> {
     } catch (err: unknown) {
         // 4. parse error
         if (err instanceof BaseError) {
-            const revertError: ContractFunctionRevertedError | null = err.walk(
-                (e: Error): e is ContractFunctionRevertedError => e instanceof ContractFunctionRevertedError
-            );
+            const revertError = err.walk(
+                (e: unknown): e is ContractFunctionRevertedError => e instanceof ContractFunctionRevertedError
+            ) as ContractFunctionRevertedError | null;;
 
             if (revertError?.data?.errorName) {
                 return {
