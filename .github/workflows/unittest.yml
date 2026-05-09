@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ main, master ]
 jobs:
-  unittest:
+  test-unittest:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     defaults:
@@ -19,11 +19,8 @@ jobs:
     - name: Install pnpm
       run: npm install -g pnpm
 
-    - name: Approve build scripts
-      run: pnpm approve-builds --global
-
     - name: Install dependencies
-      run: pnpm install
+      run: pnpm install --ignore-scripts
 
     #create temporay .env.local file
     - name: Create .env.local for CI
