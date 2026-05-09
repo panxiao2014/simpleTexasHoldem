@@ -4,7 +4,6 @@ COPY package*.json pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --ignore-scripts
 COPY . .
 
-
 ARG VITE_CONVEX_URL
 ARG VITE_CHAIN_CONFIG
 ARG VITE_CONTRACT_ADDRESS
@@ -21,5 +20,8 @@ RUN pnpm run build
 
 FROM nginx:alpine
 COPY --from=builder /simpleTexasHoldem/frontend/dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
