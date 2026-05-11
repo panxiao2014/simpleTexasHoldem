@@ -11,7 +11,7 @@ docker stop simple-poker 2>/dev/null || true
 docker rm simple-poker 2>/dev/null || true
 
 echo "🔄 启动新容器..."
-docker run -d \
+docker run \
   --name simple-poker \
   -p 80:80 \
   --restart unless-stopped \
