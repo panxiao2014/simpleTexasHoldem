@@ -17,7 +17,7 @@ interface PlayerPageProps {
     latestGame: GameRecordFrontend;
 }
 
-const MIN_BET_AMOUNT_ETH = 0.001;
+const MIN_BET_AMOUNT_ETH = 0.01;
 
 /**
  * PlayerPage component for the player mode area.
