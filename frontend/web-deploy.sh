@@ -38,7 +38,7 @@ docker build \
   ./frontend
 
 # 给 Docker 镜像打标签
-echo "🏷️  给 Docker 镜像打标签..."
+echo "🏷️ 给 Docker 镜像打标签..."
 docker tag simple-poker:latest panxiao2014/simple-poker:latest
 
 # 推送 Docker 镜像到 Docker Hub
